@@ -24,7 +24,7 @@ Merchants can choose whether providing a location is optional or required. Howev
 
 ## Configuration
 
-### Add the Shipping Option Components app to your theme dependencies
+### Adding the Shipping Option Components app to your theme dependencies
 
 Add the `shipping-option-components` app to your theme dependencies in the `manifest.json` as shown below:
 
