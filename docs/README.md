@@ -1,6 +1,6 @@
-📢 Use this project, [contribute](https://github.com/{OrganizationName}/{AppName}) to it or open issues to help evolve it using [Store Discussion](https://github.com/vtex-apps/store-discussion).
+📢 Use this project, [contribute](https://github.com/{OrganizationName}/{AppName}) to it, or open issues to help evolve it through [Store Discussion](https://github.com/vtex-apps/store-discussion).
 
-# Shipping Option Components
+# Shipping Option components
 
 <!-- DOCS-IGNORE:start -->
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
@@ -10,13 +10,17 @@
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 <!-- DOCS-IGNORE:end -->
 
-> ⚠️ The Shipping Option Components app is available only for stores using [Delivery Promises](https://help.vtex.com/en/tutorial/delivery-promise-beta--p9EJH9GgxL0JceA6dBswd). This feature is in closed beta, which means that only selected customers can access it. If you are interested in implementing it in the future, please contact our [Support](https://support.vtex.com/hc/en-us) team.
+[<i class="fa-brands fa-github"></i> Source code](https://github.com/vtex-apps/shipping-option-components)
+
+> ⚠️ The Shipping Option Components app is available only for stores using [Delivery Promise](https://help.vtex.com/en/tutorial/delivery-promise-beta--p9EJH9GgxL0JceA6dBswd). This feature is currently in closed beta, meaning only select customers can access it. If you are interested in implementing it in the future, please contact our [Support](https://support.vtex.com/hc/en-us) team.
 >
 > For more information on setting up Delivery Promise components on Store Framework, see the [developer documentation](https://developers.vtex.com/docs/guides/setting-up-delivery-promise-components).
 
-The Shipping Option Components app exports a component that aims to allow you to filter store products by location or pickup point.
+The Shipping Option Components app exports a component that allows you to filter store products by location or pickup point. Shoppers can share their location automatically (for example, through browser or device settings) or enter it manually.
 
-![Media Placeholder](https://github.com/user-attachments/assets/6f334e28-fd01-42e9-a536-64eb9742e70c)
+Merchants can choose whether providing a location is optional or required. However, the shopper must provide their location for the Delivery Promise feature to work.
+
+![shipping-option-components](https://vtexhelp.vtexassets.com/assets/docs/src/shipping-option-components___c5a1d86b0ebf692a3eb9ca49f79b55f8.png)
 
 ## Configuration
 
@@ -32,8 +36,8 @@ Add the `shipping-option-components` app to your theme dependencies in the `mani
 
 You can now use all blocks exported by the `shipping-option-components` app. See the full list below:
 
-| Block name                          | Description                                                                                          |
-| ----------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Block name                          | Description                                                                                                          |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | `shipping-option-location-selector` | Renders a set of components that allow users to add their location and/or select a store for pickup. |
 
 ### Adding Shipping Option Components blocks to the theme
@@ -65,13 +69,13 @@ Declare the `shipping-option-location-selector` block as a child block of your [
 
 #### `shipping-option-location-selector` props
 
-| Prop name                    | Type      | Description                                                                                                                                                                                                                                                 | Default value   |
-| ---------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
-| `callToAction`               | `enum`    | Defines the type of overlay that opens when the page loads. Possible values: `modal` (modal that requires a postal code input), `popover-input` (popover for postal code input), `popover-button` (popover that opens with a button).                       | `popover-input` |
-| `compactMode`                | `boolean` | Determines whether the button displays its label. When true, the label is hidden, showing only its value.                                                                                                                                                   | `false`         |
-| `dismissible`                | `boolean` | Controls whether the modal can be dismissed without entering a postal code. When set to `false`, the modal cannot be closed until a postal code is entered. Must be used along with `callToAction` to correctly set a blocking modal.                       | `true`          |
-| `shippingSelection`          | `enum`    | Defines the type of shipping option selector to be shown. Possible values: `delivery-and-pickup` (shows both options), `only-pickup` (shows only the pickup store selector)                                                                                 | `delivery-and-pickup` |
-| `showLocationDetectorButton` | `boolean` | When set to `true`, displays a location detector button that automatically detects the user's current location using geolocation API and sets the postal code based on their coordinates. The button appears in both the main component and location modal. | `false`         |
+| Prop name                    | Type      | Description                                                                                                                                                                                                                                                                                                                                    | Default value         |
+| ---------------------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
+| `callToAction`               | `enum`    | Defines the type of overlay that opens when the page loads. Possible values: `modal` (modal that requires a postal code input), `popover-input` (popover for postal code input), `popover-button` (popover that opens with a button). | `popover-input`       |
+| `compactMode`                | `boolean` | Determines whether the button displays its label. When true, the label is hidden, showing only its value.                                                                                                                                                                                                      | `false`               |
+| `dismissible`                | `boolean` | Controls whether the modal can be dismissed without entering a postal code. When set to `false`, the modal can't be closed until a postal code is entered. Must be used along with `callToAction` to correctly set a blocking modal.                                                           | `true`                |
+| `shippingSelection`          | `enum`    | Defines the type of shipping option selector to be displayed. Possible values: `delivery-and-pickup` (shows both options), `only-pickup` (shows only the pickup store selector)                                                                                          | `delivery-and-pickup` |
+| `showLocationDetectorButton` | `boolean` | When set to `true`, displays a location detector button that automatically detects the user's current location using geolocation API and sets the postal code based on their coordinates. The button appears both in the main component and in the location modal.                                             | `false`               |
 
 ## Customization
 
@@ -108,14 +112,13 @@ In order to apply CSS customizations in this and other blocks, follow the instru
 
 ## Contributors ✨
 
-Thanks goes to these wonderful people:
+Special thanks to these wonderful people:
 
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
 <!-- prettier-ignore-start -->
 <!-- markdownlint-disable -->
 <!-- markdownlint-enable -->
 <!-- prettier-ignore-end -->
-
 <!-- ALL-CONTRIBUTORS-LIST:END -->
 
 This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind are welcome!
