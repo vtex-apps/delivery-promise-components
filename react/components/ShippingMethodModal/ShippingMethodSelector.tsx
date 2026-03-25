@@ -4,7 +4,7 @@ import { Spinner } from 'vtex.styleguide'
 import { useDevice } from 'vtex.device-detector'
 
 import ShippingIcon from './ShippingIcon'
-import PickupIcon from './PickupIcon'
+import PickupPointIcon from './PickupPointIcon'
 import DeliveryIcon from './DeliveryIcon'
 
 interface Props {
@@ -15,17 +15,17 @@ interface Props {
 }
 
 const CSS_HANDLES = [
-  'deliveryModalButton',
-  'deliveryModalButtonLabel',
-  'deliveryModalButtonLabelLimited',
+  'shippingMethodSelector',
+  'shippingMethodSelectorLabel',
+  'shippingMethodSelectorLabelLimited',
 ]
 
 const SHIPPING_ICONS = {
-  'pickup-in-point': <PickupIcon width={24} height={24} />,
+  'pickup-in-point': <PickupPointIcon width={24} height={24} />,
   delivery: <DeliveryIcon width={24} height={22.5} />,
 }
 
-const DeliveryModalButton = ({
+const ShippingMethodSelector = ({
   selectedShipping,
   onClick,
   selectedPickup,
@@ -37,7 +37,7 @@ const DeliveryModalButton = ({
   return (
     <button
       onClick={onClick}
-      className={`flex flex-row items-center pa4 ${handles.deliveryModalButton}`}
+      className={`flex flex-row items-center pa4 ${handles.shippingMethodSelector}`}
     >
       {selectedShipping ? (
         SHIPPING_ICONS[selectedShipping]
@@ -54,9 +54,9 @@ const DeliveryModalButton = ({
             </span>
           ) : (
             <span
-              className={`${handles.deliveryModalButtonLabel} ${
+              className={`${handles.shippingMethodSelectorLabel} ${
                 selectedShipping === 'pickup-in-point'
-                  ? handles.deliveryModalButtonLabelLimited
+                  ? handles.shippingMethodSelectorLabelLimited
                   : ''
               } c-action-primary`}
             >
@@ -73,4 +73,4 @@ const DeliveryModalButton = ({
   )
 }
 
-export default DeliveryModalButton
+export default ShippingMethodSelector

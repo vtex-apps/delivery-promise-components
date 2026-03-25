@@ -28,7 +28,7 @@ const PickupModal = ({ isOpen, onClose, pickupProps }: Props) => {
     <Modal
       showArrowBack={false}
       isTopCloseButton={false}
-      title={intl.formatMessage(messages.deliverToButtonPlaceholder)}
+      title={intl.formatMessage(messages.shopperLocationButtonPlaceholder)}
       isOpen={isOpen}
       onClose={onClose}
     >

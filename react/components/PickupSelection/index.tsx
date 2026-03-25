@@ -40,17 +40,26 @@ const PickupSelection = ({
           zipcode={zipcode}
           onSubmit={onSubmit}
           errorMessage={inputErrorMessage}
-          placeholder={intl.formatMessage(messages.postalCodeInputPlaceHolder)}
+          placeholder={intl.formatMessage(
+            messages.shopperLocationPostalCodeInputPlaceholder
+          )}
         />
       </div>
       {pickups.length === 0 && !isLoading ? (
         <EmptyState
           onClick={onDeliverySelection}
-          buttonLabel={intl.formatMessage(messages.noStoresStateButton)}
-          title={intl.formatMessage(messages.noStoresStateTitle)}
-          description={intl.formatMessage(messages.noStoresStateDescription, {
-            postalCode: ` ${zipcode}`,
-          })}
+          buttonLabel={intl.formatMessage(
+            messages.pickupPointSelectionNoPointsStateButtonLabel
+          )}
+          title={intl.formatMessage(
+            messages.pickupPointSelectionNoPointsStateTitle
+          )}
+          description={intl.formatMessage(
+            messages.pickupPointSelectionNoPointsStateDescription,
+            {
+              postalCode: ` ${zipcode}`,
+            }
+          )}
         />
       ) : (
         <PickupList

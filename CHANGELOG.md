@@ -39,7 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `LocationDetectorButton` component to automatically detect
+- `ShopperLocationDetectorButton` component to automatically detect
 
 ## [1.8.0] - 2025-10-06
 

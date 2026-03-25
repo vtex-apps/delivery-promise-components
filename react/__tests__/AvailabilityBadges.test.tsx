@@ -6,12 +6,12 @@ import * as reactIntl from 'react-intl'
 import AvailabilityBadges from '../AvailabilityBadges'
 
 const messages = {
-  'store/shipping-option-zipcode.availabilityBadge.deliveryAvailable':
+  'store/shipping-option-components.shippingOption.deliveryAvailable.badge':
     'Delivery available',
-  'store/shipping-option-zipcode.availabilityBadge.deliveryUnavailable':
+  'store/shipping-option-components.shippingOption.deliveryUnavailable.badge':
     'Delivery unavailable',
-  'store/shipping-option-zipcode.availabilityBadge.pickupAt': 'Pickup at',
-  'store/shipping-option-zipcode.availabilityBadge.pickupUnavailable':
+  'store/shipping-option-components.shippingOption.pickupAt.badge': 'Pickup at',
+  'store/shipping-option-components.shippingOption.pickupPointUnavailable.badge':
     'Pickup unavailable',
 } as const
 

@@ -14,19 +14,19 @@ interface Props {
   selectedShipping?: 'delivery' | 'pickup-in-point'
   nonDismissibleModal: boolean
   onDeliverySelection: () => void
-  onPickupMethodSelection?: () => void
+  onShippingMethodPickupClear?: () => void
 }
 
 type Stages = 'shippingSelection' | 'pickupSelection'
 
-const ShippingSelectionModal = ({
+const ShippingMethodModal = ({
   pickupProps,
   isOpen,
   onClose,
   selectedShipping,
   nonDismissibleModal,
   onDeliverySelection,
-  onPickupMethodSelection,
+  onShippingMethodPickupClear,
 }: Props) => {
   const intl = useIntl()
   const {
@@ -43,14 +43,14 @@ const ShippingSelectionModal = ({
 
   const stageContent: StageContent = {
     shippingSelection: {
-      title: intl.formatMessage(messages.shippingSelectionModalTitle),
+      title: intl.formatMessage(messages.shippingMethodModalTitle),
       content: (
         <ShippingMethodStage
           selectedShipping={selectedShipping}
           onDeliverySelection={onDeliverySelection}
           onPickupSelection={() => {
-            if (onPickupMethodSelection) {
-              onPickupMethodSelection()
+            if (onShippingMethodPickupClear) {
+              onShippingMethodPickupClear()
             }
 
             setStage('pickupSelection')
@@ -59,7 +59,7 @@ const ShippingSelectionModal = ({
       ),
     },
     pickupSelection: {
-      title: intl.formatMessage(messages.pickupSelectionTitle),
+      title: intl.formatMessage(messages.pickupPointSelectionTitle),
       content: (
         <PickupSelection
           isLoading={isLoading}
@@ -90,4 +90,4 @@ const ShippingSelectionModal = ({
   )
 }
 
-export default ShippingSelectionModal
+export default ShippingMethodModal

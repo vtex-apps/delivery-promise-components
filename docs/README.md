@@ -36,8 +36,8 @@ Add the `shipping-option-components` app to your theme dependencies in the `mani
 
 You can now use all blocks exported by the `shipping-option-components` app. See the full list below:
 
-| Block name                          | Description                                                                                                          |
-| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Block name                          | Description                                                                                          |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | `shipping-option-location-selector` | Renders a set of components that allow users to add their location and/or select a store for pickup. |
 
 ### Adding Shipping Option Components blocks to the theme
@@ -62,51 +62,57 @@ Declare the `shipping-option-location-selector` block as a child block of your [
 "shipping-option-location-selector": {
   "props": {
     "compactMode": true,
-    "showLocationDetectorButton": true
+    "showShopperLocationDetectorButton": true
   }
 },
 ```
 
 #### `shipping-option-location-selector` props
 
-| Prop name                    | Type      | Description                                                                                                                                                                                                                                                                                                                                    | Default value         |
-| ---------------------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
-| `callToAction`               | `enum`    | Defines the type of overlay that opens when the page loads. Possible values: `modal` (modal that requires a postal code input), `popover-input` (popover for postal code input), `popover-button` (popover that opens with a button). | `popover-input`       |
-| `compactMode`                | `boolean` | Determines whether the button displays its label. When true, the label is hidden, showing only its value.                                                                                                                                                                                                      | `false`               |
-| `dismissible`                | `boolean` | Controls whether the modal can be dismissed without entering a postal code. When set to `false`, the modal can't be closed until a postal code is entered. Must be used along with `callToAction` to correctly set a blocking modal.                                                           | `true`                |
-| `shippingSelection`          | `enum`    | Defines the type of shipping option selector to be displayed. Possible values: `delivery-and-pickup` (shows both options), `only-pickup` (shows only the pickup store selector)                                                                                          | `delivery-and-pickup` |
-| `showLocationDetectorButton` | `boolean` | When set to `true`, displays a location detector button that automatically detects the user's current location using geolocation API and sets the postal code based on their coordinates. The button appears both in the main component and in the location modal.                                             | `false`               |
+| Prop name                           | Type      | Description                                                                                                                                                                                                                           | Default value         |
+| ----------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
+| `callToAction`                      | `enum`    | Defines the type of overlay that opens when the page loads. Possible values: `modal` (modal that requires a postal code input), `popover-input` (popover for postal code input), `popover-button` (popover that opens with a button). | `popover-input`       |
+| `compactMode`                       | `boolean` | Determines whether the button displays its label. When true, the label is hidden, showing only its value.                                                                                                                             | `false`               |
+| `dismissible`                       | `boolean` | Controls whether the modal can be dismissed without entering a postal code. When set to `false`, the modal can't be closed until a postal code is entered. Must be used along with `callToAction` to correctly set a blocking modal.  | `true`                |
+| `shippingSelection`                 | `enum`    | Defines the type of shipping option selector to be displayed. Possible values: `delivery-and-pickup` (shows both options), `only-pickup` (shows only the pickup store selector)                                                       | `delivery-and-pickup` |
+| `showShopperLocationDetectorButton` | `boolean` | When set to `true`, displays a shopper location detector control that uses the geolocation API and sets the postal code from coordinates. It appears in the main flow and in the shopper location modal.                              | `false`               |
 
 ## Customization
 
 In order to apply CSS customizations in this and other blocks, follow the instructions given in the recipe on [Using CSS Handles for store customization](https://vtex.io/docs/recipes/style/using-css-handles-for-store-customization).
 
-| CSS Handles                       |
-| --------------------------------- |
-| `buttonLabel`                     |
-| `buttonValue`                     |
-| `buttonWrapper`                   |
-| `deliveryModalButtonLabel`        |
-| `deliveryModalButtonLabelLimited` |
-| `deliveryModalButton`             |
-| `deliveryPopover`                 |
-| `locationDetectorButton`          |
-| `locationDetectorButtonContainer` |
-| `locationDetectorButtonIcon`      |
-| `noPickupsStateContent`           |
-| `pickupItem`                      |
-| `pickupItemSelected`              |
-| `popoverInputContainer`           |
-| `popoverPolygon`                  |
-| `popoverPolygonContainer`         |
-| `popoverPolygonSvg`               |
-| `postalCodeHelpLink`              |
-| `postalCodeInputClearButton`      |
-| `postalCodeInputContainer`        |
-| `shippingButtonContainer`         |
-| `shippingMethodModalOptions`      |
-| `shippingOptionButton`            |
-| `shippingOptionButtonSelected`    |
+| CSS Handles                              |
+| ---------------------------------------- |
+| `shopperLocationPopover`                 |
+| `shopperLocationPopoverArrow`            |
+| `shopperLocationPopoverInputContainer`   |
+| `shopperLocationPopoverText`             |
+| `shopperLocationDetectorButton`          |
+| `shopperLocationDetectorButtonContainer` |
+| `shopperLocationDetectorButtonIcon`      |
+| `noPickupPointStateContent`              |
+| `pickupPointItem`                        |
+| `pickupPointItemSelected`                |
+| `pickupPointIconPath`                    |
+| `pickupPointIconSVG`                     |
+| `pickupPointSelectorButtonValue`         |
+| `pickupPointSelectorButtonWrapper`       |
+| `pickupPointSelectorContainer`           |
+| `postalCodeHelpLink`                     |
+| `postalCodeInputClearButton`             |
+| `postalCodeInputContainer`               |
+| `shippingMethodModalOptions`             |
+| `shippingMethodOptionButton`             |
+| `shippingMethodOptionButtonSelected`     |
+| `shippingMethodSelector`                 |
+| `shippingMethodSelectorLabel`            |
+| `shippingMethodSelectorLabelLimited`     |
+| `shopperLocationPinIconPath`             |
+| `shopperLocationPinIconSVG`              |
+| `shopperLocationSetterButtonLabel`       |
+| `shopperLocationSetterButtonValue`       |
+| `shopperLocationSetterButtonWrapper`     |
+| `shopperLocationSetterContainer`         |
 
 <!-- DOCS-IGNORE:start -->
 
@@ -119,6 +125,7 @@ Special thanks to these wonderful people:
 <!-- markdownlint-disable -->
 <!-- markdownlint-enable -->
 <!-- prettier-ignore-end -->
+
 <!-- ALL-CONTRIBUTORS-LIST:END -->
 
 This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind are welcome!

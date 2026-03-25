@@ -4,7 +4,7 @@ import { useCssHandles } from 'vtex.css-handles'
 
 import PinSlashIcon from './PinSlashIcon'
 
-const CSS_HANDLES = ['noPickupsStateContent'] as const
+const CSS_HANDLES = ['noPickupPointStateContent'] as const
 
 interface Props {
   onClick?: () => void
@@ -37,7 +37,7 @@ const EmptyState = ({
         style={{ margin: 'auto 0' }}
         className={`flex ${title ? 'flex-column' : 'flex-row'} ${
           variant === 'primary' ? 'items-center' : 'items-start'
-        } ${handle.noPickupsStateContent}`}
+        } ${handle.noPickupPointStateContent}`}
       >
         {iconProps.useIcon && (
           <PinSlashIcon

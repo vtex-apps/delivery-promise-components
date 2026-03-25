@@ -9,7 +9,7 @@ interface Props {
   selected: boolean
 }
 
-const CSS_HANDLES = ['pickupItem', 'pickupItemSelected'] as const
+const CSS_HANDLES = ['pickupPointItem', 'pickupPointItemSelected'] as const
 
 const PickupItem = ({ pickup, onClick, selected }: Props) => {
   const {
@@ -29,8 +29,10 @@ const PickupItem = ({ pickup, onClick, selected }: Props) => {
         backgroundColor: 'unset',
         marginBottom: '1.25rem',
       }}
-      className={`${handle.pickupItem} ${
-        selected ? `${handle.pickupItemSelected} bw1 b--action-primary` : ''
+      className={`${handle.pickupPointItem} ${
+        selected
+          ? `${handle.pickupPointItemSelected} bw1 b--action-primary`
+          : ''
       } pointer relative hover-b--gray b--black-10 ba br2`}
       onClick={onClick}
     >

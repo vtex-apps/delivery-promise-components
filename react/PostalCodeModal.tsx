@@ -1,6 +1,6 @@
 import React from 'react'
 
-import LocationModal from './components/LocationModal'
+import ShopperLocationModal from './components/ShopperLocationModal'
 import { useShippingOptionDispatch, useShippingOptionState } from './context'
 
 interface Props {
@@ -25,7 +25,7 @@ const LocationModalWithContext = ({ isOpen, onClose }: Props) => {
   }
 
   return (
-    <LocationModal
+    <ShopperLocationModal
       isOpen={isOpen}
       onClose={onClose}
       onSubmit={onSubmit}

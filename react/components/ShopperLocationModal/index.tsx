@@ -21,10 +21,10 @@ interface Props {
   inputErrorMessage?: ZipCodeError
   selectedZipcode?: string
   nonDismissibleModal?: boolean
-  showLocationDetectorButton?: boolean
+  showShopperLocationDetectorButton?: boolean
 }
 
-const LocationModal = ({
+const ShopperLocationModal = ({
   isOpen,
   onClose,
   onSubmit,
@@ -32,7 +32,7 @@ const LocationModal = ({
   inputErrorMessage,
   selectedZipcode,
   nonDismissibleModal,
-  showLocationDetectorButton = false,
+  showShopperLocationDetectorButton = false,
 }: Props) => {
   const [zipcode, setZipcode] = useState<string>('')
   const [stage, setStage] = useState<Stages>(LOCATION_SELECTION)
@@ -48,11 +48,11 @@ const LocationModal = ({
 
   const stageContent: StageContent = {
     locationSelection: {
-      title: intl.formatMessage(messages.locationModalTitle),
+      title: intl.formatMessage(messages.shopperLocationModalTitle),
       content: (
         <AddLocation
           onSubmit={onSubmit}
-          showLocationDetectorButton={showLocationDetectorButton}
+          showShopperLocationDetectorButton={showShopperLocationDetectorButton}
           isLoading={isLoading}
           inputErrorMessage={inputErrorMessage?.message}
           onChange={(value: string) => setZipcode(value)}
@@ -64,11 +64,18 @@ const LocationModal = ({
       title: '',
       content: (
         <EmptyState
-          title={intl.formatMessage(messages.noPickupsStateTitle)}
-          description={intl.formatMessage(messages.noPickupsStateDescription, {
-            postalCode: ` ${zipcode}`,
-          })}
-          buttonLabel={intl.formatMessage(messages.noPickupsStateButtonLabel)}
+          title={intl.formatMessage(
+            messages.shopperLocationModalNoPickupPointStateTitle
+          )}
+          description={intl.formatMessage(
+            messages.shopperLocationModalNoPickupPointStateDescription,
+            {
+              postalCode: ` ${zipcode}`,
+            }
+          )}
+          buttonLabel={intl.formatMessage(
+            messages.shopperLocationModalNoPickupPointStateButtonLabel
+          )}
           onClick={() => setStage(LOCATION_SELECTION)}
           variant="secondary"
         />
@@ -91,4 +98,4 @@ const LocationModal = ({
   )
 }
 
-export default LocationModal
+export default ShopperLocationModal

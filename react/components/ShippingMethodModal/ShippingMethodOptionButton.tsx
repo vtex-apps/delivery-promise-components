@@ -8,16 +8,24 @@ interface Props {
   isSelected: boolean
 }
 
-const CSS_HANDLES = ['shippingOptionButton', 'shippingOptionButtonSelected']
+const CSS_HANDLES = [
+  'shippingMethodOptionButton',
+  'shippingMethodOptionButtonSelected',
+]
 
-const ShippingOptionButton = ({ icon, label, onClick, isSelected }: Props) => {
+const ShippingMethodOptionButton = ({
+  icon,
+  label,
+  onClick,
+  isSelected,
+}: Props) => {
   const handles = useCssHandles(CSS_HANDLES)
 
   return (
     <button
       onClick={onClick}
-      className={`br2 w-100 ${handles.shippingOptionButton} ${
-        isSelected ? handles.shippingOptionButtonSelected : ''
+      className={`br2 w-100 ${handles.shippingMethodOptionButton} ${
+        isSelected ? handles.shippingMethodOptionButtonSelected : ''
       }`}
     >
       <div className="flex items-center">
@@ -28,4 +36,4 @@ const ShippingOptionButton = ({ icon, label, onClick, isSelected }: Props) => {
   )
 }
 
-export default ShippingOptionButton
+export default ShippingMethodOptionButton

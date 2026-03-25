@@ -1,168 +1,148 @@
 import { defineMessages } from 'react-intl'
 
 const messages = defineMessages({
-  deliverToButtonLabel: {
-    id: 'store/shipping-option-zipcode.deliverToButton.label',
+  shopperLocationButtonPlaceholder: {
+    id: 'store/shipping-option-components.shopperLocationButton.placeholder',
     defaultMessage: '',
   },
-  deliverToButtonPlaceholder: {
-    id: 'store/shipping-option-zipcode.deliverToButton.placeholder',
+  pickupPointButtonPlaceholder: {
+    id: 'store/shipping-option-components.pickupPointButton.placeholder',
     defaultMessage: '',
   },
-  storeButtonLabel: {
-    id: 'store/shipping-option-zipcode.storeButton.label',
+  shopperLocationPostalCodeInputPlaceholder: {
+    id: 'store/shipping-option-components.shopperLocation.postalCodeInput.placeholder',
     defaultMessage: '',
   },
-  storeButtonPlaceHolder: {
-    id: 'store/shipping-option-zipcode.storeButton.placeholder',
+  shopperLocationPostalCodeInputError: {
+    id: 'store/shipping-option-components.shopperLocation.postalCodeInput.error',
     defaultMessage: '',
   },
-  storeDeliverDrawerTitle: {
-    id: 'store/shipping-option-zipcode.deliverDrawer.title',
+  pickupPointListUpdateButtonLabel: {
+    id: 'store/shipping-option-components.pickupPointList.updateButton.label',
     defaultMessage: '',
   },
-  pickupDrawerTitleEmpty: {
-    id: 'store/shipping-option-zipcode.pickupDrawer.title.empty',
+  shopperLocationPopoverButtonLabel: {
+    id: 'store/shipping-option-components.shopperLocationPopover.button.label',
     defaultMessage: '',
   },
-  pickupDrawerTitleFilled: {
-    id: 'store/shipping-option-zipcode.pickupDrawer.title.filled',
+  shopperLocationPopoverSubmitButtonLabel: {
+    id: 'store/shipping-option-components.shopperLocationPopover.submitButton.label',
     defaultMessage: '',
   },
-  postalCodeInputPlaceHolder: {
-    id: 'store/shipping-option-zipcode.postalCodeInput.placeholder',
+  shopperLocationPopoverDescription: {
+    id: 'store/shipping-option-components.shopperLocationPopover.description',
     defaultMessage: '',
   },
-  postalCodeInputError: {
-    id: 'store/shipping-option-zipcode.postalCodeInput.error',
-    defaultMessaage: '',
+  shopperLocationPopoverPostalCodePlaceholder: {
+    id: 'store/shipping-option-components.shopperLocationPopover.postalCodeInput.placeholder',
+    defaultMessage: '',
   },
-  updateButtonLabel: {
-    id: 'store/shipping-option-zipcode.updateButton.label',
-    defaultMessaage: '',
+  shopperLocationPopoverPostalCodeHelpLink: {
+    id: 'store/shipping-option-components.shopperLocationPopover.postalCodeHelpLink',
+    defaultMessage: '',
   },
-  popoverButtonLabel: {
-    id: 'store/shipping-option-zipcode.popoverButton.label',
-    defaultMessaage: '',
+  shopperLocationModalTitle: {
+    id: 'store/shipping-option-components.shopperLocationModal.title',
+    defaultMessage: '',
   },
-  popoverSubmitButtonLabel: {
-    id: 'store/shipping-option-zipcode.deliveryPopover.submitButton.label',
-    defaultMessaage: '',
+  shopperLocationModalDescription: {
+    id: 'store/shipping-option-components.shopperLocationModal.description',
+    defaultMessage: '',
   },
-  popoverDescription: {
-    id: 'store/shipping-option-zipcode.popover.description',
-    defaultMessaage: '',
+  shopperLocationModalNoPickupPointStateTitle: {
+    id: 'store/shipping-option-components.shopperLocationModal.noPickupPointState.title',
+    defaultMessage: '',
   },
-  popoverPostalCodeInputPlaceHolder: {
-    id: 'store/shipping-option-zipcode.deliveryPopover.postalCodeInput.placeholder',
-    defaultMessaage: '',
+  shopperLocationModalNoPickupPointStateDescription: {
+    id: 'store/shipping-option-components.shopperLocationModal.noPickupPointState.description',
+    defaultMessage: '',
   },
-  popoverPostalCodeLink: {
-    id: 'store/shipping-option-zipcode.popover.postalCodeLink',
-    defaultMessaage: '',
+  shopperLocationModalNoPickupPointStateButtonLabel: {
+    id: 'store/shipping-option-components.shopperLocationModal.noPickupPointState.button.label',
+    defaultMessage: '',
   },
-  locationModalTitle: {
-    id: 'store/shipping-option-zipcode.locationModal.title',
-    defaultMessaage: '',
+  pickupPointSelectionNoPointsStateTitle: {
+    id: 'store/shipping-option-components.pickupPointSelection.noPointsState.title',
+    defaultMessage: '',
   },
-  locationModalDescription: {
-    id: 'store/shipping-option-zipcode.locationModal.description',
-    defaultMessaage: '',
+  pickupPointSelectionNoPointsStateDescription: {
+    id: 'store/shipping-option-components.pickupPointSelection.noPointsState.description',
+    defaultMessage: '',
   },
-  noPickupsStateTitle: {
-    id: 'store/shipping-option-zipcode.locationModal.noPickupsState.title',
-    defaultMessaage: '',
+  pickupPointSelectionNoPointsStateButtonLabel: {
+    id: 'store/shipping-option-components.pickupPointSelection.noPointsState.button.label',
+    defaultMessage: '',
   },
-  noPickupsStateDescription: {
-    id: 'store/shipping-option-zipcode.locationModal.noPickupsState.description',
-    defaultMessaage: '',
+  shippingMethodModalTitle: {
+    id: 'store/shipping-option-components.shippingMethodModal.title',
+    defaultMessage: '',
   },
-  noPickupsStateButtonLabel: {
-    id: 'store/shipping-option-zipcode.locationModal.noPickupsState.button.label',
-    defaultMessaage: '',
+  shippingMethodModalDescription: {
+    id: 'store/shipping-option-components.shippingMethodModal.description',
+    defaultMessage: '',
   },
-  noStoresStateTitle: {
-    id: 'store/shipping-option-zipcode.pickupSelection.noStoresState.title',
-    defaultMessaage: '',
+  shippingMethodModalDeliveryOptionLabel: {
+    id: 'store/shipping-option-components.shippingMethodModal.deliveryOption.label',
+    defaultMessage: '',
   },
-  noStoresStateDescription: {
-    id: 'store/shipping-option-zipcode.pickupSelection.noStoresState.description',
-    defaultMessaage: '',
+  shippingMethodModalPickupPointOptionLabel: {
+    id: 'store/shipping-option-components.shippingMethodModal.pickupPointOption.label',
+    defaultMessage: '',
   },
-  noStoresStateButton: {
-    id: 'store/shipping-option-zipcode.pickupSelection.noStoresState.button.label',
-    defaultMessaage: '',
+  pickupPointSelectionTitle: {
+    id: 'store/shipping-option-components.pickupPointSelection.title',
+    defaultMessage: '',
   },
-  shippingSelectionModalTitle: {
-    id: 'store/shipping-option-zipcode.shippingSelectionModal.title',
-    defaultMessaage: '',
+  shippingOptionDeliveryAvailableBadge: {
+    id: 'store/shipping-option-components.shippingOption.deliveryAvailable.badge',
+    defaultMessage: '',
   },
-  shippingSelectionModalDescription: {
-    id: 'store/shipping-option-zipcode.shippingSelectionModal.description',
-    defaultMessaage: '',
+  shippingOptionDeliveryUnavailableBadge: {
+    id: 'store/shipping-option-components.shippingOption.deliveryUnavailable.badge',
+    defaultMessage: '',
   },
-  shippingSelectionModalDeliveryButton: {
-    id: 'store/shipping-option-zipcode.shippingSelectionModal.deliveryButton.label',
-    defaultMessaage: '',
+  shippingOptionPickupPointUnavailableBadge: {
+    id: 'store/shipping-option-components.shippingOption.pickupPointUnavailable.badge',
+    defaultMessage: '',
   },
-  shippingSelectionModalPickupButton: {
-    id: 'store/shipping-option-zipcode.shippingSelectionModal.pickupButton.label',
-    defaultMessaage: '',
+  shippingOptionPickupAtBadge: {
+    id: 'store/shipping-option-components.shippingOption.pickupAt.badge',
+    defaultMessage: '',
   },
-  pickupSelectionTitle: {
-    id: 'store/shipping-option-zipcode.pickupSelection.title',
-    defaultMessaage: '',
+  unavailableItemsModalRemoveButtonLabel: {
+    id: 'store/shipping-option-components.unavailableItemsModal.removeItemsButton.label',
+    defaultMessage: '',
   },
-  deliveryAvailableBadge: {
-    id: 'store/shipping-option-zipcode.availabilityBadge.deliveryAvailable',
-    defaultMessaage: '',
-  },
-  deliveryUnavailableBadge: {
-    id: 'store/shipping-option-zipcode.availabilityBadge.deliveryUnavailable',
-    defaultMessaage: '',
-  },
-  pickupUnavailableBadge: {
-    id: 'store/shipping-option-zipcode.availabilityBadge.pickupUnavailable',
-    defaultMessaage: '',
-  },
-  pickupAtBadge: {
-    id: 'store/shipping-option-zipcode.availabilityBadge.pickupAt',
-    defaultMessaage: '',
-  },
-  unavailableItemsModalRemoveButton: {
-    id: 'store/shipping-option-zipcode.unavailableItems.removeItemsButton.label',
-    defaultMessaage: '',
-  },
-  unavailableItemsModalRetryButton: {
-    id: 'store/shipping-option-zipcode.unavailableItems.retryButton.label',
-    defaultMessaage: '',
+  unavailableItemsModalRetryButtonLabel: {
+    id: 'store/shipping-option-components.unavailableItemsModal.retryButton.label',
+    defaultMessage: '',
   },
   unavailableItemsModalTitle: {
-    id: 'store/shipping-option-zipcode.unavailableItems.title',
-    defaultMessaage: '',
-  },
-  unavailableItemsModalDescription: {
-    id: 'store/shipping-option-zipcode.unavailableItems.description',
-    defaultMessaage: '',
-  },
-  unavailableItemsModalForPickupDescription: {
-    id: 'store/shipping-option-zipcode.unavailableItems.forPickup.description',
-    defaultMessaage: '',
-  },
-  unavailableItemsModalForDeliveryDescription: {
-    id: 'store/shipping-option-zipcode.unavailableItems.forDelivery.description',
-    defaultMessaage: '',
-  },
-  LocationDetectorButtonTitle: {
-    id: 'store/shipping-option-zipcode.LocationDetectorButton.title',
-    defaultMessaage: '',
-  },
-  LocationDetectorButtonLoadingDescription: {
-    id: 'store/shipping-option-zipcode.LocationDetectorButtonLoading.description',
+    id: 'store/shipping-option-components.unavailableItemsModal.title',
     defaultMessage: '',
   },
-  LocationDetectorButtonErrorDescription: {
-    id: 'store/shipping-option-zipcode.LocationDetectorButtonError.description',
+  unavailableItemsModalDescription: {
+    id: 'store/shipping-option-components.unavailableItemsModal.description',
+    defaultMessage: '',
+  },
+  unavailableItemsModalForPickupPointDescription: {
+    id: 'store/shipping-option-components.unavailableItemsModal.forPickupPoint.description',
+    defaultMessage: '',
+  },
+  unavailableItemsModalForDeliveryDescription: {
+    id: 'store/shipping-option-components.unavailableItemsModal.forDelivery.description',
+    defaultMessage: '',
+  },
+  shopperLocationDetectorButtonTitle: {
+    id: 'store/shipping-option-components.shopperLocationDetectorButton.title',
+    defaultMessage: '',
+  },
+  shopperLocationDetectorButtonLoadingDescription: {
+    id: 'store/shipping-option-components.shopperLocationDetectorButton.loadingDescription',
+    defaultMessage: '',
+  },
+  shopperLocationDetectorButtonErrorDescription: {
+    id: 'store/shipping-option-components.shopperLocationDetectorButton.errorDescription',
     defaultMessage: '',
   },
 })

@@ -67,7 +67,7 @@ const PickupList = ({ pickups, selectedPickup, onSelectPickup }: Props) => {
               onSelectPickup(highlightedPickup as Pickup)
             }}
           >
-            {intl.formatMessage(messages.updateButtonLabel)}
+            {intl.formatMessage(messages.pickupPointListUpdateButtonLabel)}
           </Button>
         </div>
       )}
