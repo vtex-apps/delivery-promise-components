@@ -1,9 +1,9 @@
 {
   "vendor": "vtex",
-  "name": "shipping-option-components",
-  "version": "2.0.2",
-  "title": "Shipping Option Zipcode component",
-  "description": "Shipping Option Zipcode component",
+  "name": "delivery-promise-components",
+  "version": "0.0.0",
+  "title": "Delivery Promise Components",
+  "description": "Delivery Promise UI components",
   "builders": {
     "react": "3.x",
     "messages": "1.x",
@@ -20,9 +20,7 @@
     "vtex.product-summary-context": "0.x",
     "vtex.order-items": "0.x"
   },
-  "registries": [
-    "smartcheckout"
-  ],
+  "registries": ["smartcheckout"],
   "policies": [],
   "$schema": "https://raw.githubusercontent.com/vtex/node-vtex-api/master/gen/manifest.schema"
 }

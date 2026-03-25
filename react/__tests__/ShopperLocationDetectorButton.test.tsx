@@ -5,11 +5,11 @@ import * as reactIntl from 'react-intl'
 import ShopperLocationDetectorButton from '../components/ShopperLocationDetectorButton'
 
 const messages = {
-  'store/shipping-option-components.shopperLocationDetectorButton.title':
+  'store/delivery-promise-components.shopperLocationDetectorButton.title':
     'Use my location',
-  'store/shipping-option-components.shopperLocationDetectorButton.loadingDescription':
+  'store/delivery-promise-components.shopperLocationDetectorButton.loadingDescription':
     'Detecting location...',
-  'store/shipping-option-components.shopperLocationDetectorButton.errorDescription':
+  'store/delivery-promise-components.shopperLocationDetectorButton.errorDescription':
     'Location detection failed',
 } as const
 

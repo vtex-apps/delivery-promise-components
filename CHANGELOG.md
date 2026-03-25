@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.0] - 2026-03-25
+
+### Breaking changes
+
+Themes and customizations must be updated together; there is no drop-in replacement under the old app id.
+
+- **Dependency:** replace `vtex.shipping-option-components` with `vtex.delivery-promise-components` (use **0.x** until a stable major is published).
+- **Store block:** rename `shipping-option-location-selector` to `delivery-promise-location-selector` in `blocks.json` / theme JSON (children arrays and block definitions).
+- **Translations:** all message ids changed from `store/shipping-option-components.*` to `store/delivery-promise-components.*` — update any `messages` overrides or CMS entries that referenced the old ids.
+
+### Changed
+
+- App and package name: `shipping-option-components` → `delivery-promise-components`
+- Catalog / docs references updated to the new GitHub slug `vtex-apps/delivery-promise-components` (rename the repository to match when publishing)
+
+### Notes
+
+- Pixel event ids (`shipping-option-deliver-to`, `shipping-option-store`, `item-added-to-cart-shipping-modal`) and the `shipping_info` cookie name are **unchanged** for analytics and session continuity
+
 ## [2.0.2] - 2026-01-27
 
 ### Changed

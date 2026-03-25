@@ -1,6 +1,6 @@
 📢 Use this project, [contribute](https://github.com/{OrganizationName}/{AppName}) to it, or open issues to help evolve it through [Store Discussion](https://github.com/vtex-apps/store-discussion).
 
-# Shipping Option components
+# Delivery Promise Components
 
 <!-- DOCS-IGNORE:start -->
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
@@ -10,39 +10,39 @@
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 <!-- DOCS-IGNORE:end -->
 
-[<i class="fa-brands fa-github"></i> Source code](https://github.com/vtex-apps/shipping-option-components)
+[<i class="fa-brands fa-github"></i> Source code](https://github.com/vtex-apps/delivery-promise-components)
 
-> ⚠️ The Shipping Option Components app is available only for stores using [Delivery Promise](https://help.vtex.com/en/tutorial/delivery-promise-beta--p9EJH9GgxL0JceA6dBswd). This feature is currently in closed beta, meaning only select customers can access it. If you are interested in implementing it in the future, please contact our [Support](https://support.vtex.com/hc/en-us) team.
+> ⚠️ The Delivery Promise Components app is available only for stores using [Delivery Promise](https://help.vtex.com/en/tutorial/delivery-promise-beta--p9EJH9GgxL0JceA6dBswd). This feature is currently in closed beta, meaning only select customers can access it. If you are interested in implementing it in the future, please contact our [Support](https://support.vtex.com/hc/en-us) team.
 >
 > For more information on setting up Delivery Promise components on Store Framework, see the [developer documentation](https://developers.vtex.com/docs/guides/setting-up-delivery-promise-components).
 
-The Shipping Option Components app exports a component that allows you to filter store products by location or pickup point. Shoppers can share their location automatically (for example, through browser or device settings) or enter it manually.
+The Delivery Promise Components app exports a component that allows you to filter store products by location or pickup point. Shoppers can share their location automatically (for example, through browser or device settings) or enter it manually.
 
 Merchants can choose whether providing a location is optional or required. However, the shopper must provide their location for the Delivery Promise feature to work.
 
-![shipping-option-components](https://vtexhelp.vtexassets.com/assets/docs/src/shipping-option-components___c5a1d86b0ebf692a3eb9ca49f79b55f8.png)
+![delivery-promise-components](https://vtexhelp.vtexassets.com/assets/docs/src/shipping-option-components___c5a1d86b0ebf692a3eb9ca49f79b55f8.png)
 
 ## Configuration
 
-### Adding the Shipping Option Components app to your theme dependencies
+### Adding the Delivery Promise Components app to your theme dependencies
 
-Add the `shipping-option-components` app to your theme dependencies in the `manifest.json` as shown below:
+Add the `delivery-promise-components` app to your theme dependencies in the `manifest.json` as shown below:
 
 ```json
   "dependencies": {
-    "vtex.shipping-option-components": "1.x"
+    "vtex.delivery-promise-components": "0.x"
   }
 ```
 
-You can now use all blocks exported by the `shipping-option-components` app. See the full list below:
+You can now use all blocks exported by the `delivery-promise-components` app. See the full list below:
 
 | Block name                          | Description                                                                                          |
 | ----------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `shipping-option-location-selector` | Renders a set of components that allow users to add their location and/or select a store for pickup. |
+| `delivery-promise-location-selector` | Renders a set of components that allow users to add their location and/or select a store for pickup. |
 
-### Adding Shipping Option Components blocks to the theme
+### Adding Delivery Promise Components blocks to the theme
 
-Declare the `shipping-option-location-selector` block as a child block of your [header](https://developers.vtex.com/docs/apps/vtex.store-header) block, exported by the `store-header` app. Example:
+Declare the `delivery-promise-location-selector` block as a child block of your [header](https://developers.vtex.com/docs/apps/vtex.store-header) block, exported by the `store-header` app. Example:
 
 ```json
 "header.full": {
@@ -56,10 +56,10 @@ Declare the `shipping-option-location-selector` block as a child block of your [
  },
 
  "header-row#1-desktop": {
-   "children": ["shipping-option-location-selector"],
+   "children": ["delivery-promise-location-selector"],
  },
 
-"shipping-option-location-selector": {
+"delivery-promise-location-selector": {
   "props": {
     "compactMode": true,
     "showShopperLocationDetectorButton": true
@@ -67,7 +67,7 @@ Declare the `shipping-option-location-selector` block as a child block of your [
 },
 ```
 
-#### `shipping-option-location-selector` props
+#### `delivery-promise-location-selector` props
 
 | Prop name                           | Type      | Description                                                                                                                                                                                                                           | Default value         |
 | ----------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
