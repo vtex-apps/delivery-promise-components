@@ -93,20 +93,20 @@ const messages = defineMessages({
     id: 'store/delivery-promise-components.pickupPointSelection.title',
     defaultMessage: '',
   },
-  shippingOptionDeliveryAvailableBadge: {
-    id: 'store/delivery-promise-components.shippingOption.deliveryAvailable.badge',
+  shippingMethodDeliveryAvailableBadge: {
+    id: 'store/delivery-promise-components.shippingMethod.deliveryAvailable.badge',
     defaultMessage: '',
   },
-  shippingOptionDeliveryUnavailableBadge: {
-    id: 'store/delivery-promise-components.shippingOption.deliveryUnavailable.badge',
+  shippingMethodDeliveryUnavailableBadge: {
+    id: 'store/delivery-promise-components.shippingMethod.deliveryUnavailable.badge',
     defaultMessage: '',
   },
-  shippingOptionPickupPointUnavailableBadge: {
-    id: 'store/delivery-promise-components.shippingOption.pickupPointUnavailable.badge',
+  shippingMethodPickupPointUnavailableBadge: {
+    id: 'store/delivery-promise-components.shippingMethod.pickupPointUnavailable.badge',
     defaultMessage: '',
   },
-  shippingOptionPickupAtBadge: {
-    id: 'store/delivery-promise-components.shippingOption.pickupAt.badge',
+  shippingMethodPickupAtBadge: {
+    id: 'store/delivery-promise-components.shippingMethod.pickupAt.badge',
     defaultMessage: '',
   },
   unavailableItemsModalRemoveButtonLabel: {

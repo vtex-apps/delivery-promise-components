@@ -78,16 +78,16 @@ const AvailabilityBadges = () => {
     >
       {deliveryBadge ? (
         <Badge isAvailable>
-          {intl.formatMessage(messages.shippingOptionDeliveryAvailableBadge)}
+          {intl.formatMessage(messages.shippingMethodDeliveryAvailableBadge)}
         </Badge>
       ) : (
         <Badge isAvailable={false}>
-          {intl.formatMessage(messages.shippingOptionDeliveryUnavailableBadge)}
+          {intl.formatMessage(messages.shippingMethodDeliveryUnavailableBadge)}
         </Badge>
       )}
       {pickupBadge ? (
         <Badge isAvailable>
-          {`${intl.formatMessage(messages.shippingOptionPickupAtBadge)} `}
+          {`${intl.formatMessage(messages.shippingMethodPickupAtBadge)} `}
           <button
             onClick={() => setIsPickupModalOpen(true)}
             className={handle.availabilityPickupButton}
@@ -98,7 +98,7 @@ const AvailabilityBadges = () => {
       ) : (
         <Badge isAvailable={false}>
           {intl.formatMessage(
-            messages.shippingOptionPickupPointUnavailableBadge
+            messages.shippingMethodPickupPointUnavailableBadge
           )}
         </Badge>
       )}
