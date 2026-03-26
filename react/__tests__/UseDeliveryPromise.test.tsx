@@ -2,7 +2,7 @@ import React from 'react'
 import { render, fireEvent, waitFor } from '@vtex/test-tools/react'
 import * as reactIntl from 'react-intl'
 
-import { useShippingOption } from '../context/useShippingOption'
+import { useDeliveryPromise } from '../context/useDeliveryPromise'
 import * as client from '../client'
 
 const mockIntl = {
@@ -16,7 +16,7 @@ function ActionRunner({
 }: {
   actions: Array<{ type: string; args?: unknown }>
 }) {
-  const { dispatch } = useShippingOption()
+  const { dispatch } = useDeliveryPromise()
 
   return (
     <button
@@ -33,7 +33,7 @@ function ActionRunner({
   )
 }
 
-describe('useShippingOption actions and behavior', () => {
+describe('useDeliveryPromise actions and behavior', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     jest.spyOn(client, 'updateSession').mockResolvedValue(undefined)
@@ -83,23 +83,23 @@ describe('useShippingOption actions and behavior', () => {
 
   it.each([
     [
-      'UPDATE_ZIPCODE + SELECT_DELIVERY_SHIPPING_OPTION triggers reload',
+      'UPDATE_ZIPCODE + SELECT_HOME_DELIVERY triggers reload',
       [
         {
           type: 'UPDATE_ZIPCODE',
           args: { zipcode: '12345-678', reload: true },
         },
-        { type: 'SELECT_DELIVERY_SHIPPING_OPTION' },
+        { type: 'SELECT_HOME_DELIVERY' },
       ],
     ],
     [
-      'UPDATE_ZIPCODE + RESET_SHIPPING_OPTION triggers reload',
+      'UPDATE_ZIPCODE + RESET_FULFILLMENT_METHOD triggers reload',
       [
         {
           type: 'UPDATE_ZIPCODE',
           args: { zipcode: '12345-678', reload: true },
         },
-        { type: 'RESET_SHIPPING_OPTION' },
+        { type: 'RESET_FULFILLMENT_METHOD' },
       ],
     ],
   ])('%s', async (_title, actions) => {
@@ -138,14 +138,14 @@ describe('useShippingOption actions and behavior', () => {
     })
   })
 
-  it('smoke: RESET_SHIPPING_OPTION executes without errors', async () => {
+  it('smoke: RESET_FULFILLMENT_METHOD executes without errors', async () => {
     function ResetComponent() {
-      const { dispatch } = useShippingOption()
+      const { dispatch } = useDeliveryPromise()
 
       return (
         <button
           data-testid="reset"
-          onClick={() => dispatch({ type: 'RESET_SHIPPING_OPTION' } as never)}
+          onClick={() => dispatch({ type: 'RESET_FULFILLMENT_METHOD' } as never)}
         >
           Reset
         </button>

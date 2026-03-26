@@ -1,7 +1,7 @@
 import React from 'react'
 
 import PickupModal from './components/PickupModal'
-import { useShippingOptionDispatch, useShippingOptionState } from './context'
+import { useDeliveryPromiseDispatch, useDeliveryPromiseState } from './context'
 
 interface Props {
   isOpen: boolean
@@ -15,9 +15,9 @@ const PickupModalWithContext = ({ isOpen, onClose }: Props) => {
     selectedPickup,
     isLoading,
     submitErrorMessage,
-  } = useShippingOptionState()
+  } = useDeliveryPromiseState()
 
-  const dispatch = useShippingOptionDispatch()
+  const dispatch = useDeliveryPromiseDispatch()
 
   const onSubmit = (zipcode: string, reload?: boolean) => {
     dispatch({

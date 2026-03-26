@@ -20,7 +20,7 @@ const COMMON_BADGE_STYLE = 'br-pill mr3'
 const AVAILABLE_BADGE_STYLE = 'bg-green'
 const UNAVAILABLE_BADGE_STYLE = ['bg-white', 'ba']
 
-const mockUseShippingOptionState = jest.fn()
+const mockUseDeliveryPromiseState = jest.fn()
 const mockUseProductSummary =
   ProductSummaryContext.useProductSummary as jest.Mock
 
@@ -30,7 +30,7 @@ const mockIntl = {
 } as reactIntl.IntlShape
 
 jest.mock('../context', () => ({
-  useShippingOptionState: () => mockUseShippingOptionState(),
+  useDeliveryPromiseState: () => mockUseDeliveryPromiseState(),
 }))
 
 jest.mock('../PickupModal', () => {
@@ -61,7 +61,7 @@ describe('AvailabilityBadges', () => {
 
   describe('Initial render conditions', () => {
     it('renders nothing if zipcode is missing', () => {
-      mockUseShippingOptionState.mockReturnValue({ zipcode: null })
+      mockUseDeliveryPromiseState.mockReturnValue({ zipcode: null })
 
       const { container } = render(<AvailabilityBadges />)
 
@@ -69,7 +69,7 @@ describe('AvailabilityBadges', () => {
     })
 
     it('renders nothing if deliveryPromisesBadges is null', () => {
-      mockUseShippingOptionState.mockReturnValue({ zipcode: '12345' })
+      mockUseDeliveryPromiseState.mockReturnValue({ zipcode: '12345' })
       mockUseProductSummary.mockReturnValue({
         product: { deliveryPromisesBadges: null },
       })
@@ -82,7 +82,7 @@ describe('AvailabilityBadges', () => {
 
   describe('Delivery badge states and styles', () => {
     beforeEach(() => {
-      mockUseShippingOptionState.mockReturnValue({ zipcode: '12345' })
+      mockUseDeliveryPromiseState.mockReturnValue({ zipcode: '12345' })
     })
 
     it('renders unavailable badges if deliveryPromisesBadges is empty', () => {
@@ -191,7 +191,7 @@ describe('AvailabilityBadges', () => {
 
   describe('Pickup modal behavior', () => {
     beforeEach(() => {
-      mockUseShippingOptionState.mockReturnValue({ zipcode: '12345' })
+      mockUseDeliveryPromiseState.mockReturnValue({ zipcode: '12345' })
     })
 
     it('opens pickup modal when clicking on pickup location', () => {
@@ -241,7 +241,7 @@ describe('AvailabilityBadges', () => {
 
   describe('Event handling', () => {
     beforeEach(() => {
-      mockUseShippingOptionState.mockReturnValue({ zipcode: '12345' })
+      mockUseDeliveryPromiseState.mockReturnValue({ zipcode: '12345' })
     })
 
     it('stops event propagation when clicking on the container', () => {

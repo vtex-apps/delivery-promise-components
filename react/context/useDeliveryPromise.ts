@@ -22,15 +22,15 @@ import { getCountryCode, getFacetsData, getOrderFormId } from '../utils/cookie'
 import messages from '../messages'
 import type {
   ShippingMethod,
-  ShippingOptionActions,
+  DeliveryPromiseActions,
   ZipCodeError,
-} from './ShippingOptionContext'
+} from './DeliveryPromiseContext'
 import {
   SHOPPER_LOCATION_MODAL_PIXEL_EVENT_ID,
   PRODUCTS_NOT_FOUND_ERROR_CODE,
 } from '../constants'
 
-export const useShippingOption = () => {
+export const useDeliveryPromise = () => {
   const [zipcode, setZipCode] = useState<string>()
   const [isLoading, setIsLoading] = useState(true)
   const [countryCode, setCountryCode] = useState<string>()
@@ -41,7 +41,8 @@ export const useShippingOption = () => {
   const [selectedPickup, setSelectedPickup] = useState<Pickup>()
   const [geoCoordinates, setGeoCoordinates] = useState<number[]>()
   const [addressLabel, setAddressLabel] = useState<string>()
-  const [shippingOption, setShippingOption] = useState<ShippingMethod>()
+  const [deliveryPromiseMethod, setDeliveryPromiseMethod] =
+    useState<ShippingMethod>()
   const [unavailableCartItems, setUnavailableCartItems] = useState<CartItem[]>(
     []
   )
@@ -139,10 +140,10 @@ export const useShippingOption = () => {
 
     const segmentZipCode = getFacetsData('zip-code')
     const segmentCountryCode = getCountryCode()
-    const segmentShippingOption = getFacetsData('shipping') as ShippingMethod
+    const segmentShippingMethod = getFacetsData('shipping') as ShippingMethod
 
     setZipCode(segmentZipCode)
-    setShippingOption(segmentShippingOption)
+    setDeliveryPromiseMethod(segmentShippingMethod)
     setCountryCode(segmentCountryCode)
 
     if (segmentZipCode) {
@@ -154,7 +155,7 @@ export const useShippingOption = () => {
             segmentCountryCode,
             segmentZipCode,
             res.geoCoordinates,
-            segmentShippingOption
+            segmentShippingMethod
           )
         })
       } catch {
@@ -297,7 +298,7 @@ export const useShippingOption = () => {
         countryCode,
         selectedZipcode,
         coordinates,
-        shippingOption,
+        deliveryPromiseMethod,
         true
       )
     } catch {
@@ -309,7 +310,7 @@ export const useShippingOption = () => {
       return
     }
 
-    setShippingOption(undefined)
+    setDeliveryPromiseMethod(undefined)
     setSelectedPickup(undefined)
 
     if (!reload) {
@@ -331,7 +332,7 @@ export const useShippingOption = () => {
 
     if (
       canUnselect &&
-      shippingOption === 'pickup-in-point' &&
+      deliveryPromiseMethod === 'pickup-in-point' &&
       pickup.pickupPoint.id === selectedPickup?.pickupPoint.id
     ) {
       shippingMethod = ''
@@ -351,7 +352,7 @@ export const useShippingOption = () => {
     location.reload()
   }
 
-  const selectDeliveryShippingOption = async () => {
+  const selectHomeDelivery = async () => {
     if (!countryCode || !zipcode || !geoCoordinates) {
       return
     }
@@ -371,7 +372,7 @@ export const useShippingOption = () => {
     setAddressLabel(city ? `${city}, ${zipcode}` : zipcode)
   }, [zipcode, city])
 
-  const dispatch = async (action: ShippingOptionActions) => {
+  const dispatch = async (action: DeliveryPromiseActions) => {
     switch (action.type) {
       case 'UPDATE_ZIPCODE': {
         const { zipcode: zipcodeSelected, reload } = action.args
@@ -443,7 +444,7 @@ export const useShippingOption = () => {
         break
       }
 
-      case 'SELECT_DELIVERY_SHIPPING_OPTION': {
+      case 'SELECT_HOME_DELIVERY': {
         setUnavailabilityMessage('delivery')
 
         const unavailableItems = await validateCartItems(
@@ -457,7 +458,7 @@ export const useShippingOption = () => {
         )
 
         if (unavailableItems.length === 0) {
-          selectDeliveryShippingOption()
+          selectHomeDelivery()
 
           if (pendingAddToCartItem) {
             await addItems(
@@ -481,7 +482,7 @@ export const useShippingOption = () => {
         )
 
         setActionInterruptedByCartValidation(
-          () => () => selectDeliveryShippingOption()
+          () => () => selectHomeDelivery()
         )
 
         break
@@ -497,12 +498,12 @@ export const useShippingOption = () => {
         break
       }
 
-      case 'RESET_SHIPPING_OPTION': {
+      case 'RESET_FULFILLMENT_METHOD': {
         if (!countryCode || !zipcode || !geoCoordinates) {
           return
         }
 
-        // Reset shipping option to undefined (no selection)
+        // Reset fulfillment method to undefined (no selection)
         await updateSession(
           countryCode,
           zipcode,
@@ -535,7 +536,7 @@ export const useShippingOption = () => {
       selectedPickup,
       geoCoordinates,
       addressLabel,
-      shippingOption,
+      deliveryPromiseMethod,
       areThereUnavailableCartItems,
       unavailableCartItems,
       unavailabilityMessage,
