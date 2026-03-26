@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import React, { createContext, useContext } from 'react'
 
 import ErrorBoundary from './ErrorBoundary'
-import { ShippingOptionProviderCore } from './ShippingOptionProviderCore'
+import { DeliveryPromiseProviderCore } from './DeliveryPromiseProviderCore'
 import type { CartItem } from '../components/UnavailableItemsModal'
 
 export type ShippingMethod = 'delivery' | 'pickup-in-point'
@@ -20,7 +20,7 @@ export interface State {
   countryCode?: string
   city?: string
   isLoading: boolean
-  shippingOption?: ShippingMethod
+  deliveryPromiseMethod?: ShippingMethod
   addressLabel?: string
   submitErrorMessage?: ZipCodeError
   areThereUnavailableCartItems: boolean
@@ -38,8 +38,8 @@ interface UpdatePickup {
   args: { pickup: Pickup; canUnselect?: boolean }
 }
 
-interface SelectDeliveryShippingOption {
-  type: 'SELECT_DELIVERY_SHIPPING_OPTION'
+interface SelectHomeDelivery {
+  type: 'SELECT_HOME_DELIVERY'
 }
 
 interface AbortUnavailableItemsAction {
@@ -50,17 +50,17 @@ interface ContinueUnavailableItemsAction {
   type: 'CONTINUE_UNAVAILABLE_ITEMS_ACTION'
 }
 
-interface ResetShippingOption {
-  type: 'RESET_SHIPPING_OPTION'
+interface ResetFulfillmentMethod {
+  type: 'RESET_FULFILLMENT_METHOD'
 }
 
-export type ShippingOptionActions =
+export type DeliveryPromiseActions =
   | UpdateZipCode
   | UpdatePickup
-  | SelectDeliveryShippingOption
+  | SelectHomeDelivery
   | AbortUnavailableItemsAction
   | ContinueUnavailableItemsAction
-  | ResetShippingOption
+  | ResetFulfillmentMethod
 
 const DEFAULT_STATE: State = {
   pickups: [],
@@ -69,32 +69,32 @@ const DEFAULT_STATE: State = {
   unavailableCartItems: [],
 }
 
-const ShippingOptionStateContext = createContext<State>(DEFAULT_STATE)
-const ShippingOptionDispatchContext = createContext(
-  (_: ShippingOptionActions) => {}
+const DeliveryPromiseStateContext = createContext<State>(DEFAULT_STATE)
+const DeliveryPromiseDispatchContext = createContext(
+  (_: DeliveryPromiseActions) => {}
 )
 
 interface Props {
   children?: ReactNode
 }
 
-const ShippingOptionProvider = ({ children }: Props) => {
+const DeliveryPromiseProvider = ({ children }: Props) => {
   return (
     <ErrorBoundary fallback={children}>
-      <ShippingOptionProviderCore>{children}</ShippingOptionProviderCore>
+      <DeliveryPromiseProviderCore>{children}</DeliveryPromiseProviderCore>
     </ErrorBoundary>
   )
 }
 
-const useShippingOptionState = () => useContext(ShippingOptionStateContext)
+const useDeliveryPromiseState = () => useContext(DeliveryPromiseStateContext)
 
-const useShippingOptionDispatch = () =>
-  useContext(ShippingOptionDispatchContext)
+const useDeliveryPromiseDispatch = () =>
+  useContext(DeliveryPromiseDispatchContext)
 
 export {
-  ShippingOptionProvider,
-  useShippingOptionState,
-  useShippingOptionDispatch,
-  ShippingOptionStateContext,
-  ShippingOptionDispatchContext,
+  DeliveryPromiseProvider,
+  useDeliveryPromiseState,
+  useDeliveryPromiseDispatch,
+  DeliveryPromiseStateContext,
+  DeliveryPromiseDispatchContext,
 }

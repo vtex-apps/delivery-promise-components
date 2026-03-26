@@ -31,7 +31,7 @@ The `availability-badges` block displays availability badges for product deliver
 
 ### Props
 
-Although this block does not have explicit props, it uses the `ProductSummaryContext` and `useShippingOptionState` to retrieve delivery information.
+Although this block does not have explicit props, it uses the `ProductSummaryContext` and `useDeliveryPromiseState` to retrieve delivery information.
 
 
 ## Customization

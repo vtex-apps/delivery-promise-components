@@ -13,7 +13,7 @@ export const updateSession = async (
   _zipCode: string,
   _geoCoordinates: number[],
   _pickup?: unknown,
-  _shippingOption?: string
+  _sessionShippingValue?: string
 ) => undefined
 
 export const getCartProducts = async () => []

@@ -5,7 +5,7 @@ import AddLocation from './AddLocation'
 import Modal from '../Modal'
 import messages from '../../messages'
 import EmptyState from '../EmptyState'
-import type { ZipCodeError } from '../../context/ShippingOptionContext'
+import type { ZipCodeError } from '../../context/DeliveryPromiseContext'
 import { PRODUCTS_NOT_FOUND_ERROR_CODE } from '../../constants'
 
 const LOCATION_SELECTION = 'locationSelection'

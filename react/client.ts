@@ -17,11 +17,11 @@ export const updateSession = async (
   zipCode: string,
   geoCoordinates: number[],
   pickup?: Pickup,
-  shippingOption?: string
+  sessionShippingValue?: string
 ) => {
   const facetsValue = `zip-code=${zipCode};country=${countryCode};coordinates=${geoCoordinates.join(
     ','
-  )}${shippingOption ? `;shipping=${shippingOption}` : ''}${
+  )}${sessionShippingValue ? `;shipping=${sessionShippingValue}` : ''}${
     pickup ? `;pickupPoint=${pickup.pickupPoint.id}` : ''
   }`
 

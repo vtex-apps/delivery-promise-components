@@ -1,7 +1,7 @@
 import React from 'react'
 
 import ShopperLocationModal from './components/ShopperLocationModal'
-import { useShippingOptionDispatch, useShippingOptionState } from './context'
+import { useDeliveryPromiseDispatch, useDeliveryPromiseState } from './context'
 
 interface Props {
   isOpen: boolean
@@ -13,9 +13,9 @@ const LocationModalWithContext = ({ isOpen, onClose }: Props) => {
     zipcode: selectedZipcode,
     isLoading,
     submitErrorMessage,
-  } = useShippingOptionState()
+  } = useDeliveryPromiseState()
 
-  const dispatch = useShippingOptionDispatch()
+  const dispatch = useDeliveryPromiseDispatch()
 
   const onSubmit = (zipcode: string, reload?: boolean) => {
     dispatch({

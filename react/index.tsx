@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react'
 import { usePixelEventCallback } from 'vtex.pixel-manager'
 import { useIntl } from 'react-intl'
 
-import { useShippingOptionState, useShippingOptionDispatch } from './context'
+import { useDeliveryPromiseState, useDeliveryPromiseDispatch } from './context'
 import ShippingMethodModal from './components/ShippingMethodModal'
 import ShippingMethodSelector from './components/ShippingMethodModal/ShippingMethodSelector'
 import { SHOPPER_LOCATION_MODAL_PIXEL_EVENT_ID } from './constants'
@@ -25,7 +25,7 @@ interface Props {
   showShopperLocationDetectorButton?: boolean
 }
 
-function ShippingOptionZipcode({
+function DeliveryPromiseLocationSelector({
   callToAction = 'popover-input',
   dismissible = false,
   shippingSelection = 'delivery-and-pickup',
@@ -51,15 +51,15 @@ function ShippingOptionZipcode({
     pickups,
     selectedPickup,
     isLoading,
-    shippingOption,
+    deliveryPromiseMethod,
     addressLabel,
     submitErrorMessage,
     areThereUnavailableCartItems,
     unavailableCartItems,
     unavailabilityMessage,
-  } = useShippingOptionState()
+  } = useDeliveryPromiseState()
 
-  const dispatch = useShippingOptionDispatch()
+  const dispatch = useDeliveryPromiseDispatch()
 
   const onSubmit = (zipcode: string, reload?: boolean) => {
     dispatch({
@@ -76,23 +76,23 @@ function ShippingOptionZipcode({
   }
 
   const onShippingMethodDeliveryToggle = () => {
-    if (shippingOption === 'delivery') {
+    if (deliveryPromiseMethod === 'delivery') {
       // If delivery is already selected, reset to no selection
       dispatch({
-        type: 'RESET_SHIPPING_OPTION',
+        type: 'RESET_FULFILLMENT_METHOD',
       })
     } else {
       dispatch({
-        type: 'SELECT_DELIVERY_SHIPPING_OPTION',
+        type: 'SELECT_HOME_DELIVERY',
       })
     }
   }
 
   const onShippingMethodPickupClear = () => {
-    if (shippingOption === 'pickup-in-point') {
+    if (deliveryPromiseMethod === 'pickup-in-point') {
       // If pickup is already selected, reset to no selection
       dispatch({
-        type: 'RESET_SHIPPING_OPTION',
+        type: 'RESET_FULFILLMENT_METHOD',
       })
     }
     // Removed automatic pickup selection - let user choose from the list
@@ -130,7 +130,7 @@ function ShippingOptionZipcode({
   const showShippingMethodSelector = shippingSelection === 'delivery-and-pickup'
   const showPickupButton = shippingSelection === 'only-pickup'
   const pickup =
-    shippingOption === 'pickup-in-point' ? selectedPickup : undefined
+    deliveryPromiseMethod === 'pickup-in-point' ? selectedPickup : undefined
 
   return (
     <>
@@ -159,7 +159,7 @@ function ShippingOptionZipcode({
       {selectedZipcode && showShippingMethodSelector && (
         <ShippingMethodSelector
           onClick={() => setIsShippingMethodModalOpen(true)}
-          selectedShipping={shippingOption}
+          selectedShipping={deliveryPromiseMethod}
           selectedPickup={selectedPickup}
           loading={isLoading}
         />
@@ -197,7 +197,7 @@ function ShippingOptionZipcode({
       <ShippingMethodModal
         isOpen={isShippingMethodModalOpen && !areThereUnavailableCartItems}
         onClose={() => setIsShippingMethodModalOpen(false)}
-        selectedShipping={shippingOption}
+        selectedShipping={deliveryPromiseMethod}
         onDeliverySelection={() => {
           onShippingMethodDeliveryToggle()
         }}
@@ -240,4 +240,4 @@ function ShippingOptionZipcode({
   )
 }
 
-export default ShippingOptionZipcode
+export default DeliveryPromiseLocationSelector

@@ -5,7 +5,7 @@ import { ProductSummaryContext } from 'vtex.product-summary-context'
 import { useCssHandles } from 'vtex.css-handles'
 
 import messages from './messages'
-import { useShippingOptionState } from './context'
+import { useDeliveryPromiseState } from './context'
 import PickupModal from './PickupModal'
 
 const CSS_HANDLES = [
@@ -47,7 +47,7 @@ const AvailabilityBadges = () => {
   const intl = useIntl()
 
   const [isPickupModalOpen, setIsPickupModalOpen] = useState(false)
-  const { zipcode } = useShippingOptionState()
+  const { zipcode } = useDeliveryPromiseState()
   const {
     product: { deliveryPromisesBadges },
   } = ProductSummaryContext.useProductSummary()
