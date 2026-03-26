@@ -7,8 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.0.0] - 2026-03-25
-
 ### Breaking changes
 
 Themes and customizations must be updated together; there is no drop-in replacement under the old app id.
