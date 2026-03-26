@@ -26,7 +26,7 @@ import type {
   ZipCodeError,
 } from './ShippingOptionContext'
 import {
-  SHIPPING_MODAL_PIXEL_EVENT_ID,
+  SHOPPER_LOCATION_MODAL_PIXEL_EVENT_ID,
   PRODUCTS_NOT_FOUND_ERROR_CODE,
 } from '../constants'
 
@@ -61,7 +61,7 @@ export const useShippingOption = () => {
   const { addItems } = useOrderItems()
 
   usePixelEventCallback({
-    eventId: SHIPPING_MODAL_PIXEL_EVENT_ID,
+    eventId: SHOPPER_LOCATION_MODAL_PIXEL_EVENT_ID,
     handler: (event: any) => {
       setPendingAddToCartItem(event.data.addToCartInfo)
     },
@@ -231,7 +231,7 @@ export const useShippingOption = () => {
     if (!selectedZipcode) {
       onError(
         'POSTAL_CODE_NOT_FOUND',
-        intl.formatMessage(messages.postalCodeInputPlaceHolder)
+        intl.formatMessage(messages.shopperLocationPostalCodeInputPlaceholder)
       )
 
       return
@@ -253,7 +253,7 @@ export const useShippingOption = () => {
       if (coordinates.length === 0) {
         onError(
           'INVALID_POSTAL_CODE',
-          intl.formatMessage(messages.postalCodeInputError)
+          intl.formatMessage(messages.shopperLocationPostalCodeInputError)
         )
 
         return
@@ -264,9 +264,12 @@ export const useShippingOption = () => {
       if (total === 0) {
         onError(
           PRODUCTS_NOT_FOUND_ERROR_CODE,
-          intl.formatMessage(messages.noPickupsStateDescription, {
-            postalCode: ` ${selectedZipcode}`,
-          })
+          intl.formatMessage(
+            messages.shopperLocationModalNoPickupPointStateDescription,
+            {
+              postalCode: ` ${selectedZipcode}`,
+            }
+          )
         )
 
         return
@@ -300,7 +303,7 @@ export const useShippingOption = () => {
     } catch {
       onError(
         'INVALID_POSTAL_CODE',
-        intl.formatMessage(messages.postalCodeInputError)
+        intl.formatMessage(messages.shopperLocationPostalCodeInputError)
       )
 
       return
@@ -428,7 +431,7 @@ export const useShippingOption = () => {
 
         setUnavailabilityMessage(
           intl.formatMessage(
-            messages.unavailableItemsModalForPickupDescription,
+            messages.unavailableItemsModalForPickupPointDescription,
             {
               pickupLabel: selectedPickup?.pickupPoint.friendlyName,
             }

@@ -1,4 +1,4 @@
->📢 **Disclaimer** Don't fork this project. Use it, [contribute](https://github.com/vtex-apps/shipping-option-components) to help us evolve it. 
+>📢 **Disclaimer** Don't fork this project. Use it, [contribute](https://github.com/vtex-apps/delivery-promise-components) to help us evolve it. 
 
 # Availability Badges
 
@@ -10,11 +10,11 @@ The `availability-badges` block displays availability badges for product deliver
 
 ## Configuration
 
-1. Import the `shipping-option-components` app to your theme's dependencies in the manifest.json file as in the following example:
+1. Import the `delivery-promise-components` app to your theme's dependencies in the manifest.json file as in the following example:
 
 ```json
   "dependencies": {
-    "shipping-option-components": "1.x"
+    "vtex.delivery-promise-components": "0.x"
 
   }
 ```

@@ -5,7 +5,7 @@ import { useIntl } from 'react-intl'
 import PostalCodeInput from '../PostalCodeInput'
 import messages from '../../messages'
 import PostalCodeHelpLink from '../PostalCodeHelpLink'
-import LocationDetectorButton from '../LocationDetectorButton'
+import ShopperLocationDetectorButton from '../ShopperLocationDetectorButton'
 
 interface AddLocationProps {
   onSubmit: (zipcode: string) => void
@@ -13,7 +13,7 @@ interface AddLocationProps {
   zipcode: string
   isLoading?: boolean
   inputErrorMessage?: string
-  showLocationDetectorButton?: boolean
+  showShopperLocationDetectorButton?: boolean
 }
 
 const AddLocation = ({
@@ -22,14 +22,14 @@ const AddLocation = ({
   zipcode,
   isLoading,
   inputErrorMessage,
-  showLocationDetectorButton,
+  showShopperLocationDetectorButton,
 }: AddLocationProps) => {
   const intl = useIntl()
 
   return (
     <div className="flex-auto flex flex-column justify-between mt0">
       <p className="mid-gray ma0">
-        {intl.formatMessage(messages.locationModalDescription)}
+        {intl.formatMessage(messages.shopperLocationModalDescription)}
       </p>
 
       <div>
@@ -40,7 +40,7 @@ const AddLocation = ({
           errorMessage={inputErrorMessage}
           showClearButton={false}
           placeholder={intl.formatMessage(
-            messages.popoverPostalCodeInputPlaceHolder
+            messages.shopperLocationPopoverPostalCodePlaceholder
           )}
         />
         <div className="mt3">
@@ -49,9 +49,9 @@ const AddLocation = ({
       </div>
 
       <Button isLoading={isLoading} onClick={() => onSubmit(zipcode)}>
-        {intl.formatMessage(messages.popoverSubmitButtonLabel)}
+        {intl.formatMessage(messages.shopperLocationPopoverSubmitButtonLabel)}
       </Button>
-      {showLocationDetectorButton && <LocationDetectorButton />}
+      {showShopperLocationDetectorButton && <ShopperLocationDetectorButton />}
     </div>
   )
 }

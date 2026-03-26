@@ -4,13 +4,13 @@ import { useIntl } from 'react-intl'
 import { useCssHandles } from 'vtex.css-handles'
 
 import EmptyState from './EmptyState'
-import PinIcon from './PinIcon'
+import ShopperLocationPinIcon from './ShopperLocationPinIcon'
 import messages from '../messages'
 
 const CSS_HANDLES = [
-  'locationDetectorButton',
-  'locationDetectorButtonContainer',
-  'locationDetectorButtonIcon',
+  'shopperLocationDetectorButton',
+  'shopperLocationDetectorButtonContainer',
+  'shopperLocationDetectorButtonIcon',
 ] as const
 
 const getGeolocation = async (): Promise<any> => {
@@ -23,7 +23,7 @@ const getGeolocation = async (): Promise<any> => {
   })
 }
 
-const LocationDetectorButton: React.FC = () => {
+const ShopperLocationDetectorButton: React.FC = () => {
   const [regionId, setRegionId] = useState<string>('')
   const [error, setError] = useState<boolean>(false)
   const handles = useCssHandles(CSS_HANDLES)
@@ -75,12 +75,12 @@ const LocationDetectorButton: React.FC = () => {
 
   if (!regionId || error) {
     return (
-      <div className={`${handles.locationDetectorButtonContainer}`}>
+      <div className={`${handles.shopperLocationDetectorButtonContainer}`}>
         <EmptyState
           description={intl.formatMessage(
             error
-              ? messages.LocationDetectorButtonErrorDescription
-              : messages.LocationDetectorButtonLoadingDescription
+              ? messages.shopperLocationDetectorButtonErrorDescription
+              : messages.shopperLocationDetectorButtonLoadingDescription
           )}
           variant="secondary"
           iconProps={{ useIcon: !!error, width: '20', height: '20' }}
@@ -95,14 +95,14 @@ const LocationDetectorButton: React.FC = () => {
   return (
     <a
       href={href}
-      className={`${handles.locationDetectorButton} no-underline flex items-center c-link hover-c-link`}
+      className={`${handles.shopperLocationDetectorButton} no-underline flex items-center c-link hover-c-link`}
     >
-      <span className={handles.locationDetectorButtonIcon}>
-        <PinIcon filled={false} />
+      <span className={handles.shopperLocationDetectorButtonIcon}>
+        <ShopperLocationPinIcon filled={false} />
       </span>
-      {intl.formatMessage(messages.LocationDetectorButtonTitle)}
+      {intl.formatMessage(messages.shopperLocationDetectorButtonTitle)}
     </a>
   )
 }
 
-export default LocationDetectorButton
+export default ShopperLocationDetectorButton

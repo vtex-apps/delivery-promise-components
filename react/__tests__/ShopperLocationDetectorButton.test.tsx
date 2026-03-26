@@ -2,14 +2,14 @@ import React from 'react'
 import { render, waitFor } from '@vtex/test-tools/react'
 import * as reactIntl from 'react-intl'
 
-import LocationDetectorButton from '../components/LocationDetectorButton'
+import ShopperLocationDetectorButton from '../components/ShopperLocationDetectorButton'
 
 const messages = {
-  'store/shipping-option-zipcode.LocationDetectorButton.title':
+  'store/delivery-promise-components.shopperLocationDetectorButton.title':
     'Use my location',
-  'store/shipping-option-zipcode.LocationDetectorButtonLoading.description':
+  'store/delivery-promise-components.shopperLocationDetectorButton.loadingDescription':
     'Detecting location...',
-  'store/shipping-option-zipcode.LocationDetectorButtonError.description':
+  'store/delivery-promise-components.shopperLocationDetectorButton.errorDescription':
     'Location detection failed',
 } as const
 
@@ -52,8 +52,8 @@ jest.mock('../components/EmptyState', () => {
   return MockEmptyState
 })
 
-jest.mock('../components/PinIcon', () => {
-  const MockPinIcon = ({ filled }: { filled: boolean }) => (
+jest.mock('../components/ShopperLocationPinIcon', () => {
+  const MockShopperLocationPinIcon = ({ filled }: { filled: boolean }) => (
     <span
       data-testid="pin-icon"
       data-filled={filled}
@@ -62,10 +62,10 @@ jest.mock('../components/PinIcon', () => {
     />
   )
 
-  return MockPinIcon
+  return MockShopperLocationPinIcon
 })
 
-describe('LocationDetectorButton', () => {
+describe('ShopperLocationDetectorButton', () => {
   // Shared test data
   const mockCoordinates = { latitude: -23.5505, longitude: -46.6333 }
   const mockPostcode = '01310-100'
@@ -99,20 +99,20 @@ describe('LocationDetectorButton', () => {
     mockSuccessfulGeolocation()
     mockSuccessfulFetch()
 
-    return render(<LocationDetectorButton />)
+    return render(<ShopperLocationDetectorButton />)
   }
 
   const renderWithGeolocationError = () => {
     mockGeolocationError()
 
-    return render(<LocationDetectorButton />)
+    return render(<ShopperLocationDetectorButton />)
   }
 
   const renderWithAPIError = () => {
     mockSuccessfulGeolocation()
     mockFailedFetch()
 
-    return render(<LocationDetectorButton />)
+    return render(<ShopperLocationDetectorButton />)
   }
 
   beforeEach(() => {
@@ -132,9 +132,10 @@ describe('LocationDetectorButton', () => {
     })
 
     mockUseCssHandles.mockReturnValue({
-      locationDetectorButton: 'locationDetectorButton',
-      locationDetectorButtonContainer: 'locationDetectorButtonContainer',
-      locationDetectorButtonIcon: 'locationDetectorButtonIcon',
+      shopperLocationDetectorButton: 'shopperLocationDetectorButton',
+      shopperLocationDetectorButtonContainer:
+        'shopperLocationDetectorButtonContainer',
+      shopperLocationDetectorButtonIcon: 'shopperLocationDetectorButtonIcon',
     })
 
     jest.spyOn(reactIntl, 'useIntl').mockImplementation(() => mockIntl)
@@ -157,13 +158,15 @@ describe('LocationDetectorButton', () => {
         },
       })
 
-      const { container } = render(<LocationDetectorButton />)
+      const { container } = render(<ShopperLocationDetectorButton />)
 
       expect(container.firstChild).toBeNull()
     })
 
     it('renders loading state initially when no regionId is set', () => {
-      const { getByTestId, getByText } = render(<LocationDetectorButton />)
+      const { getByTestId, getByText } = render(
+        <ShopperLocationDetectorButton />
+      )
 
       expect(getByTestId('empty-state')).toBeInTheDocument()
       expect(getByText('Detecting location...')).toBeInTheDocument()
@@ -175,7 +178,7 @@ describe('LocationDetectorButton', () => {
         writable: true,
       })
 
-      const { getByTestId } = render(<LocationDetectorButton />)
+      const { getByTestId } = render(<ShopperLocationDetectorButton />)
 
       expect(getByTestId('empty-state')).toBeInTheDocument()
     })
@@ -183,7 +186,7 @@ describe('LocationDetectorButton', () => {
 
   describe('Geolocation functionality', () => {
     it('calls geolocation API on mount when available', () => {
-      render(<LocationDetectorButton />)
+      render(<ShopperLocationDetectorButton />)
 
       expect(mockGeolocation.getCurrentPosition).toHaveBeenCalledWith(
         expect.any(Function),
@@ -255,7 +258,7 @@ describe('LocationDetectorButton', () => {
         route: { path: '/products', queryString: {} },
       })
 
-      const { getByRole } = render(<LocationDetectorButton />)
+      const { getByRole } = render(<ShopperLocationDetectorButton />)
 
       await waitFor(() => {
         const link = getByRole('link')
@@ -273,7 +276,7 @@ describe('LocationDetectorButton', () => {
         route: { path: '/products', queryString: { category: 'electronics' } },
       })
 
-      const { getByRole } = render(<LocationDetectorButton />)
+      const { getByRole } = render(<ShopperLocationDetectorButton />)
 
       await waitFor(() => {
         const link = getByRole('link')
@@ -294,7 +297,7 @@ describe('LocationDetectorButton', () => {
           }),
       })
 
-      const { getByRole } = render(<LocationDetectorButton />)
+      const { getByRole } = render(<ShopperLocationDetectorButton />)
 
       await waitFor(() => {
         const link = getByRole('link')
@@ -316,7 +319,7 @@ describe('LocationDetectorButton', () => {
           }),
       })
 
-      const { getByRole } = render(<LocationDetectorButton />)
+      const { getByRole } = render(<ShopperLocationDetectorButton />)
 
       await waitFor(() => {
         const link = getByRole('link')
@@ -335,16 +338,16 @@ describe('LocationDetectorButton', () => {
 
       // Check loading container handle
       expect(
-        container.querySelector('.locationDetectorButtonContainer')
+        container.querySelector('.shopperLocationDetectorButtonContainer')
       ).toBeInTheDocument()
 
       // Check button and icon handles after successful load
       await waitFor(() => {
         expect(
-          container.querySelector('.locationDetectorButton')
+          container.querySelector('.shopperLocationDetectorButton')
         ).toBeInTheDocument()
         expect(
-          container.querySelector('.locationDetectorButtonIcon')
+          container.querySelector('.shopperLocationDetectorButtonIcon')
         ).toBeInTheDocument()
       })
     })
@@ -358,7 +361,7 @@ describe('LocationDetectorButton', () => {
         json: () => Promise.resolve({ address: {} }), // No postcode
       })
 
-      const { getByTestId } = render(<LocationDetectorButton />)
+      const { getByTestId } = render(<ShopperLocationDetectorButton />)
 
       await waitFor(() => {
         // Should continue showing loading state when no postcode (not an error)

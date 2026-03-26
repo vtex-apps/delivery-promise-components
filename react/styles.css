@@ -1,4 +1,6 @@
-.buttonWrapper {
+.buttonWrapper,
+.shopperLocationSetterButtonWrapper,
+.pickupPointSelectorButtonWrapper {
   cursor: pointer;
   background-color: unset;
 }
@@ -17,12 +19,14 @@
   color: #2e2e2e;
 }
 
-.shippingButtonContainer {
+.shippingButtonContainer,
+.shopperLocationSetterContainer,
+.pickupPointSelectorContainer {
   margin: auto;
   position: relative;
 }
 
-.deliveryPopover {
+.shopperLocationPopover {
   display: flex;
   gap: 16px;
   flex-direction: column;
@@ -34,7 +38,7 @@
   max-width: min(calc(100vw - 20px), 380px);
 }
 
-.popoverInputContainer {
+.shopperLocationPopoverInputContainer {
   gap: 16px;
   align-items: start;
 }
@@ -43,10 +47,10 @@
   display: none;
 }
 
-.shippingOptionButton,
+.shippingMethodOptionButton,
 .modalCloseButton,
 .modalBackButton,
-.deliveryModalButton {
+.shippingMethodSelector {
   cursor: pointer;
   background-color: unset;
   border: 0;
@@ -57,17 +61,17 @@
   text-align: right;
 }
 
-.shippingOptionButton {
+.shippingMethodOptionButton {
   border: 1px solid var(--border-2, #e2e4e6);
   border-radius: 8px;
   padding: 28px 40px;
 }
 
-.shippingOptionButtonSelected {
+.shippingMethodOptionButtonSelected {
   border: 1px solid var(--border-1, #7e7e7e);
 }
 
-.shippingOptionButton:hover {
+.shippingMethodOptionButton:hover {
   border: 1px solid var(--border-1, #7e7e7e);
 }
 
@@ -75,7 +79,7 @@
   gap: 20px;
 }
 
-.deliveryModalButtonLabel,
+.shippingMethodSelectorLabel,
 .deliveryDrawerValue {
   font-weight: 500;
   line-height: normal;
@@ -84,17 +88,19 @@
   margin-left: 6px;
 }
 
-.deliveryModalButtonLabel {
+.shippingMethodSelectorLabel {
   max-width: 68px;
 }
 
-.deliveryModalButtonLabelLimited {
+.shippingMethodSelectorLabelLimited {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.buttonValue {
+.buttonValue,
+.shopperLocationSetterButtonValue,
+.pickupPointSelectorButtonValue {
   max-width: 110px;
   align-self: end;
 }

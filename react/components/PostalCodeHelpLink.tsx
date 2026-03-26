@@ -39,7 +39,7 @@ const HelpLink = helpers.injectRules(({ rules }: Props) => {
       target="_blank"
       className={`${handles.postalCodeHelpLink}`}
     >
-      {intl.formatMessage(messages.popoverPostalCodeLink)}
+      {intl.formatMessage(messages.shopperLocationPopoverPostalCodeHelpLink)}
     </Link>
   )
 })

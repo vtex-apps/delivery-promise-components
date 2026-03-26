@@ -68,14 +68,16 @@ const UnavailableItemsModal = ({
             isLoading={isLoading}
             onClick={handleRemoveItemsClick}
           >
-            {intl.formatMessage(messages.unavailableItemsModalRemoveButton)}
+            {intl.formatMessage(
+              messages.unavailableItemsModalRemoveButtonLabel
+            )}
           </Button>
           <Button
             isLoading={isLoading}
             variation="secondary"
             onClick={onTryAgain}
           >
-            {intl.formatMessage(messages.unavailableItemsModalRetryButton)}
+            {intl.formatMessage(messages.unavailableItemsModalRetryButtonLabel)}
           </Button>
         </div>
       </div>

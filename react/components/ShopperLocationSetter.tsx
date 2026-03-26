@@ -3,16 +3,16 @@ import { useCssHandles } from 'vtex.css-handles'
 import { Spinner } from 'vtex.styleguide'
 import { usePopoverStore } from '@ariakit/react'
 
-import DeliveryPopover from './DeliveryPopover'
+import ShopperLocationPopover from './ShopperLocationPopover'
 
 const CSS_HANDLES = [
-  'buttonWrapper',
-  'buttonLabel',
-  'buttonValue',
-  'shippingButtonContainer',
+  'shopperLocationSetterButtonWrapper',
+  'shopperLocationSetterButtonLabel',
+  'shopperLocationSetterButtonValue',
+  'shopperLocationSetterContainer',
 ] as const
 
-interface ShippingOptionButtonProps {
+interface ShopperLocationSetterProps {
   onClick: () => void
   loading: boolean
   placeholder: string
@@ -23,10 +23,10 @@ interface ShippingOptionButtonProps {
   callToAction?: CallToAction
   mode: Mode
   icon: React.ReactNode
-  showLocationDetectorButton?: boolean
+  showShopperLocationDetectorButton?: boolean
 }
 
-const ShippingOptionButton = ({
+const ShopperLocationSetter = ({
   onClick,
   loading,
   value,
@@ -37,8 +37,8 @@ const ShippingOptionButton = ({
   callToAction,
   mode,
   icon,
-  showLocationDetectorButton,
-}: ShippingOptionButtonProps) => {
+  showShopperLocationDetectorButton,
+}: ShopperLocationSetterProps) => {
   const handles = useCssHandles(CSS_HANDLES)
   const popoverStore = usePopoverStore({ defaultOpen: false })
   const anchorRef = useRef(null)
@@ -56,19 +56,21 @@ const ShippingOptionButton = ({
 
   return (
     <div
-      className={`${handles.shippingButtonContainer} flex items-center h-100`}
+      className={`${handles.shopperLocationSetterContainer} flex items-center h-100`}
     >
       <button
         ref={anchorRef}
         onClick={onClick}
-        className={`${handles.buttonWrapper} flex items-center br3 pt4 pr4 pb4 pl0 b--none`}
+        className={`${handles.shopperLocationSetterButtonWrapper} flex items-center br3 pt4 pr4 pb4 pl0 b--none`}
       >
         {loading ? (
           <div className="ml4">
             <Spinner size={14} />
           </div>
         ) : mode === 'default' ? (
-          <p className={`${handles.buttonValue} ma0 f6 fw6 c-action-primary`}>
+          <p
+            className={`${handles.shopperLocationSetterButtonValue} ma0 f6 fw6 c-action-primary`}
+          >
             {value ?? placeholder}
           </p>
         ) : (
@@ -76,7 +78,7 @@ const ShippingOptionButton = ({
         )}
       </button>
       {popoverOverlay && (
-        <DeliveryPopover
+        <ShopperLocationPopover
           onClick={onClick}
           onSubmit={onSubmit ?? (() => {})}
           isLoading={loading}
@@ -84,11 +86,11 @@ const ShippingOptionButton = ({
           selectedZipcode={selectedZipcode}
           variant={popoverOverlay}
           popoverStore={popoverStore}
-          showLocationDetectorButton={showLocationDetectorButton}
+          showShopperLocationDetectorButton={showShopperLocationDetectorButton}
         />
       )}
     </div>
   )
 }
 
-export default ShippingOptionButton
+export default ShopperLocationSetter
