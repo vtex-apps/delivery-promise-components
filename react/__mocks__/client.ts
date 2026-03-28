@@ -20,9 +20,7 @@ export const getCartProducts = async () => []
 
 export const removeCartProductsById = async () => undefined
 
-export const validateProductAvailability = async (
-  ..._args: unknown[]
-) => ({
+export const validateProductAvailability = async (..._args: unknown[]) => ({
   unavailableItemIds: [],
 })
 

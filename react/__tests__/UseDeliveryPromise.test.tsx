@@ -132,13 +132,13 @@ describe('useDeliveryPromise actions and behavior', () => {
 
   it.each([
     [
-      'UPDATE_ZIPCODE + SELECT_HOME_DELIVERY triggers reload',
+      'UPDATE_ZIPCODE + SELECT_DELIVERY_SHIPPING_OPTION triggers reload',
       [
         {
           type: 'UPDATE_ZIPCODE',
           args: { zipcode: '12345-678', reload: true },
         },
-        { type: 'SELECT_HOME_DELIVERY' },
+        { type: 'SELECT_DELIVERY_SHIPPING_OPTION' },
       ],
     ],
     [
@@ -226,7 +226,9 @@ describe('useDeliveryPromise actions and behavior', () => {
       return (
         <button
           data-testid="reset"
-          onClick={() => dispatch({ type: 'RESET_FULFILLMENT_METHOD' } as never)}
+          onClick={() =>
+            dispatch({ type: 'RESET_FULFILLMENT_METHOD' } as never)
+          }
         >
           Reset
         </button>

@@ -47,6 +47,7 @@ export const useDeliveryPromise = () => {
   const [addressLabel, setAddressLabel] = useState<string>()
   const [deliveryPromiseMethod, setDeliveryPromiseMethod] =
     useState<ShippingMethod>()
+
   const [unavailableCartItems, setUnavailableCartItems] = useState<CartItem[]>(
     []
   )
@@ -411,7 +412,7 @@ export const useDeliveryPromise = () => {
     location.reload()
   }
 
-  const selectHomeDelivery = async () => {
+  const selectDeliveryShippingOption = async () => {
     if (!countryCode || !zipcode || !geoCoordinates) {
       return
     }
@@ -458,7 +459,9 @@ export const useDeliveryPromise = () => {
           })
         )
 
-        setActionInterruptedByCartValidation(() => () => submitZipcode(zipcodeSelected, reload))
+        setActionInterruptedByCartValidation(
+          () => () => submitZipcode(zipcodeSelected, reload)
+        )
 
         break
       }
@@ -509,7 +512,7 @@ export const useDeliveryPromise = () => {
         break
       }
 
-      case 'SELECT_HOME_DELIVERY': {
+      case 'SELECT_DELIVERY_SHIPPING_OPTION': {
         setUnavailabilityMessage('delivery')
 
         const unavailableItems = await validateCartItems(
@@ -524,7 +527,7 @@ export const useDeliveryPromise = () => {
         )
 
         if (unavailableItems.length === 0) {
-          selectHomeDelivery()
+          selectDeliveryShippingOption()
 
           if (pendingAddToCartItem) {
             await addItems(
@@ -547,7 +550,9 @@ export const useDeliveryPromise = () => {
           )
         )
 
-        setActionInterruptedByCartValidation(() => () => selectHomeDelivery())
+        setActionInterruptedByCartValidation(
+          () => () => selectDeliveryShippingOption()
+        )
 
         break
       }

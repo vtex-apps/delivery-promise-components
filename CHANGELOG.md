@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Dispatch action for the **delivery** shipping method is `SELECT_DELIVERY_SHIPPING_OPTION` (replaces `SELECT_HOME_DELIVERY`; same name as `vtex.shipping-option-components`).
 - Pickup points are loaded via Intelligent Search `pickup-point-availability` using the session sales channel as trade policy (fallback `1`), with `vtex.session-client`.
 - Cart availability checks call **delivery-promises-bff** at `/api/delivery-promises-bff/availability/*` with `{ items: [{ itemId, productId }] }` and read `unavailableItemIds` from the response.
 
@@ -16,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- React context API renamed from `ShippingOption*` to `DeliveryPromise*` (for example `DeliveryPromiseProvider`, `useDeliveryPromiseState`, `useDeliveryPromiseDispatch`). State field `shippingOption` is now `deliveryPromiseMethod`. Dispatch action types `SELECT_DELIVERY_SHIPPING_OPTION` / `RESET_SHIPPING_OPTION` are now `SELECT_HOME_DELIVERY` / `RESET_FULFILLMENT_METHOD`. Default export component for the location selector block renamed from `ShippingOptionZipcode` to `DeliveryPromiseLocationSelector`.
+- React context API renamed from `ShippingOption*` to `DeliveryPromise*` (for example `DeliveryPromiseProvider`, `useDeliveryPromiseState`, `useDeliveryPromiseDispatch`). State field `shippingOption` is now `deliveryPromiseMethod`. `RESET_SHIPPING_OPTION` is now `RESET_FULFILLMENT_METHOD`. Default export component for the location selector block renamed from `ShippingOptionZipcode` to `DeliveryPromiseLocationSelector`.
 
 ## [0.1.0] - 2026-03-26
 
