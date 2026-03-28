@@ -83,7 +83,7 @@ function DeliveryPromiseLocationSelector({
       })
     } else {
       dispatch({
-        type: 'SELECT_HOME_DELIVERY',
+        type: 'SELECT_DELIVERY_SHIPPING_OPTION',
       })
     }
   }

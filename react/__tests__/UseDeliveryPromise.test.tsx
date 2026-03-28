@@ -4,6 +4,33 @@ import * as reactIntl from 'react-intl'
 
 import { useDeliveryPromise } from '../context/useDeliveryPromise'
 import * as client from '../client'
+import { DEFAULT_TRADE_POLICY } from '../constants'
+
+jest.mock('vtex.order-items/OrderItems', () => ({
+  useOrderItems: () => ({ addItems: jest.fn() }),
+}))
+
+jest.mock('vtex.pixel-manager', () => ({
+  usePixelEventCallback: () => {},
+}))
+
+jest.mock('vtex.render-runtime', () => ({
+  useRuntime: () => ({ account: 'store' }),
+  useSSR: () => false,
+}))
+
+jest.mock('../utils/cookie', () => ({
+  getCountryCode: () => 'BR',
+  getFacetsData: () => undefined,
+  getOrderFormId: () => undefined,
+}))
+
+jest.mock('vtex.session-client', () => ({
+  useRenderSession: jest.fn(() => ({
+    session: { namespaces: { store: { channel: { value: '1' } } } },
+    loading: false,
+  })),
+}))
 
 const mockIntl = {
   formatMessage: ({ id }: { id: string }) => String(id),
@@ -36,10 +63,26 @@ function ActionRunner({
 describe('useDeliveryPromise actions and behavior', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    const sessionMod = jest.requireMock('vtex.session-client') as {
+      useRenderSession: jest.Mock
+    }
+
+    sessionMod.useRenderSession.mockImplementation(() => ({
+      session: { namespaces: { store: { channel: { value: '1' } } } },
+      loading: false,
+    }))
     jest.spyOn(client, 'updateSession').mockResolvedValue(undefined)
     jest.spyOn(client, 'getAddress').mockResolvedValue({
       city: 'City',
       geoCoordinates: [1, 2],
+    } as never)
+
+    jest.spyOn(client, 'getPickups').mockResolvedValue({
+      items: [
+        {
+          pickupPoint: { isActive: true, id: 'p1', friendlyName: 'Store 1' },
+        },
+      ],
     } as never)
 
     jest
@@ -49,7 +92,13 @@ describe('useDeliveryPromise actions and behavior', () => {
     jest.spyOn(client, 'getCartProducts').mockResolvedValue([] as never)
     jest
       .spyOn(client, 'validateProductAvailability')
-      .mockResolvedValue({ unavailableProducts: [] } as never)
+      .mockResolvedValue({ unavailableItemIds: [] } as never)
+    jest
+      .spyOn(client, 'validateProductAvailabilityByPickup')
+      .mockResolvedValue({ unavailableItemIds: [] } as never)
+    jest
+      .spyOn(client, 'validateProductAvailabilityByDelivery')
+      .mockResolvedValue({ unavailableItemIds: [] } as never)
 
     const renderRuntime = jest.requireMock('vtex.render-runtime') as {
       useSSR: () => boolean
@@ -83,13 +132,13 @@ describe('useDeliveryPromise actions and behavior', () => {
 
   it.each([
     [
-      'UPDATE_ZIPCODE + SELECT_HOME_DELIVERY triggers reload',
+      'UPDATE_ZIPCODE + SELECT_DELIVERY_SHIPPING_OPTION triggers reload',
       [
         {
           type: 'UPDATE_ZIPCODE',
           args: { zipcode: '12345-678', reload: true },
         },
-        { type: 'SELECT_HOME_DELIVERY' },
+        { type: 'SELECT_DELIVERY_SHIPPING_OPTION' },
       ],
     ],
     [
@@ -109,6 +158,38 @@ describe('useDeliveryPromise actions and behavior', () => {
 
     await waitFor(() => {
       expect(getByTestId('btn')).toBeTruthy()
+    })
+  })
+
+  it('calls getPickups with default trade policy when session store channel is missing', async () => {
+    const sessionMod = jest.requireMock('vtex.session-client') as {
+      useRenderSession: jest.Mock
+    }
+
+    sessionMod.useRenderSession.mockImplementation(() => ({
+      session: { namespaces: { store: {} } },
+      loading: false,
+    }))
+
+    const getPickupsSpy = jest.spyOn(client, 'getPickups').mockResolvedValue({
+      items: [],
+    } as never)
+
+    function MountHook() {
+      useDeliveryPromise()
+
+      return null
+    }
+
+    render(<MountHook />)
+
+    await waitFor(() => {
+      expect(getPickupsSpy).toHaveBeenCalledWith(
+        'BR',
+        '12345-678',
+        'store',
+        DEFAULT_TRADE_POLICY
+      )
     })
   })
 
@@ -145,7 +226,9 @@ describe('useDeliveryPromise actions and behavior', () => {
       return (
         <button
           data-testid="reset"
-          onClick={() => dispatch({ type: 'RESET_FULFILLMENT_METHOD' } as never)}
+          onClick={() =>
+            dispatch({ type: 'RESET_FULFILLMENT_METHOD' } as never)
+          }
         >
           Reset
         </button>

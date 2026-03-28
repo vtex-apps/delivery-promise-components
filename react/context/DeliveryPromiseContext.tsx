@@ -38,8 +38,8 @@ interface UpdatePickup {
   args: { pickup: Pickup; canUnselect?: boolean }
 }
 
-interface SelectHomeDelivery {
-  type: 'SELECT_HOME_DELIVERY'
+interface SelectDeliveryShippingOption {
+  type: 'SELECT_DELIVERY_SHIPPING_OPTION'
 }
 
 interface AbortUnavailableItemsAction {
@@ -57,7 +57,7 @@ interface ResetFulfillmentMethod {
 export type DeliveryPromiseActions =
   | UpdateZipCode
   | UpdatePickup
-  | SelectHomeDelivery
+  | SelectDeliveryShippingOption
   | AbortUnavailableItemsAction
   | ContinueUnavailableItemsAction
   | ResetFulfillmentMethod
