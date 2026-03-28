@@ -49,7 +49,7 @@ describe('useDeliveryPromise actions and behavior', () => {
     jest.spyOn(client, 'getCartProducts').mockResolvedValue([] as never)
     jest
       .spyOn(client, 'validateProductAvailability')
-      .mockResolvedValue({ unavailableProducts: [] } as never)
+      .mockResolvedValue({ unavailableItemIds: [] } as never)
 
     const renderRuntime = jest.requireMock('vtex.render-runtime') as {
       useSSR: () => boolean

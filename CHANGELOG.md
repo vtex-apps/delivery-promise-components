@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Pickup points are loaded via Intelligent Search `pickup-point-availability` using the session sales channel as trade policy (fallback `1`), with `vtex.session-client`.
+- Cart availability checks call **delivery-promises-bff** at `/api/delivery-promises-bff/availability/*` with `{ items: [{ itemId, productId }] }` and read `unavailableItemIds` from the response.
+
 ## [0.1.1] - 2026-03-26
 
 ### Changed

@@ -1,6 +1,37 @@
 import { SHIPPING_INFO_COOKIE } from './constants'
 import { setCookie } from './utils/cookie'
 
+/** Matches delivery-promises-bff availability body (`itemId` = SKU, `productId` = catalog product). */
+export type AvailabilityItem = {
+  itemId: string
+  productId: string
+}
+
+const buildAvailabilityLocation = (
+  zipCode: string,
+  countryCode: string,
+  geoCoordinates: number[]
+) => ({
+  zipCode,
+  coordinate: {
+    longitude: geoCoordinates[0],
+    latitude: geoCoordinates[1],
+  },
+  country: countryCode,
+})
+
+/** Appends optional BFF `sc` (sales channel) query param when defined. */
+const withAvailabilityScQuery = (
+  baseUrlWithQuery: string,
+  salesChannel?: string
+) => {
+  if (salesChannel == null || salesChannel.trim() === '') {
+    return baseUrlWithQuery
+  }
+
+  return `${baseUrlWithQuery}&sc=${encodeURIComponent(salesChannel.trim())}`
+}
+
 export const getAddress = (
   countryCode: string,
   zipCode: string,
@@ -17,11 +48,11 @@ export const updateSession = async (
   zipCode: string,
   geoCoordinates: number[],
   pickup?: Pickup,
-  sessionShippingValue?: string
+  shippingOption?: string
 ) => {
   const facetsValue = `zip-code=${zipCode};country=${countryCode};coordinates=${geoCoordinates.join(
     ','
-  )}${sessionShippingValue ? `;shipping=${sessionShippingValue}` : ''}${
+  )}${shippingOption ? `;shipping=${shippingOption}` : ''}${
     pickup ? `;pickupPoint=${pickup.pickupPoint.id}` : ''
   }`
 
@@ -47,11 +78,54 @@ export const updateSession = async (
 export const getPickups = (
   countryCode: string,
   zipCode: string,
-  account: string
+  account: string,
+  salesChannel: string
 ) =>
   fetch(
-    `/api/checkout/pub/pickup-points?an=${account}&countryCode=${countryCode}&postalCode=${zipCode}`
-  ).then((res) => res.json())
+    `/api/intelligent-search/v0/pickup-point-availability/trade-policy/${encodeURIComponent(
+      salesChannel
+    )}?zip-code=${encodeURIComponent(zipCode)}&an=${encodeURIComponent(
+      account
+    )}&country=${encodeURIComponent(countryCode)}`,
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }
+  )
+    .then((res) => {
+      if (!res.ok) {
+        throw new Error(`pickup-point-availability failed (${res.status})`)
+      }
+
+      return res.json()
+    })
+    .then((data) => ({
+      items: Array.isArray(data?.pickupPointDistances)
+        ? data.pickupPointDistances.map((ppd: any) => {
+            const { address } = ppd
+
+            return {
+              distance: ppd.distance,
+              pickupPoint: {
+                id: ppd.pickupId,
+                friendlyName: ppd.pickupName,
+                address: {
+                  neighborhood: address.neighborhood,
+                  street: address.street,
+                  postalCode: address.postalCode,
+                  city: address.city,
+                  number: address.number,
+                  state: address.state,
+                },
+                isActive: ppd.isActive,
+              },
+            }
+          })
+        : [],
+    }))
+    .catch(() => ({ items: [] }))
 
 export const updateOrderForm = (
   country: string,
@@ -88,6 +162,21 @@ export const getCartProducts = async (orderFormId: string) => {
   return orderForm.items
 }
 
+/** Maps Checkout orderForm items to BFF `items` (SKU id + catalog product id). */
+export const orderFormItemsToAvailabilityItems = (
+  orderFormItems: unknown[]
+): AvailabilityItem[] =>
+  orderFormItems.map((raw) => {
+    const line = raw as { id: string | number; productId?: string | number }
+    const itemId = String(line.id)
+    const productId =
+      line.productId != null && String(line.productId) !== ''
+        ? String(line.productId)
+        : itemId
+
+    return { itemId, productId }
+  })
+
 export const removeCartProductsById = async (
   orderFormId: string,
   cartProductsIndex: number[]
@@ -116,31 +205,29 @@ export const removeCartProductsById = async (
 export const validateProductAvailability = async (
   zipCode: string,
   countryCode: string,
-  products: string[],
-  account: string
+  items: AvailabilityItem[],
+  account: string,
+  salesChannel?: string
 ) => {
   const address = await getAddress(countryCode, zipCode, account)
 
-  const coordinatesArray = address.geoCoordinates
-  const coordinate = {
-    longitude: coordinatesArray[0],
-    latitude: coordinatesArray[1],
-  }
-
-  const location = {
-    zipCode,
-    coordinate,
-    country: countryCode,
-  }
-
   const requestBody = {
-    location,
-    products,
+    location: buildAvailabilityLocation(
+      zipCode,
+      countryCode,
+      address.geoCoordinates
+    ),
+    items,
   }
 
-  const baseUrl = window.location.origin
+  const url = withAvailabilityScQuery(
+    `/api/delivery-promises-bff/availability/deliveryorpickup?an=${encodeURIComponent(
+      account
+    )}`,
+    salesChannel
+  )
 
-  return fetch(`${baseUrl}/api/io/_v/availability/deliveryorpickup`, {
+  return fetch(url, {
     method: 'POST',
     body: JSON.stringify(requestBody),
     headers: {
@@ -152,31 +239,29 @@ export const validateProductAvailability = async (
 export const validateProductAvailabilityByDelivery = async (
   zipCode: string,
   countryCode: string,
-  products: string[],
-  account: string
+  items: AvailabilityItem[],
+  account: string,
+  salesChannel?: string
 ) => {
   const address = await getAddress(countryCode, zipCode, account)
 
-  const coordinatesArray = address.geoCoordinates
-  const coordinate = {
-    longitude: coordinatesArray[0],
-    latitude: coordinatesArray[1],
-  }
-
-  const location = {
-    zipCode,
-    coordinate,
-    country: countryCode,
-  }
-
   const requestBody = {
-    location,
-    products,
+    location: buildAvailabilityLocation(
+      zipCode,
+      countryCode,
+      address.geoCoordinates
+    ),
+    items,
   }
 
-  const baseUrl = window.location.origin
+  const url = withAvailabilityScQuery(
+    `/api/delivery-promises-bff/availability/delivery?an=${encodeURIComponent(
+      account
+    )}`,
+    salesChannel
+  )
 
-  return fetch(`${baseUrl}/api/io/_v/availability/delivery`, {
+  return fetch(url, {
     method: 'POST',
     body: JSON.stringify(requestBody),
     headers: {
@@ -187,22 +272,30 @@ export const validateProductAvailabilityByDelivery = async (
 
 export const validateProductAvailabilityByPickup = async (
   pickupId: string,
-  products: string[]
+  items: AvailabilityItem[],
+  zipCode: string,
+  countryCode: string,
+  account: string,
+  salesChannel?: string
 ) => {
+  await getAddress(countryCode, zipCode, account)
+
   const requestBody = {
-    products,
+    items,
   }
 
-  const baseUrl = window.location.origin
+  const url = withAvailabilityScQuery(
+    `/api/delivery-promises-bff/availability/pickupid?an=${encodeURIComponent(
+      account
+    )}&pickupId=${encodeURIComponent(pickupId)}`,
+    salesChannel
+  )
 
-  return fetch(
-    `${baseUrl}/api/io/_v/availability/pickupid?pickupId=${pickupId}`,
-    {
-      method: 'POST',
-      body: JSON.stringify(requestBody),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    }
-  ).then((res) => res.json())
+  return fetch(url, {
+    method: 'POST',
+    body: JSON.stringify(requestBody),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  }).then((res) => res.json())
 }
