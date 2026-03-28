@@ -31,6 +31,7 @@ import type {
 import {
   SHOPPER_LOCATION_MODAL_PIXEL_EVENT_ID,
   PRODUCTS_NOT_FOUND_ERROR_CODE,
+  DEFAULT_TRADE_POLICY,
 } from '../constants'
 
 export const useDeliveryPromise = () => {
@@ -67,7 +68,7 @@ export const useDeliveryPromise = () => {
 
   const salesChannel = isSessionLoading
     ? undefined
-    : session?.namespaces?.store?.channel?.value ?? '1'
+    : session?.namespaces?.store?.channel?.value ?? DEFAULT_TRADE_POLICY
 
   const [pendingPickupsFetch, setPendingPickupsFetch] = useState<{
     country: string
