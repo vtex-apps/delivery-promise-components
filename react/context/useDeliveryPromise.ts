@@ -70,6 +70,10 @@ export const useDeliveryPromise = () => {
 
   uiRegistryRef.current = uiRegistry
 
+  const dispatchImplRef = useRef<
+    (action: DeliveryPromiseActions) => Promise<void>
+  >(async () => {})
+
   const { account } = useRuntime()
   const { session, loading: isSessionLoading } = useRenderSession()
   const isSSR = useSSR()
@@ -454,7 +458,7 @@ export const useDeliveryPromise = () => {
     setAddressLabel(city ? `${city}, ${zipcode}` : zipcode)
   }, [zipcode, city])
 
-  const dispatch = async (action: DeliveryPromiseActions) => {
+  dispatchImplRef.current = async (action: DeliveryPromiseActions) => {
     switch (action.type) {
       case 'REGISTER_SHOPPER_LOCATION_BLOCK':
         setUiRegistry((prev) => ({
@@ -655,6 +659,10 @@ export const useDeliveryPromise = () => {
         break
     }
   }
+
+  const dispatch = useCallback((action: DeliveryPromiseActions) => {
+    return dispatchImplRef.current(action)
+  }, [])
 
   const areThereUnavailableCartItems = unavailableCartItems.length > 0
 
