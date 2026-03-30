@@ -518,7 +518,7 @@ export const useDeliveryPromise = () => {
         )
 
         if (unavailableItems.length === 0) {
-          submitZipcode(zipcodeSelected, reload)
+          await submitZipcode(zipcodeSelected, reload)
           break
         }
 

@@ -42,6 +42,7 @@ const ShopperLocationPopover = ({
   const [alreadyOpen, setAlreadyOpen] = useState<boolean>(false)
   const submitInFlightRef = useRef(false)
   const sawLoadingRef = useRef(false)
+  const lastSubmittedZipRef = useRef<string | null>(null)
   const handles = useCssHandles(CSS_HANDLES)
   const intl = useIntl()
 
@@ -71,15 +72,24 @@ const ShopperLocationPopover = ({
       popoverStore.setOpen(true)
       submitInFlightRef.current = false
       sawLoadingRef.current = false
+      lastSubmittedZipRef.current = null
 
       return
     }
 
-    if (sawLoadingRef.current) {
+    if (
+      sawLoadingRef.current &&
+      !isLoading &&
+      !inputErrorMessage &&
+      selectedZipcode &&
+      lastSubmittedZipRef.current != null &&
+      selectedZipcode === lastSubmittedZipRef.current
+    ) {
       submitInFlightRef.current = false
       sawLoadingRef.current = false
+      lastSubmittedZipRef.current = null
     }
-  }, [isLoading, inputErrorMessage, variant, popoverStore])
+  }, [isLoading, inputErrorMessage, selectedZipcode, variant, popoverStore])
 
   const handleZipSubmit = (zipCode: string) => {
     if (variant !== 'popover-input') {
@@ -91,6 +101,7 @@ const ShopperLocationPopover = ({
     popoverStore.setOpen(false)
     submitInFlightRef.current = true
     sawLoadingRef.current = false
+    lastSubmittedZipRef.current = zipCode
     onSubmit(zipCode)
   }
 
@@ -104,6 +115,7 @@ const ShopperLocationPopover = ({
       className={handles.shopperLocationPopover}
       hideOnInteractOutside
       autoFocusOnShow={false}
+      autoFocusOnHide={false}
       store={popoverStore}
     >
       <p className={`${handles.shopperLocationPopoverText} ma0`}>
@@ -136,7 +148,7 @@ const ShopperLocationPopover = ({
             )}
           />
           <Button
-            type="submit"
+            type="button"
             isLoading={isLoading}
             onClick={(e: React.MouseEvent) => {
               e.preventDefault()
