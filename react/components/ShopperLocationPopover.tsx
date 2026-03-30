@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import type { PopoverStore } from '@ariakit/react'
 import { Popover, PopoverArrow } from '@ariakit/react'
 import { useIntl } from 'react-intl'
@@ -40,6 +40,8 @@ const ShopperLocationPopover = ({
 }: ShopperLocationPopoverProps) => {
   const [zipcode, setZipcode] = useState<string>('')
   const [alreadyOpen, setAlreadyOpen] = useState<boolean>(false)
+  const submitInFlightRef = useRef(false)
+  const sawLoadingRef = useRef(false)
   const handles = useCssHandles(CSS_HANDLES)
   const intl = useIntl()
 
@@ -53,6 +55,44 @@ const ShopperLocationPopover = ({
       setAlreadyOpen(true)
     }
   }, [openPopover, popoverStore])
+
+  useEffect(() => {
+    if (variant !== 'popover-input' || !submitInFlightRef.current) {
+      return
+    }
+
+    if (isLoading) {
+      sawLoadingRef.current = true
+
+      return
+    }
+
+    if (inputErrorMessage) {
+      popoverStore.setOpen(true)
+      submitInFlightRef.current = false
+      sawLoadingRef.current = false
+
+      return
+    }
+
+    if (sawLoadingRef.current) {
+      submitInFlightRef.current = false
+      sawLoadingRef.current = false
+    }
+  }, [isLoading, inputErrorMessage, variant, popoverStore])
+
+  const handleZipSubmit = (zipCode: string) => {
+    if (variant !== 'popover-input') {
+      onSubmit(zipCode)
+
+      return
+    }
+
+    popoverStore.setOpen(false)
+    submitInFlightRef.current = true
+    sawLoadingRef.current = false
+    onSubmit(zipCode)
+  }
 
   const handlePopoverClick = () => {
     onClick()
@@ -76,23 +116,38 @@ const ShopperLocationPopover = ({
           {intl.formatMessage(messages.shopperLocationPopoverButtonLabel)}
         </Button>
       ) : (
-        <div className={`${handles.shopperLocationPopoverInputContainer} flex`}>
+        <form
+          className={`${handles.shopperLocationPopoverInputContainer} flex`}
+          onSubmit={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            handleZipSubmit(zipcode)
+          }}
+        >
           <PostalCodeInput
             onChange={(value: string) => setZipcode(value)}
             zipcode={zipcode}
-            onSubmit={onSubmit}
+            onSubmit={handleZipSubmit}
             errorMessage={inputErrorMessage}
             showClearButton={false}
+            submitOnEnter={false}
             placeholder={intl.formatMessage(
               messages.shopperLocationPopoverPostalCodePlaceholder
             )}
           />
-          <Button isLoading={isLoading} onClick={() => onSubmit(zipcode)}>
+          <Button
+            type="submit"
+            isLoading={isLoading}
+            onClick={(e: React.MouseEvent) => {
+              e.preventDefault()
+              handleZipSubmit(zipcode)
+            }}
+          >
             {intl.formatMessage(
               messages.shopperLocationPopoverSubmitButtonLabel
             )}
           </Button>
-        </div>
+        </form>
       )}
 
       {showLocationDetectorButton && <ShopperLocationDetectorButton />}
