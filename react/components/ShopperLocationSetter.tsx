@@ -48,6 +48,16 @@ const ShopperLocationSetter = ({
       ? callToAction
       : undefined
 
+  const handleAnchorClick = () => {
+    if (popoverOverlay) {
+      popoverStore.toggle()
+
+      return
+    }
+
+    onClick()
+  }
+
   useEffect(() => {
     if (anchorRef.current) {
       popoverStore.setAnchorElement(anchorRef.current)
@@ -60,7 +70,7 @@ const ShopperLocationSetter = ({
     >
       <button
         ref={anchorRef}
-        onClick={onClick}
+        onClick={handleAnchorClick}
         className={`${handles.shopperLocationSetterButtonWrapper} flex items-center br3 pt4 pr4 pb4 pl0 b--none`}
       >
         {loading ? (
