@@ -215,6 +215,97 @@ describe('useDeliveryPromise actions and behavior', () => {
     })
   })
 
+  it('UPDATE_ZIPCODE with required shipping (optional setter) bumps shippingMethodModalRequestId', async () => {
+    const actions = [
+      {
+        type: 'REGISTER_SHIPPING_METHOD_BLOCK',
+        args: { required: true },
+      },
+      {
+        type: 'UPDATE_ZIPCODE',
+        args: { zipcode: '12345-678', reload: true },
+      },
+    ]
+
+    function ModalRequestProbe() {
+      const { dispatch, state } = useDeliveryPromise()
+
+      return (
+        <div>
+          <span data-testid="rid">{state.shippingMethodModalRequestId}</span>
+          <button
+            data-testid="btn"
+            type="button"
+            onClick={async () => {
+              for (const action of actions) {
+                // eslint-disable-next-line no-await-in-loop
+                await dispatch(action as never)
+              }
+            }}
+          >
+            go
+          </button>
+        </div>
+      )
+    }
+
+    const { getByTestId } = render(<ModalRequestProbe />)
+
+    expect(getByTestId('rid').textContent).toBe('0')
+    fireEvent.click(getByTestId('btn'))
+
+    await waitFor(() => {
+      expect(getByTestId('rid').textContent).toBe('1')
+    })
+  })
+
+  it('UPDATE_ZIPCODE does not bump shippingMethodModalRequestId when both location and shipping blocks are required (CEP-before-method sequence)', async () => {
+    const actions = [
+      {
+        type: 'REGISTER_SHOPPER_LOCATION_BLOCK',
+        args: { required: true },
+      },
+      {
+        type: 'REGISTER_SHIPPING_METHOD_BLOCK',
+        args: { required: true },
+      },
+      {
+        type: 'UPDATE_ZIPCODE',
+        args: { zipcode: '12345-678', reload: true },
+      },
+    ]
+
+    function ModalRequestProbe() {
+      const { dispatch, state } = useDeliveryPromise()
+
+      return (
+        <div>
+          <span data-testid="rid">{state.shippingMethodModalRequestId}</span>
+          <button
+            data-testid="btn"
+            type="button"
+            onClick={async () => {
+              for (const action of actions) {
+                // eslint-disable-next-line no-await-in-loop
+                await dispatch(action as never)
+              }
+            }}
+          >
+            go
+          </button>
+        </div>
+      )
+    }
+
+    const { getByTestId } = render(<ModalRequestProbe />)
+
+    fireEvent.click(getByTestId('btn'))
+
+    await waitFor(() => {
+      expect(getByTestId('rid').textContent).toBe('0')
+    })
+  })
+
   it('UPDATE_ZIPCODE still calls location.reload when shipping method is registered as optional', async () => {
     const reloadMock = window.location.reload as jest.Mock
     const actions = [
@@ -234,6 +325,81 @@ describe('useDeliveryPromise actions and behavior', () => {
 
     await waitFor(() => {
       expect(reloadMock).toHaveBeenCalled()
+    })
+  })
+
+  it('REGISTER_*_BLOCK updates uiRegistry and UNREGISTER clears entries', async () => {
+    function RegistryProbe() {
+      const { dispatch, state } = useDeliveryPromise()
+
+      return (
+        <div>
+          <span data-testid="registry">{JSON.stringify(state.uiRegistry)}</span>
+          <button
+            data-testid="reg-both"
+            type="button"
+            onClick={async () => {
+              await dispatch({
+                type: 'REGISTER_SHOPPER_LOCATION_BLOCK',
+                args: { required: true },
+              } as never)
+              await dispatch({
+                type: 'REGISTER_SHIPPING_METHOD_BLOCK',
+                args: { required: false },
+              } as never)
+            }}
+          >
+            reg
+          </button>
+          <button
+            data-testid="unreg-shopper"
+            type="button"
+            onClick={() =>
+              dispatch({ type: 'UNREGISTER_SHOPPER_LOCATION_BLOCK' } as never)
+            }
+          >
+            unreg shopper
+          </button>
+          <button
+            data-testid="unreg-shipping"
+            type="button"
+            onClick={() =>
+              dispatch({ type: 'UNREGISTER_SHIPPING_METHOD_BLOCK' } as never)
+            }
+          >
+            unreg shipping
+          </button>
+        </div>
+      )
+    }
+
+    const { getByTestId } = render(<RegistryProbe />)
+
+    expect(getByTestId('registry').textContent).toBe('{}')
+
+    fireEvent.click(getByTestId('reg-both'))
+
+    await waitFor(() => {
+      expect(getByTestId('registry').textContent).toBe(
+        JSON.stringify({
+          shopperLocation: { required: true },
+          shippingMethod: { required: false },
+        })
+      )
+    })
+
+    fireEvent.click(getByTestId('unreg-shopper'))
+
+    await waitFor(() => {
+      expect(getByTestId('registry').textContent).toBe(
+        JSON.stringify({ shippingMethod: { required: false } })
+      )
+    })
+
+    fireEvent.click(getByTestId('unreg-shipping'))
+
+    await waitFor(() => {
+      expect(getByTestId('registry').textContent).toBe('{}')
     })
   })
 
