@@ -1,5 +1,5 @@
 /* eslint-disable no-restricted-globals */
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 
 import { useDeliveryPromiseState, useDeliveryPromiseDispatch } from './context'
 import ShippingMethodModal from './components/ShippingMethodModal'
@@ -27,9 +27,49 @@ function ShippingMethodSelector({
     deliveryPromiseMethod,
     submitErrorMessage,
     areThereUnavailableCartItems,
+    shippingMethodModalRequestId,
   } = useDeliveryPromiseState()
 
   const dispatch = useDeliveryPromiseDispatch()
+  const lastHandledShippingMethodModalRequestId = useRef(0)
+
+  useEffect(() => {
+    dispatch({
+      type: 'REGISTER_SHIPPING_METHOD_BLOCK',
+      args: { required },
+    })
+
+    return () => {
+      dispatch({ type: 'UNREGISTER_SHIPPING_METHOD_BLOCK' })
+    }
+  }, [dispatch, required])
+
+  useEffect(() => {
+    if (
+      shippingMethodModalRequestId <=
+      lastHandledShippingMethodModalRequestId.current
+    ) {
+      return
+    }
+
+    lastHandledShippingMethodModalRequestId.current =
+      shippingMethodModalRequestId
+
+    if (!selectedZipcode) {
+      return
+    }
+
+    if (required && deliveryPromiseMethod) {
+      return
+    }
+
+    setIsShippingMethodModalOpen(true)
+  }, [
+    deliveryPromiseMethod,
+    required,
+    selectedZipcode,
+    shippingMethodModalRequestId,
+  ])
 
   const onSubmit = (zipcode: string, reload?: boolean) => {
     dispatch({

@@ -1,6 +1,6 @@
 /* eslint-disable no-restricted-globals */
 import { useRuntime, useSSR } from 'vtex.render-runtime'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useIntl } from 'react-intl'
 import { useOrderItems } from 'vtex.order-items/OrderItems'
 import { usePixelEventCallback } from 'vtex.pixel-manager'
@@ -27,6 +27,7 @@ import type {
   ShippingMethod,
   DeliveryPromiseActions,
   ZipCodeError,
+  DeliveryPromiseUiRegistry,
 } from './DeliveryPromiseContext'
 import {
   SHOPPER_LOCATION_MODAL_PIXEL_EVENT_ID,
@@ -60,6 +61,14 @@ export const useDeliveryPromise = () => {
     actionInterruptedByCartValidation,
     setActionInterruptedByCartValidation,
   ] = useState<() => void>()
+
+  const [uiRegistry, setUiRegistry] = useState<DeliveryPromiseUiRegistry>({})
+  const [shippingMethodModalRequestId, setShippingMethodModalRequestId] =
+    useState(0)
+
+  const uiRegistryRef = useRef(uiRegistry)
+
+  uiRegistryRef.current = uiRegistry
 
   const { account } = useRuntime()
   const { session, loading: isSessionLoading } = useRenderSession()
@@ -373,11 +382,24 @@ export const useDeliveryPromise = () => {
     setDeliveryPromiseMethod(undefined)
     setSelectedPickup(undefined)
 
-    if (!reload) {
+    const registry = uiRegistryRef.current
+    const shippingMethodRequired = registry.shippingMethod?.required === true
+    const shopperLocationRequired = registry.shopperLocation?.required === true
+    const effectiveReload = reload && !shippingMethodRequired
+
+    if (!effectiveReload) {
       setIsLoading(false)
     }
 
-    if (reload) {
+    if (
+      reload &&
+      shippingMethodRequired &&
+      !(shopperLocationRequired && shippingMethodRequired)
+    ) {
+      setShippingMethodModalRequestId((n) => n + 1)
+    }
+
+    if (effectiveReload) {
       location.reload()
     }
   }
@@ -434,6 +456,49 @@ export const useDeliveryPromise = () => {
 
   const dispatch = async (action: DeliveryPromiseActions) => {
     switch (action.type) {
+      case 'REGISTER_SHOPPER_LOCATION_BLOCK':
+        setUiRegistry((prev) => ({
+          ...prev,
+          shopperLocation: { required: action.args.required },
+        }))
+
+        return
+
+      case 'UNREGISTER_SHOPPER_LOCATION_BLOCK':
+        setUiRegistry((prev) => {
+          const next = { ...prev }
+
+          delete next.shopperLocation
+
+          return next
+        })
+
+        return
+
+      case 'REGISTER_SHIPPING_METHOD_BLOCK':
+        setUiRegistry((prev) => ({
+          ...prev,
+          shippingMethod: { required: action.args.required },
+        }))
+
+        return
+
+      case 'UNREGISTER_SHIPPING_METHOD_BLOCK':
+        setUiRegistry((prev) => {
+          const next = { ...prev }
+
+          delete next.shippingMethod
+
+          return next
+        })
+
+        return
+
+      case 'REQUEST_OPEN_SHIPPING_METHOD_MODAL':
+        setShippingMethodModalRequestId((n) => n + 1)
+
+        return
+
       case 'UPDATE_ZIPCODE': {
         const { zipcode: zipcodeSelected, reload } = action.args
 
@@ -609,6 +674,8 @@ export const useDeliveryPromise = () => {
       areThereUnavailableCartItems,
       unavailableCartItems,
       unavailabilityMessage,
+      uiRegistry,
+      shippingMethodModalRequestId,
     },
   }
 }

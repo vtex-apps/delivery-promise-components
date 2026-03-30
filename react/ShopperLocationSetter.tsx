@@ -1,5 +1,5 @@
 /* eslint-disable no-restricted-globals */
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { usePixelEventCallback } from 'vtex.pixel-manager'
 import { useIntl } from 'react-intl'
 
@@ -38,9 +38,12 @@ function ShopperLocationSetter({
     addressLabel,
     submitErrorMessage,
     areThereUnavailableCartItems,
+    uiRegistry,
+    deliveryPromiseMethod,
   } = useDeliveryPromiseState()
 
   const dispatch = useDeliveryPromiseDispatch()
+  const lastZipHandledForShippingModalRef = useRef<string | undefined>()
 
   const onSubmit = (zipcode: string, reload?: boolean) => {
     dispatch({
@@ -48,6 +51,44 @@ function ShopperLocationSetter({
       args: { zipcode, reload },
     })
   }
+
+  useEffect(() => {
+    dispatch({
+      type: 'REGISTER_SHOPPER_LOCATION_BLOCK',
+      args: { required },
+    })
+
+    return () => {
+      dispatch({ type: 'UNREGISTER_SHOPPER_LOCATION_BLOCK' })
+    }
+  }, [dispatch, required])
+
+  useEffect(() => {
+    if (
+      isLoading ||
+      !selectedZipcode ||
+      !required ||
+      !uiRegistry.shippingMethod?.required ||
+      deliveryPromiseMethod
+    ) {
+      return
+    }
+
+    if (lastZipHandledForShippingModalRef.current === selectedZipcode) {
+      return
+    }
+
+    lastZipHandledForShippingModalRef.current = selectedZipcode
+    dispatch({ type: 'REQUEST_OPEN_SHIPPING_METHOD_MODAL' })
+    setIsShopperLocationModalOpen(false)
+  }, [
+    deliveryPromiseMethod,
+    dispatch,
+    isLoading,
+    required,
+    selectedZipcode,
+    uiRegistry.shippingMethod?.required,
+  ])
 
   usePixelEventCallback({
     eventId: SHOPPER_LOCATION_MODAL_PIXEL_EVENT_ID,

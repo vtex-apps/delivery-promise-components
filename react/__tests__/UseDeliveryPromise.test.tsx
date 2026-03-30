@@ -193,6 +193,80 @@ describe('useDeliveryPromise actions and behavior', () => {
     })
   })
 
+  it('UPDATE_ZIPCODE skips location.reload when shipping method block is registered as required', async () => {
+    const reloadMock = window.location.reload as jest.Mock
+    const actions = [
+      {
+        type: 'REGISTER_SHIPPING_METHOD_BLOCK',
+        args: { required: true },
+      },
+      {
+        type: 'UPDATE_ZIPCODE',
+        args: { zipcode: '12345-678', reload: true },
+      },
+    ]
+
+    const { getByTestId } = render(<ActionRunner actions={actions} />)
+
+    fireEvent.click(getByTestId('btn'))
+
+    await waitFor(() => {
+      expect(reloadMock).not.toHaveBeenCalled()
+    })
+  })
+
+  it('UPDATE_ZIPCODE still calls location.reload when shipping method is registered as optional', async () => {
+    const reloadMock = window.location.reload as jest.Mock
+    const actions = [
+      {
+        type: 'REGISTER_SHIPPING_METHOD_BLOCK',
+        args: { required: false },
+      },
+      {
+        type: 'UPDATE_ZIPCODE',
+        args: { zipcode: '12345-678', reload: true },
+      },
+    ]
+
+    const { getByTestId } = render(<ActionRunner actions={actions} />)
+
+    fireEvent.click(getByTestId('btn'))
+
+    await waitFor(() => {
+      expect(reloadMock).toHaveBeenCalled()
+    })
+  })
+
+  it('REQUEST_OPEN_SHIPPING_METHOD_MODAL increments shippingMethodModalRequestId', async () => {
+    function RequestOpenProbe() {
+      const { dispatch, state } = useDeliveryPromise()
+
+      return (
+        <div>
+          <span data-testid="rid">{state.shippingMethodModalRequestId}</span>
+          <button
+            data-testid="bump"
+            type="button"
+            onClick={() =>
+              dispatch({ type: 'REQUEST_OPEN_SHIPPING_METHOD_MODAL' } as never)
+            }
+          >
+            bump
+          </button>
+        </div>
+      )
+    }
+
+    const { getByTestId } = render(<RequestOpenProbe />)
+
+    expect(getByTestId('rid').textContent).toBe('0')
+    fireEvent.click(getByTestId('bump'))
+
+    await waitFor(() => {
+      expect(getByTestId('rid').textContent).toBe('1')
+    })
+  })
+
   it('UPDATE_PICKUP sets selected pickup via explicit action', async () => {
     const actions = [
       { type: 'UPDATE_ZIPCODE', args: { zipcode: '12345-678', reload: false } },
