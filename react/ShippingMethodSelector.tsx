@@ -6,15 +6,14 @@ import ShippingMethodModal from './components/ShippingMethodModal'
 import ShippingMethodSelectorControl from './components/ShippingMethodModal/ShippingMethodSelector'
 
 interface Props {
-  hideStoreSelection?: boolean
-  callToAction?: CallToAction
-  dismissible?: boolean
-  shippingSelection?: ShippingSelection
+  required?: boolean
   mode?: Mode
-  showShopperLocationDetectorButton?: boolean
+  shippingSelection?: ShippingSelection
 }
 
 function ShippingMethodSelector({
+  required = false,
+  mode = 'default',
   shippingSelection = 'delivery-and-pickup',
 }: Props) {
   const [isShippingMethodModalOpen, setIsShippingMethodModalOpen] =
@@ -81,6 +80,7 @@ function ShippingMethodSelector({
         selectedShipping={deliveryPromiseMethod}
         selectedPickup={selectedPickup}
         loading={isLoading}
+        mode={mode}
       />
 
       <ShippingMethodModal
@@ -100,7 +100,7 @@ function ShippingMethodSelector({
           selectedZipcode,
           isLoading,
         }}
-        nonDismissibleModal={false}
+        nonDismissibleModal={required && !deliveryPromiseMethod}
       />
     </>
   )

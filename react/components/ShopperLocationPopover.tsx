@@ -25,7 +25,7 @@ interface ShopperLocationPopoverProps {
   inputErrorMessage?: string
   popoverStore: PopoverStore
   selectedZipcode?: string
-  showShopperLocationDetectorButton?: boolean
+  showLocationDetectorButton?: boolean
 }
 
 const ShopperLocationPopover = ({
@@ -36,7 +36,7 @@ const ShopperLocationPopover = ({
   inputErrorMessage,
   popoverStore,
   selectedZipcode,
-  showShopperLocationDetectorButton,
+  showLocationDetectorButton,
 }: ShopperLocationPopoverProps) => {
   const [zipcode, setZipcode] = useState<string>('')
   const [alreadyOpen, setAlreadyOpen] = useState<boolean>(false)
@@ -95,7 +95,7 @@ const ShopperLocationPopover = ({
         </div>
       )}
 
-      {showShopperLocationDetectorButton && <ShopperLocationDetectorButton />}
+      {showLocationDetectorButton && <ShopperLocationDetectorButton />}
 
       <PopoverArrow className={handles.shopperLocationPopoverArrow} />
     </Popover>

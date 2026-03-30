@@ -9,12 +9,8 @@ import PickupModal from './components/PickupModal'
 import PickupPointIcon from './components/ShippingMethodModal/PickupPointIcon'
 
 interface Props {
-  hideStoreSelection?: boolean
-  callToAction?: CallToAction
-  dismissible?: boolean
-  shippingSelection?: ShippingSelection
   mode?: Mode
-  showShopperLocationDetectorButton?: boolean
+  shippingSelection?: ShippingSelection
 }
 
 function PickupPointSelector({

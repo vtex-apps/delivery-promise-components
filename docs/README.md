@@ -62,7 +62,7 @@ Declare the `delivery-promise-location-selector` block as a child block of your 
 "delivery-promise-location-selector": {
   "props": {
     "compactMode": true,
-    "showShopperLocationDetectorButton": true
+    "showLocationDetectorButton": true
   }
 },
 ```
@@ -75,7 +75,7 @@ Declare the `delivery-promise-location-selector` block as a child block of your 
 | `compactMode`                       | `boolean` | Determines whether the button displays its label. When true, the label is hidden, showing only its value.                                                                                                                             | `false`               |
 | `dismissible`                       | `boolean` | Controls whether the modal can be dismissed without entering a postal code. When set to `false`, the modal can't be closed until a postal code is entered. Must be used along with `callToAction` to correctly set a blocking modal.  | `true`                |
 | `shippingSelection`                 | `enum`    | Defines the type of shipping option selector to be displayed. Possible values: `delivery-and-pickup` (shows both options), `only-pickup` (shows only the pickup store selector)                                                       | `delivery-and-pickup` |
-| `showShopperLocationDetectorButton` | `boolean` | When set to `true`, displays a shopper location detector control that uses the geolocation API and sets the postal code from coordinates. It appears in the main flow and in the shopper location modal.                              | `false`               |
+| `showLocationDetectorButton` | `boolean` | When set to `true`, displays a shopper location detector control that uses the geolocation API and sets the postal code from coordinates. It appears in the main flow and in the shopper location modal.                              | `false`               |
 
 ## Customization
 

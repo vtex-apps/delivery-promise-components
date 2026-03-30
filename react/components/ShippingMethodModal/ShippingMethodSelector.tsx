@@ -12,6 +12,7 @@ interface Props {
   selectedShipping?: 'delivery' | 'pickup-in-point'
   selectedPickup?: Pickup
   loading: boolean
+  mode?: Mode
 }
 
 const CSS_HANDLES = [
@@ -30,6 +31,7 @@ const ShippingMethodSelector = ({
   onClick,
   selectedPickup,
   loading,
+  mode = 'default',
 }: Props) => {
   const handles = useCssHandles(CSS_HANDLES)
   const { isMobile } = useDevice()
@@ -39,22 +41,22 @@ const ShippingMethodSelector = ({
       onClick={onClick}
       className={`flex flex-row items-center pa4 ${handles.shippingMethodSelector}`}
     >
-      {selectedShipping ? (
-        SHIPPING_ICONS[selectedShipping]
+      {loading ? (
+        <div className="ml4">
+          <Spinner size={14} />
+        </div>
       ) : (
-        <span>
-          <ShippingIcon width={32} height={32} />
-        </span>
-      )}
-      {!isMobile && (
         <>
-          {loading ? (
-            <span className="ml3">
-              <Spinner size={14} />
-            </span>
+          {selectedShipping ? (
+            SHIPPING_ICONS[selectedShipping]
           ) : (
+            <span>
+              <ShippingIcon width={32} height={32} />
+            </span>
+          )}
+          {mode === 'default' && !isMobile && (
             <span
-              className={`${handles.shippingMethodSelectorLabel} ${
+              className={`ml3 ${handles.shippingMethodSelectorLabel} ${
                 selectedShipping === 'pickup-in-point'
                   ? handles.shippingMethodSelectorLabelLimited
                   : ''

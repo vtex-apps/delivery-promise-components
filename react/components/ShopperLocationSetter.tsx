@@ -23,7 +23,7 @@ interface ShopperLocationSetterProps {
   callToAction?: CallToAction
   mode: Mode
   icon: React.ReactNode
-  showShopperLocationDetectorButton?: boolean
+  showLocationDetectorButton?: boolean
 }
 
 const ShopperLocationSetter = ({
@@ -37,7 +37,7 @@ const ShopperLocationSetter = ({
   callToAction,
   mode,
   icon,
-  showShopperLocationDetectorButton,
+  showLocationDetectorButton,
 }: ShopperLocationSetterProps) => {
   const handles = useCssHandles(CSS_HANDLES)
   const popoverStore = usePopoverStore({ defaultOpen: false })
@@ -86,7 +86,7 @@ const ShopperLocationSetter = ({
           selectedZipcode={selectedZipcode}
           variant={popoverOverlay}
           popoverStore={popoverStore}
-          showShopperLocationDetectorButton={showShopperLocationDetectorButton}
+          showLocationDetectorButton={showLocationDetectorButton}
         />
       )}
     </div>

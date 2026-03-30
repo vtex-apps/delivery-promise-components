@@ -11,20 +11,18 @@ import messages from './messages'
 import ShopperLocationPinIcon from './components/ShopperLocationPinIcon'
 
 interface Props {
-  hideStoreSelection?: boolean
-  callToAction?: CallToAction
-  dismissible?: boolean
-  shippingSelection?: ShippingSelection
+  required?: boolean
   mode?: Mode
-  showShopperLocationDetectorButton?: boolean
+  showLocationDetectorButton?: boolean
 }
 
 function ShopperLocationSetter({
-  callToAction = 'popover-input',
-  dismissible = false,
+  required = false,
   mode = 'default',
-  showShopperLocationDetectorButton = false,
+  showLocationDetectorButton = false,
 }: Props) {
+  const callToAction: CallToAction = required ? 'modal' : 'popover-input'
+  const dismissible = !required
   const intl = useIntl()
   const [isShopperLocationModalOpen, setIsShopperLocationModalOpen] =
     useState<boolean>(false)
@@ -75,7 +73,7 @@ function ShopperLocationSetter({
           setWasShopperLocationModalOpenedByPixel(false)
           setIsShopperLocationModalOpen(true)
         }}
-        showShopperLocationDetectorButton={showShopperLocationDetectorButton}
+        showLocationDetectorButton={showLocationDetectorButton}
         loading={isLoading}
         value={addressLabel}
         placeholder={intl.formatMessage(
@@ -95,7 +93,7 @@ function ShopperLocationSetter({
       <ShopperLocationModal
         isOpen={isShopperLocationModalOpen && !areThereUnavailableCartItems}
         onClose={() => setIsShopperLocationModalOpen(false)}
-        showShopperLocationDetectorButton={showShopperLocationDetectorButton}
+        showLocationDetectorButton={showLocationDetectorButton}
         onSubmit={async (zipcode: string) => {
           onSubmit(zipcode, true)
         }}
