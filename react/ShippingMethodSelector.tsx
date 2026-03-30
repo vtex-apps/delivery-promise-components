@@ -1,0 +1,109 @@
+/* eslint-disable no-restricted-globals */
+import React, { useState } from 'react'
+
+import { useDeliveryPromiseState, useDeliveryPromiseDispatch } from './context'
+import ShippingMethodModal from './components/ShippingMethodModal'
+import ShippingMethodSelectorControl from './components/ShippingMethodModal/ShippingMethodSelector'
+
+interface Props {
+  hideStoreSelection?: boolean
+  callToAction?: CallToAction
+  dismissible?: boolean
+  shippingSelection?: ShippingSelection
+  mode?: Mode
+  showShopperLocationDetectorButton?: boolean
+}
+
+function ShippingMethodSelector({
+  shippingSelection = 'delivery-and-pickup',
+}: Props) {
+  const [isShippingMethodModalOpen, setIsShippingMethodModalOpen] =
+    useState(false)
+
+  const {
+    zipcode: selectedZipcode,
+    pickups,
+    selectedPickup,
+    isLoading,
+    deliveryPromiseMethod,
+    submitErrorMessage,
+    areThereUnavailableCartItems,
+  } = useDeliveryPromiseState()
+
+  const dispatch = useDeliveryPromiseDispatch()
+
+  const onSubmit = (zipcode: string, reload?: boolean) => {
+    dispatch({
+      type: 'UPDATE_ZIPCODE',
+      args: { zipcode, reload },
+    })
+  }
+
+  const onSelectPickup = (pickup: Pickup) => {
+    dispatch({
+      type: 'UPDATE_PICKUP',
+      args: { pickup },
+    })
+  }
+
+  const onShippingMethodDeliveryToggle = () => {
+    if (deliveryPromiseMethod === 'delivery') {
+      dispatch({
+        type: 'RESET_FULFILLMENT_METHOD',
+      })
+    } else {
+      dispatch({
+        type: 'SELECT_DELIVERY_SHIPPING_OPTION',
+      })
+    }
+  }
+
+  const onShippingMethodPickupClear = () => {
+    if (deliveryPromiseMethod === 'pickup-in-point') {
+      dispatch({
+        type: 'RESET_FULFILLMENT_METHOD',
+      })
+    }
+  }
+
+  const showShippingMethodSelector = shippingSelection === 'delivery-and-pickup'
+  const pickup =
+    deliveryPromiseMethod === 'pickup-in-point' ? selectedPickup : undefined
+
+  if (!selectedZipcode || !showShippingMethodSelector) {
+    return null
+  }
+
+  return (
+    <>
+      <ShippingMethodSelectorControl
+        onClick={() => setIsShippingMethodModalOpen(true)}
+        selectedShipping={deliveryPromiseMethod}
+        selectedPickup={selectedPickup}
+        loading={isLoading}
+      />
+
+      <ShippingMethodModal
+        isOpen={isShippingMethodModalOpen && !areThereUnavailableCartItems}
+        onClose={() => setIsShippingMethodModalOpen(false)}
+        selectedShipping={deliveryPromiseMethod}
+        onDeliverySelection={() => {
+          onShippingMethodDeliveryToggle()
+        }}
+        onShippingMethodPickupClear={onShippingMethodPickupClear}
+        pickupProps={{
+          onSelectPickup,
+          onSubmit: (value) => onSubmit(value, true),
+          pickups,
+          inputErrorMessage: submitErrorMessage?.message,
+          selectedPickup: pickup,
+          selectedZipcode,
+          isLoading,
+        }}
+        nonDismissibleModal={false}
+      />
+    </>
+  )
+}
+
+export default ShippingMethodSelector

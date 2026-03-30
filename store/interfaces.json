@@ -1,6 +1,12 @@
 {
-  "delivery-promise-location-selector": {
-    "component": "index"
+  "shopper-location-setter": {
+    "component": "ShopperLocationSetter"
+  },
+  "shipping-method-selector": {
+    "component": "ShippingMethodSelector"
+  },
+  "pickup-point-selector": {
+    "component": "PickupPointSelector"
   },
   "availability-badges": {
     "component": "AvailabilityBadges"
