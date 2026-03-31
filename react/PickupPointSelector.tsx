@@ -10,13 +10,9 @@ import PickupPointIcon from './components/ShippingMethodModal/PickupPointIcon'
 
 interface Props {
   mode?: Mode
-  shippingSelection?: ShippingSelection
 }
 
-function PickupPointSelector({
-  shippingSelection = 'delivery-and-pickup',
-  mode = 'default',
-}: Props) {
+function PickupPointSelector({ mode = 'default' }: Props) {
   const intl = useIntl()
   const [isPickupModalOpen, setIsPickupModalOpen] = useState<boolean>(false)
 
@@ -46,11 +42,10 @@ function PickupPointSelector({
     })
   }
 
-  const showPickupButton = shippingSelection === 'only-pickup'
   const pickup =
     deliveryPromiseMethod === 'pickup-in-point' ? selectedPickup : undefined
 
-  if (!selectedZipcode || !showPickupButton) {
+  if (!selectedZipcode) {
     return null
   }
 
