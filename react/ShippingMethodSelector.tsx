@@ -97,14 +97,6 @@ function ShippingMethodSelector({
     }
   }
 
-  const onShippingMethodPickupClear = () => {
-    if (deliveryPromiseMethod === 'pickup-in-point') {
-      dispatch({
-        type: 'RESET_FULFILLMENT_METHOD',
-      })
-    }
-  }
-
   const showShippingMethodSelector = shippingSelection === 'delivery-and-pickup'
   const pickup =
     deliveryPromiseMethod === 'pickup-in-point' ? selectedPickup : undefined
@@ -130,7 +122,6 @@ function ShippingMethodSelector({
         onDeliverySelection={() => {
           onShippingMethodDeliveryToggle()
         }}
-        onShippingMethodPickupClear={onShippingMethodPickupClear}
         pickupProps={{
           onSelectPickup,
           onSubmit: (value) => onSubmit(value, true),

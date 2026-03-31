@@ -99,7 +99,7 @@ export const updateSession = async (
 }
 
 function mapPickupPointDistanceRow(ppd: PickupPointDistance) {
-  const address = ppd.address
+  const { address } = ppd
 
   return {
     distance: ppd.distance,
@@ -131,7 +131,7 @@ export const getPickups = (
     )}?zip-code=${encodeURIComponent(zipCode)}&an=${encodeURIComponent(
       account
     )}&country=${encodeURIComponent(countryCode)}`,
-    { method: 'GET' }
+    { method: 'GET', credentials: 'omit' }
   )
     .then((res) => {
       if (!res.ok) {

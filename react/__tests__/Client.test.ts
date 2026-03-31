@@ -32,7 +32,7 @@ describe('client.getPickups', () => {
     jest.clearAllMocks()
   })
 
-  it('sends GET without Content-Type header', async () => {
+  it('sends GET with credentials omitted and without Content-Type header', async () => {
     const mockFetch = jest.fn().mockResolvedValue({
       ok: true,
       json: () =>
@@ -48,7 +48,7 @@ describe('client.getPickups', () => {
     expect(mockFetch).toHaveBeenCalledTimes(1)
     const [, options] = mockFetch.mock.calls[0]
 
-    expect(options).toEqual({ method: 'GET' })
+    expect(options).toEqual({ method: 'GET', credentials: 'omit' })
   })
 
   it('maps pickup-point-availability response to the internal pickup model', async () => {

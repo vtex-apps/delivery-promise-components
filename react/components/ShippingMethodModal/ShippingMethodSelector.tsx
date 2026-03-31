@@ -38,6 +38,7 @@ const ShippingMethodSelector = ({
 
   return (
     <button
+      type="button"
       onClick={onClick}
       className={`flex flex-row items-center pa4 ${handles.shippingMethodSelector}`}
     >
