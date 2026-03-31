@@ -133,7 +133,9 @@ export const useDeliveryPromise = () => {
       setPickups(pickupsFormatted ?? [])
 
       if (pickupsFormatted.length === 0) {
-        setIsLoading(false)
+        if (!keepLoading) {
+          setIsLoading(false)
+        }
 
         return
       }
@@ -186,22 +188,11 @@ export const useDeliveryPromise = () => {
       return
     }
 
-    const {
-      country,
-      selectedZipcode,
-      coordinates,
-      shippingMethod,
-      keepLoading,
-    } = pendingPickupsFetch
+    const { country, selectedZipcode, coordinates, shippingMethod } =
+      pendingPickupsFetch
 
     setPendingPickupsFetch(null)
-    fetchPickups(
-      country,
-      selectedZipcode,
-      coordinates,
-      shippingMethod,
-      keepLoading
-    )
+    fetchPickups(country, selectedZipcode, coordinates, shippingMethod, false)
   }, [fetchPickups, isSSR, isSessionLoading, pendingPickupsFetch])
 
   useEffect(() => {
@@ -404,6 +395,7 @@ export const useDeliveryPromise = () => {
     }
 
     if (effectiveReload) {
+      setIsLoading(true)
       location.reload()
     }
   }
@@ -435,6 +427,7 @@ export const useDeliveryPromise = () => {
       shippingMethod
     )
 
+    setIsLoading(true)
     location.reload()
   }
 
@@ -451,6 +444,7 @@ export const useDeliveryPromise = () => {
       'delivery'
     )
 
+    setIsLoading(true)
     location.reload()
   }
 
@@ -650,6 +644,7 @@ export const useDeliveryPromise = () => {
           // No shipping option parameter = reset to no selection
         )
 
+        setIsLoading(true)
         location.reload()
 
         break
