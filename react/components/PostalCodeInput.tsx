@@ -20,8 +20,6 @@ interface Props {
 
 const postalCodeInputClearButton = {
   backgroundColor: 'unset',
-  width: '32px',
-  height: '32px',
 }
 
 const PostalCodeInput = ({
@@ -54,13 +52,13 @@ const PostalCodeInput = ({
             <button
               type="button"
               style={postalCodeInputClearButton}
-              className={`bn pointer flex justify-center items-center pa3 ${handles.postalCodeInputClearButton}`}
+              className={`bn pointer flex justify-center items-center pr0 ${handles.postalCodeInputClearButton}`}
               onClick={() => {
                 onChange('')
                 onClear?.()
               }}
             >
-              <IconClear />
+              <IconClear color="#727273"/>
             </button>
           ) : null
         }
