@@ -54,6 +54,10 @@ interface ResetFulfillmentMethod {
   type: 'RESET_FULFILLMENT_METHOD'
 }
 
+interface ClearZipCode {
+  type: 'CLEAR_ZIPCODE'
+}
+
 export type DeliveryPromiseActions =
   | UpdateZipCode
   | UpdatePickup
@@ -61,6 +65,7 @@ export type DeliveryPromiseActions =
   | AbortUnavailableItemsAction
   | ContinueUnavailableItemsAction
   | ResetFulfillmentMethod
+  | ClearZipCode
 
 const DEFAULT_STATE: State = {
   pickups: [],

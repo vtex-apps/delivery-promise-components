@@ -10,7 +10,9 @@ import {
   getCatalogCount,
   getPickups,
   updateOrderForm,
+  clearOrderFormShipping,
   updateSession,
+  clearShippingSession,
   getCartProducts,
   removeCartProductsById,
   validateProductAvailability,
@@ -512,6 +514,34 @@ export const useDeliveryPromise = () => {
           // No shipping option parameter = reset to no selection
         )
 
+        location.reload()
+
+        break
+      }
+
+      case 'CLEAR_ZIPCODE': {
+        const orderFormId = getOrderFormId()
+        setIsLoading(true)
+
+        if (orderFormId) {
+          await clearOrderFormShipping(orderFormId)
+        }
+
+        await clearShippingSession()
+
+        setZipCode(undefined)
+        setCity(undefined)
+        setGeoCoordinates(undefined)
+        setPickups([])
+        setSelectedPickup(undefined)
+        setDeliveryPromiseMethod(undefined)
+        setAddressLabel(undefined)
+        setSubmitErrorMessage(undefined)
+        setUnavailableCartItems([])
+        setUnavailabilityMessage(undefined)
+        setActionInterruptedByCartValidation(undefined)
+        setIsLoading(false)
+        
         location.reload()
 
         break
