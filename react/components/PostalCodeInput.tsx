@@ -14,8 +14,8 @@ interface Props {
   onChange: (zipcode: string) => void
   zipcode: string
   errorMessage?: string
-  showClearButton?: boolean
   placeholder?: string
+  onClear?: () => void
 }
 
 const postalCodeInputClearButton = {
@@ -29,8 +29,8 @@ const PostalCodeInput = ({
   errorMessage,
   onSubmit,
   onChange,
-  showClearButton = false,
   placeholder,
+  onClear,
 }: Props) => {
   const handles = useCssHandles(CSS_HANDLES)
 
@@ -50,12 +50,14 @@ const PostalCodeInput = ({
         errorMessage={errorMessage}
         placeholder={placeholder}
         suffix={
-          showClearButton ? (
+          onClear ? (
             <button
+              type="button"
               style={postalCodeInputClearButton}
               className={`bn pointer flex justify-center items-center pa3 ${handles.postalCodeInputClearButton}`}
               onClick={() => {
                 onChange('')
+                onClear?.()
               }}
             >
               <IconClear />

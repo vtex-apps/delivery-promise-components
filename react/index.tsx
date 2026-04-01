@@ -110,6 +110,12 @@ function DeliveryPromiseLocationSelector({
     })
   }
 
+  const onClearZipcode = () => {
+    dispatch({
+      type: 'CLEAR_ZIPCODE',
+    })
+  } 
+
   usePixelEventCallback({
     eventId: SHOPPER_LOCATION_MODAL_PIXEL_EVENT_ID,
     handler: () => {
@@ -146,6 +152,7 @@ function DeliveryPromiseLocationSelector({
           messages.shopperLocationButtonPlaceholder
         )}
         selectedZipcode={selectedZipcode}
+        onClearZipcode={onClearZipcode}
         onSubmit={(zipCode: string) => {
           setWasShopperLocationModalOpenedByPixel(true)
           onSubmit(zipCode, true)

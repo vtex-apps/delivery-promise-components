@@ -19,6 +19,7 @@ interface ShopperLocationSetterProps {
   value?: React.ReactNode
   selectedZipcode?: string
   onSubmit?: (zipCode: string) => void
+  onClearZipcode?: () => void
   inputErrorMessage?: string
   callToAction?: CallToAction
   mode: Mode
@@ -33,6 +34,7 @@ const ShopperLocationSetter = ({
   placeholder,
   selectedZipcode,
   onSubmit,
+  onClearZipcode,
   inputErrorMessage,
   callToAction,
   mode,
@@ -81,6 +83,7 @@ const ShopperLocationSetter = ({
         <ShopperLocationPopover
           onClick={onClick}
           onSubmit={onSubmit ?? (() => {})}
+          onClearZipcode={onClearZipcode}
           isLoading={loading}
           inputErrorMessage={inputErrorMessage}
           selectedZipcode={selectedZipcode}
