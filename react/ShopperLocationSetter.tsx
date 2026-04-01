@@ -32,6 +32,9 @@ function ShopperLocationSetter({
     setWasShopperLocationModalOpenedByPixel,
   ] = useState<boolean>(false)
 
+  const [awaitingPostZipSubmit, setAwaitingPostZipSubmit] =
+    useState<boolean>(false)
+
   const {
     zipcode: selectedZipcode,
     isLoading,
@@ -99,6 +102,18 @@ function ShopperLocationSetter({
   })
 
   useEffect(() => {
+    if (!isShopperLocationModalOpen) {
+      setAwaitingPostZipSubmit(false)
+    }
+  }, [isShopperLocationModalOpen])
+
+  useEffect(() => {
+    if (submitErrorMessage) {
+      setAwaitingPostZipSubmit(false)
+    }
+  }, [submitErrorMessage])
+
+  useEffect(() => {
     const isModalOpen =
       !isLoading && !selectedZipcode && callToAction === 'modal'
 
@@ -123,6 +138,10 @@ function ShopperLocationSetter({
         selectedZipcode={selectedZipcode}
         onSubmit={(zipCode: string) => {
           setWasShopperLocationModalOpenedByPixel(true)
+          if (required) {
+            setAwaitingPostZipSubmit(true)
+          }
+
           onSubmit(zipCode, true)
         }}
         inputErrorMessage={submitErrorMessage?.message}
@@ -136,6 +155,10 @@ function ShopperLocationSetter({
         onClose={() => setIsShopperLocationModalOpen(false)}
         showLocationDetectorButton={showLocationDetectorButton}
         onSubmit={async (zipcode: string) => {
+          if (required) {
+            setAwaitingPostZipSubmit(true)
+          }
+
           onSubmit(zipcode, true)
         }}
         isLoading={isLoading}
@@ -143,7 +166,8 @@ function ShopperLocationSetter({
         selectedZipcode={selectedZipcode}
         nonDismissibleModal={
           (!dismissible && !selectedZipcode) ||
-          (wasShopperLocationModalOpenedByPixel && !selectedZipcode)
+          (wasShopperLocationModalOpenedByPixel && !selectedZipcode) ||
+          (required && awaitingPostZipSubmit)
         }
       />
     </>
