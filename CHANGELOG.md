@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Dispatch action `CLEAR_ZIPCODE` to get back to the global navigation reseting the context: clears order form `shippingData`, clears shipping facets via `clearShippingSession` and resets states.
+
 ## [0.1.1] - 2026-03-26
 
 ### Changed
