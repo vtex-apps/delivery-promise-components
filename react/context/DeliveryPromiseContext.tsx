@@ -86,6 +86,10 @@ interface RequestOpenShippingMethodModal {
   type: 'REQUEST_OPEN_SHIPPING_METHOD_MODAL'
 }
 
+interface ClearZipCode {
+  type: 'CLEAR_ZIPCODE'
+}
+
 export type DeliveryPromiseActions =
   | UpdateZipCode
   | UpdatePickup
@@ -98,6 +102,7 @@ export type DeliveryPromiseActions =
   | RegisterShippingMethodBlock
   | UnregisterShippingMethodBlock
   | RequestOpenShippingMethodModal
+  | ClearZipCode
 
 const DEFAULT_STATE: State = {
   pickups: [],

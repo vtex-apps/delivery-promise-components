@@ -119,6 +119,24 @@ function mapPickupPointDistanceRow(ppd: PickupPointDistance) {
   }
 }
 
+export const clearShippingSession = async () => {
+  document.cookie = `${SHIPPING_INFO_COOKIE}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`
+
+  await fetch('/api/sessions', {
+    method: 'POST',
+    body: JSON.stringify({
+      public: {
+        facets: {
+          value: '',
+        },
+      },
+    }),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
 export const getPickups = (
   countryCode: string,
   zipCode: string,
@@ -156,6 +174,15 @@ export const updateOrderForm = (
   fetch(`/api/checkout/pub/orderForm/${orderFormId}/attachments/shippingData`, {
     method: 'POST',
     body: `{"selectedAddresses": [{ "postalCode": "${zipCode}", "country": "${country}" }]}`,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  }).then((res) => res.json())
+
+export const clearOrderFormShipping = (orderFormId: string) =>
+  fetch(`/api/checkout/pub/orderForm/${orderFormId}/attachments/shippingData`, {
+    method: 'POST',
+    body: JSON.stringify({ selectedAddresses: [] }),
     headers: {
       'Content-Type': 'application/json',
     },

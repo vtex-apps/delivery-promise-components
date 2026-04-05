@@ -55,6 +55,10 @@ function ShopperLocationSetter({
     })
   }
 
+  const onClearZipcode = () => {
+    dispatch({ type: 'CLEAR_ZIPCODE' })
+  }
+
   useEffect(() => {
     dispatch({
       type: 'REGISTER_SHOPPER_LOCATION_BLOCK',
@@ -136,6 +140,7 @@ function ShopperLocationSetter({
           messages.shopperLocationButtonPlaceholder
         )}
         selectedZipcode={selectedZipcode}
+        onClearZipcode={onClearZipcode}
         onSubmit={(zipCode: string) => {
           setWasShopperLocationModalOpenedByPixel(true)
           if (required) {

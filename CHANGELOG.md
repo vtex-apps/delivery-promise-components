@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **`PickupModalPresentational`:** root React export wrapping the presentational pickup modal UI for apps (for example `search-result`) that control zip/pickup outside global context.
 - **`pickupSearchClient` / `pickupInPointPreference`:** helpers for pickup list fetch and PLP preference storage patterns.
+- Dispatch action `CLEAR_ZIPCODE` resets navigation context: clears order form `shippingData`, clears shipping facets via `clearShippingSession`, and resets related state (then reloads).
 
 ### Changed
 
