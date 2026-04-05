@@ -13,7 +13,7 @@ interface AddLocationProps {
   zipcode: string
   isLoading?: boolean
   inputErrorMessage?: string
-  showShopperLocationDetectorButton?: boolean
+  showLocationDetectorButton?: boolean
 }
 
 const AddLocation = ({
@@ -22,7 +22,7 @@ const AddLocation = ({
   zipcode,
   isLoading,
   inputErrorMessage,
-  showShopperLocationDetectorButton,
+  showLocationDetectorButton,
 }: AddLocationProps) => {
   const intl = useIntl()
 
@@ -51,7 +51,7 @@ const AddLocation = ({
       <Button isLoading={isLoading} onClick={() => onSubmit(zipcode)}>
         {intl.formatMessage(messages.shopperLocationPopoverSubmitButtonLabel)}
       </Button>
-      {showShopperLocationDetectorButton && <ShopperLocationDetectorButton />}
+      {showLocationDetectorButton && <ShopperLocationDetectorButton />}
     </div>
   )
 }

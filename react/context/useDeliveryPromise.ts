@@ -1,9 +1,10 @@
 /* eslint-disable no-restricted-globals */
 import { useRuntime, useSSR } from 'vtex.render-runtime'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useIntl } from 'react-intl'
 import { useOrderItems } from 'vtex.order-items/OrderItems'
 import { usePixelEventCallback } from 'vtex.pixel-manager'
+import { useRenderSession } from 'vtex.session-client'
 
 import {
   getAddress,
@@ -12,11 +13,13 @@ import {
   updateOrderForm,
   updateSession,
   getCartProducts,
+  orderFormItemsToAvailabilityItems,
   removeCartProductsById,
   validateProductAvailability,
   validateProductAvailabilityByPickup,
   validateProductAvailabilityByDelivery,
 } from '../client'
+import type { AvailabilityItem } from '../client'
 import type { CartItem, CartProduct } from '../components/UnavailableItemsModal'
 import { getCountryCode, getFacetsData, getOrderFormId } from '../utils/cookie'
 import messages from '../messages'
@@ -24,10 +27,12 @@ import type {
   ShippingMethod,
   DeliveryPromiseActions,
   ZipCodeError,
+  DeliveryPromiseUiRegistry,
 } from './DeliveryPromiseContext'
 import {
   SHOPPER_LOCATION_MODAL_PIXEL_EVENT_ID,
   PRODUCTS_NOT_FOUND_ERROR_CODE,
+  DEFAULT_TRADE_POLICY,
 } from '../constants'
 
 export const useDeliveryPromise = () => {
@@ -43,6 +48,7 @@ export const useDeliveryPromise = () => {
   const [addressLabel, setAddressLabel] = useState<string>()
   const [deliveryPromiseMethod, setDeliveryPromiseMethod] =
     useState<ShippingMethod>()
+
   const [unavailableCartItems, setUnavailableCartItems] = useState<CartItem[]>(
     []
   )
@@ -56,10 +62,35 @@ export const useDeliveryPromise = () => {
     setActionInterruptedByCartValidation,
   ] = useState<() => void>()
 
+  const [uiRegistry, setUiRegistry] = useState<DeliveryPromiseUiRegistry>({})
+  const [shippingMethodModalRequestId, setShippingMethodModalRequestId] =
+    useState(0)
+
+  const uiRegistryRef = useRef(uiRegistry)
+
+  uiRegistryRef.current = uiRegistry
+
+  const dispatchImplRef = useRef<
+    (action: DeliveryPromiseActions) => Promise<void>
+  >(async () => {})
+
   const { account } = useRuntime()
+  const { session, loading: isSessionLoading } = useRenderSession()
   const isSSR = useSSR()
   const intl = useIntl()
   const { addItems } = useOrderItems()
+
+  const salesChannel = isSessionLoading
+    ? undefined
+    : session?.namespaces?.store?.channel?.value ?? DEFAULT_TRADE_POLICY
+
+  const [pendingPickupsFetch, setPendingPickupsFetch] = useState<{
+    country: string
+    selectedZipcode: string
+    coordinates: number[]
+    shippingMethod?: ShippingMethod
+    keepLoading?: boolean
+  } | null>(null)
 
   usePixelEventCallback({
     eventId: SHOPPER_LOCATION_MODAL_PIXEL_EVENT_ID,
@@ -76,10 +107,23 @@ export const useDeliveryPromise = () => {
       shippingMethod?: ShippingMethod,
       keepLoading = false
     ) => {
+      if (!salesChannel) {
+        setPendingPickupsFetch({
+          country,
+          selectedZipcode,
+          coordinates,
+          shippingMethod,
+          keepLoading,
+        })
+
+        return
+      }
+
       const responsePickups = await getPickups(
         country,
         selectedZipcode,
-        account
+        account,
+        salesChannel
       )
 
       const pickupsFormatted = responsePickups?.items.filter(
@@ -89,7 +133,9 @@ export const useDeliveryPromise = () => {
       setPickups(pickupsFormatted ?? [])
 
       if (pickupsFormatted.length === 0) {
-        setIsLoading(false)
+        if (!keepLoading) {
+          setIsLoading(false)
+        }
 
         return
       }
@@ -130,8 +176,24 @@ export const useDeliveryPromise = () => {
         setIsLoading(false)
       }
     },
-    [account]
+    [account, salesChannel]
   )
+
+  useEffect(() => {
+    if (isSSR || isSessionLoading) {
+      return
+    }
+
+    if (!pendingPickupsFetch) {
+      return
+    }
+
+    const { country, selectedZipcode, coordinates, shippingMethod } =
+      pendingPickupsFetch
+
+    setPendingPickupsFetch(null)
+    fetchPickups(country, selectedZipcode, coordinates, shippingMethod, false)
+  }, [fetchPickups, isSSR, isSessionLoading, pendingPickupsFetch])
 
   useEffect(() => {
     if (isSSR) {
@@ -176,27 +238,29 @@ export const useDeliveryPromise = () => {
   }
 
   const validateCartItems = async (
-    validationHandler: (products: string[]) => Promise<any>
+    validationHandler: (items: AvailabilityItem[]) => Promise<any>
   ) => {
     setIsLoading(true)
 
     try {
       const orderFormId = getOrderFormId()
 
-      const products = await getCartProducts(orderFormId)
+      const orderLines = await getCartProducts(orderFormId)
 
-      const productIds = products.map((product: CartProduct) => product.id)
+      const availabilityItems = orderFormItemsToAvailabilityItems(orderLines)
 
-      const { unavailableProducts } = await validationHandler(productIds)
+      const { unavailableItemIds } = await validationHandler(availabilityItems)
 
-      const unavailableItems = products
-        .map((product: CartProduct, id: number) => ({
+      const unavailableSkuIds = new Set(
+        Array.isArray(unavailableItemIds) ? unavailableItemIds.map(String) : []
+      )
+
+      const unavailableItems = orderLines
+        .map((line: CartProduct, id: number) => ({
           cartItemIndex: id,
-          product,
+          product: line,
         }))
-        .filter((item: any) =>
-          unavailableProducts.some((id: string) => id === item.product.id)
-        )
+        .filter((item: any) => unavailableSkuIds.has(String(item.product.id)))
 
       setUnavailableCartItems(unavailableItems)
 
@@ -313,11 +377,25 @@ export const useDeliveryPromise = () => {
     setDeliveryPromiseMethod(undefined)
     setSelectedPickup(undefined)
 
-    if (!reload) {
+    const registry = uiRegistryRef.current
+    const shippingMethodRequired = registry.shippingMethod?.required === true
+    const shopperLocationRequired = registry.shopperLocation?.required === true
+    const effectiveReload = reload && !shippingMethodRequired
+
+    if (!effectiveReload) {
       setIsLoading(false)
     }
 
-    if (reload) {
+    if (
+      reload &&
+      shippingMethodRequired &&
+      !(shopperLocationRequired && shippingMethodRequired)
+    ) {
+      setShippingMethodModalRequestId((n) => n + 1)
+    }
+
+    if (effectiveReload) {
+      setIsLoading(true)
       location.reload()
     }
   }
@@ -349,10 +427,11 @@ export const useDeliveryPromise = () => {
       shippingMethod
     )
 
+    setIsLoading(true)
     location.reload()
   }
 
-  const selectHomeDelivery = async () => {
+  const selectDeliveryShippingOption = async () => {
     if (!countryCode || !zipcode || !geoCoordinates) {
       return
     }
@@ -365,6 +444,7 @@ export const useDeliveryPromise = () => {
       'delivery'
     )
 
+    setIsLoading(true)
     location.reload()
   }
 
@@ -372,23 +452,67 @@ export const useDeliveryPromise = () => {
     setAddressLabel(city ? `${city}, ${zipcode}` : zipcode)
   }, [zipcode, city])
 
-  const dispatch = async (action: DeliveryPromiseActions) => {
+  dispatchImplRef.current = async (action: DeliveryPromiseActions) => {
     switch (action.type) {
+      case 'REGISTER_SHOPPER_LOCATION_BLOCK':
+        setUiRegistry((prev) => ({
+          ...prev,
+          shopperLocation: { required: action.args.required },
+        }))
+
+        return
+
+      case 'UNREGISTER_SHOPPER_LOCATION_BLOCK':
+        setUiRegistry((prev) => {
+          const next = { ...prev }
+
+          delete next.shopperLocation
+
+          return next
+        })
+
+        return
+
+      case 'REGISTER_SHIPPING_METHOD_BLOCK':
+        setUiRegistry((prev) => ({
+          ...prev,
+          shippingMethod: { required: action.args.required },
+        }))
+
+        return
+
+      case 'UNREGISTER_SHIPPING_METHOD_BLOCK':
+        setUiRegistry((prev) => {
+          const next = { ...prev }
+
+          delete next.shippingMethod
+
+          return next
+        })
+
+        return
+
+      case 'REQUEST_OPEN_SHIPPING_METHOD_MODAL':
+        setShippingMethodModalRequestId((n) => n + 1)
+
+        return
+
       case 'UPDATE_ZIPCODE': {
         const { zipcode: zipcodeSelected, reload } = action.args
 
         const unavailableItems = await validateCartItems(
-          async (products: string[]) =>
+          async (items: AvailabilityItem[]) =>
             validateProductAvailability(
               zipcodeSelected,
               countryCode!,
-              products,
-              account
+              items,
+              account,
+              salesChannel
             )
         )
 
         if (unavailableItems.length === 0) {
-          submitZipcode(zipcodeSelected, reload)
+          await submitZipcode(zipcodeSelected, reload)
           break
         }
 
@@ -411,8 +535,15 @@ export const useDeliveryPromise = () => {
         setUnavailabilityMessage('pickup')
 
         const unavailableItems = await validateCartItems(
-          async (products: string[]) =>
-            validateProductAvailabilityByPickup(pickup.pickupPoint.id, products)
+          async (items: AvailabilityItem[]) =>
+            validateProductAvailabilityByPickup(
+              pickup.pickupPoint.id,
+              items,
+              zipcode!,
+              countryCode!,
+              account,
+              salesChannel
+            )
         )
 
         if (unavailableItems.length === 0) {
@@ -444,21 +575,22 @@ export const useDeliveryPromise = () => {
         break
       }
 
-      case 'SELECT_HOME_DELIVERY': {
+      case 'SELECT_DELIVERY_SHIPPING_OPTION': {
         setUnavailabilityMessage('delivery')
 
         const unavailableItems = await validateCartItems(
-          async (products: string[]) =>
+          async (items: AvailabilityItem[]) =>
             validateProductAvailabilityByDelivery(
               zipcode!,
               countryCode!,
-              products,
-              account
+              items,
+              account,
+              salesChannel
             )
         )
 
         if (unavailableItems.length === 0) {
-          selectHomeDelivery()
+          selectDeliveryShippingOption()
 
           if (pendingAddToCartItem) {
             await addItems(
@@ -482,7 +614,7 @@ export const useDeliveryPromise = () => {
         )
 
         setActionInterruptedByCartValidation(
-          () => () => selectHomeDelivery()
+          () => () => selectDeliveryShippingOption()
         )
 
         break
@@ -512,6 +644,7 @@ export const useDeliveryPromise = () => {
           // No shipping option parameter = reset to no selection
         )
 
+        setIsLoading(true)
         location.reload()
 
         break
@@ -521,6 +654,10 @@ export const useDeliveryPromise = () => {
         break
     }
   }
+
+  const dispatch = useCallback((action: DeliveryPromiseActions) => {
+    return dispatchImplRef.current(action)
+  }, [])
 
   const areThereUnavailableCartItems = unavailableCartItems.length > 0
 
@@ -540,6 +677,8 @@ export const useDeliveryPromise = () => {
       areThereUnavailableCartItems,
       unavailableCartItems,
       unavailabilityMessage,
+      uiRegistry,
+      shippingMethodModalRequestId,
     },
   }
 }

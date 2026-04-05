@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, waitFor } from '@vtex/test-tools/react'
+import { render, waitFor, fireEvent } from '@vtex/test-tools/react'
 import * as reactIntl from 'react-intl'
 
 import ShopperLocationDetectorButton from '../components/ShopperLocationDetectorButton'
@@ -13,6 +13,16 @@ const messages = {
     'Location detection failed',
 } as const
 
+const mockDispatch = jest.fn().mockResolvedValue(undefined)
+
+jest.mock('../context', () => ({
+  useDeliveryPromiseDispatch: () => mockDispatch,
+  useDeliveryPromiseState: () => ({
+    countryCode: 'BRA',
+    isLoading: false,
+  }),
+}))
+
 // Mock geolocation
 const mockGeolocation = {
   getCurrentPosition: jest.fn(),
@@ -23,9 +33,6 @@ const mockGeolocation = {
 // Mock fetch
 const mockFetch = jest.fn()
 
-// Mock useRuntime
-const mockUseRuntime = jest.fn()
-
 // Mock useCssHandles
 const mockUseCssHandles = jest.fn()
 
@@ -34,11 +41,6 @@ const mockIntl = {
   formatMessage: ({ id }: { id: string }) =>
     messages[id as keyof typeof messages] || id,
 } as reactIntl.IntlShape
-
-// Mock modules
-jest.mock('vtex.render-runtime', () => ({
-  useRuntime: () => mockUseRuntime(),
-}))
 
 jest.mock('vtex.css-handles', () => ({
   useCssHandles: () => mockUseCssHandles(),
@@ -54,23 +56,16 @@ jest.mock('../components/EmptyState', () => {
 
 jest.mock('../components/ShopperLocationPinIcon', () => {
   const MockShopperLocationPinIcon = ({ filled }: { filled: boolean }) => (
-    <span
-      data-testid="pin-icon"
-      data-filled={filled}
-      role="img"
-      aria-label="pin icon"
-    />
+    <span data-testid="pin-icon" data-filled={filled} />
   )
 
   return MockShopperLocationPinIcon
 })
 
 describe('ShopperLocationDetectorButton', () => {
-  // Shared test data
   const mockCoordinates = { latitude: -23.5505, longitude: -46.6333 }
   const mockPostcode = '01310-100'
 
-  // Helper functions
   const mockSuccessfulGeolocation = () => {
     mockGeolocation.getCurrentPosition.mockImplementation((success) => {
       success({ coords: mockCoordinates })
@@ -94,42 +89,15 @@ describe('ShopperLocationDetectorButton', () => {
     mockFetch.mockResolvedValue({ ok: false, status })
   }
 
-  // Helper functions that return render results for simpler usage
-  const renderWithSuccessfulLocationDetection = () => {
-    mockSuccessfulGeolocation()
-    mockSuccessfulFetch()
-
-    return render(<ShopperLocationDetectorButton />)
-  }
-
-  const renderWithGeolocationError = () => {
-    mockGeolocationError()
-
-    return render(<ShopperLocationDetectorButton />)
-  }
-
-  const renderWithAPIError = () => {
-    mockSuccessfulGeolocation()
-    mockFailedFetch()
-
-    return render(<ShopperLocationDetectorButton />)
-  }
-
   beforeEach(() => {
     jest.clearAllMocks()
 
-    // Setup default mocks
     Object.defineProperty(global, 'navigator', {
       value: { geolocation: mockGeolocation },
       writable: true,
     })
 
     global.fetch = mockFetch
-
-    mockUseRuntime.mockReturnValue({
-      culture: { country: 'BRA' },
-      route: { path: '/products', queryString: {} },
-    })
 
     mockUseCssHandles.mockReturnValue({
       shopperLocationDetectorButton: 'shopperLocationDetectorButton',
@@ -139,234 +107,125 @@ describe('ShopperLocationDetectorButton', () => {
     })
 
     jest.spyOn(reactIntl, 'useIntl').mockImplementation(() => mockIntl)
-
-    // Mock btoa
-    jest.spyOn(global, 'btoa').mockImplementation((str) => `encoded-${str}`)
   })
 
   afterEach(() => {
     jest.restoreAllMocks()
   })
 
-  describe('Initial render conditions', () => {
-    it('renders nothing when region_id already exists in queryString', () => {
-      mockUseRuntime.mockReturnValue({
-        culture: { country: 'BRA' },
-        route: {
-          path: '/products',
-          queryString: { region_id: 'existing-region' },
-        },
+  it('renders use-location button initially without calling geolocation', () => {
+    const { getByRole } = render(<ShopperLocationDetectorButton />)
+
+    expect(getByRole('button', { name: 'Use my location' })).toBeInTheDocument()
+    expect(mockGeolocation.getCurrentPosition).not.toHaveBeenCalled()
+  })
+
+  it('calls geolocation and dispatches UPDATE_ZIPCODE after click', async () => {
+    mockSuccessfulGeolocation()
+    mockSuccessfulFetch()
+
+    const { getByRole } = render(<ShopperLocationDetectorButton />)
+
+    fireEvent.click(getByRole('button', { name: 'Use my location' }))
+
+    await waitFor(() => {
+      expect(mockGeolocation.getCurrentPosition).toHaveBeenCalled()
+      expect(mockDispatch).toHaveBeenCalledWith({
+        type: 'UPDATE_ZIPCODE',
+        args: { zipcode: '01310100' },
       })
-
-      const { container } = render(<ShopperLocationDetectorButton />)
-
-      expect(container.firstChild).toBeNull()
     })
+  })
 
-    it('renders loading state initially when no regionId is set', () => {
-      const { getByTestId, getByText } = render(
-        <ShopperLocationDetectorButton />
-      )
+  it('shows loading state while resolving location', async () => {
+    mockGeolocation.getCurrentPosition.mockImplementation(() => {
+      /* never resolve — stay loading */
+    })
+    mockSuccessfulFetch()
 
-      expect(getByTestId('empty-state')).toBeInTheDocument()
+    const { getByRole, getByText } = render(<ShopperLocationDetectorButton />)
+
+    fireEvent.click(getByRole('button', { name: 'Use my location' }))
+
+    await waitFor(() => {
       expect(getByText('Detecting location...')).toBeInTheDocument()
     })
-
-    it('renders loading state when geolocation is not supported', () => {
-      Object.defineProperty(global, 'navigator', {
-        value: {},
-        writable: true,
-      })
-
-      const { getByTestId } = render(<ShopperLocationDetectorButton />)
-
-      expect(getByTestId('empty-state')).toBeInTheDocument()
-    })
   })
 
-  describe('Geolocation functionality', () => {
-    it('calls geolocation API on mount when available', () => {
-      render(<ShopperLocationDetectorButton />)
+  it('handles geolocation error gracefully', async () => {
+    mockGeolocationError()
 
-      expect(mockGeolocation.getCurrentPosition).toHaveBeenCalledWith(
-        expect.any(Function),
-        expect.any(Function)
-      )
-    })
+    const { getByRole, getByText } = render(<ShopperLocationDetectorButton />)
 
-    it('renders location button after successful geolocation and API call', async () => {
-      const { getByText, getByTestId } = renderWithSuccessfulLocationDetection()
+    fireEvent.click(getByRole('button', { name: 'Use my location' }))
 
-      await waitFor(() => {
-        expect(getByText('Use my location')).toBeInTheDocument()
-        expect(getByTestId('pin-icon')).toBeInTheDocument()
-      })
-    })
-
-    it('handles geolocation error gracefully', async () => {
-      const { getByTestId, getByText } = renderWithGeolocationError()
-
-      await waitFor(() => {
-        expect(getByTestId('empty-state')).toBeInTheDocument()
-        expect(getByText('Location detection failed')).toBeInTheDocument()
-      })
-    })
-
-    it('handles API error gracefully', async () => {
-      const { getByTestId, getByText } = renderWithAPIError()
-
-      await waitFor(() => {
-        expect(getByTestId('empty-state')).toBeInTheDocument()
-        expect(getByText('Location detection failed')).toBeInTheDocument()
-      })
-    })
-
-    it('shows error state with icon when location detection fails', async () => {
-      const { container } = renderWithGeolocationError()
-
-      await waitFor(() => {
-        const emptyState = container.querySelector(
-          '[data-testid="empty-state"]'
-        )
-
-        expect(emptyState).toBeInTheDocument()
-      })
-    })
-
-    it('maintains error state after geolocation failure', async () => {
-      const { getByText } = renderWithGeolocationError()
-
-      await waitFor(() => {
-        expect(getByText('Location detection failed')).toBeInTheDocument()
-      })
-
-      // Error state should persist since the component doesn't automatically retry
+    await waitFor(() => {
       expect(getByText('Location detection failed')).toBeInTheDocument()
     })
+
+    expect(mockDispatch).not.toHaveBeenCalled()
   })
 
-  describe('Link generation and navigation', () => {
-    // All tests in this group use successful location detection
-    beforeEach(() => {
-      mockSuccessfulGeolocation()
-      mockSuccessfulFetch()
+  it('handles API error gracefully', async () => {
+    mockSuccessfulGeolocation()
+    mockFailedFetch()
+
+    const { getByRole, getByText } = render(<ShopperLocationDetectorButton />)
+
+    fireEvent.click(getByRole('button', { name: 'Use my location' }))
+
+    await waitFor(() => {
+      expect(getByText('Location detection failed')).toBeInTheDocument()
     })
 
-    it('generates correct href with ? separator for empty queryString', async () => {
-      mockUseRuntime.mockReturnValue({
-        culture: { country: 'BRA' },
-        route: { path: '/products', queryString: {} },
-      })
+    expect(mockDispatch).not.toHaveBeenCalled()
+  })
 
-      const { getByRole } = render(<ShopperLocationDetectorButton />)
-
-      await waitFor(() => {
-        const link = getByRole('link')
-
-        expect(link).toHaveAttribute(
-          'href',
-          '/products?region_id=encoded-vtex:BRA:01310100'
-        )
-      })
+  it('dispatches zipcode from postal_code field when postcode is absent', async () => {
+    mockSuccessfulGeolocation()
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          address: { postal_code: '90210' },
+        }),
     })
 
-    it('generates correct href with & separator for existing queryString', async () => {
-      mockUseRuntime.mockReturnValue({
-        culture: { country: 'BRA' },
-        route: { path: '/products', queryString: { category: 'electronics' } },
-      })
+    const { getByRole } = render(<ShopperLocationDetectorButton />)
 
-      const { getByRole } = render(<ShopperLocationDetectorButton />)
+    fireEvent.click(getByRole('button', { name: 'Use my location' }))
 
-      await waitFor(() => {
-        const link = getByRole('link')
-
-        expect(link).toHaveAttribute(
-          'href',
-          '/products&region_id=encoded-vtex:BRA:01310100'
-        )
-      })
-    })
-
-    it('handles postal codes with hyphens correctly', async () => {
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            address: { postcode: '01310-100' },
-          }),
-      })
-
-      const { getByRole } = render(<ShopperLocationDetectorButton />)
-
-      await waitFor(() => {
-        const link = getByRole('link')
-
-        // Should remove hyphens from postal code
-        expect(link).toHaveAttribute(
-          'href',
-          '/products?region_id=encoded-vtex:BRA:01310100'
-        )
-      })
-    })
-
-    it('handles alternative postal_code field from API', async () => {
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            address: { postal_code: '90210' },
-          }),
-      })
-
-      const { getByRole } = render(<ShopperLocationDetectorButton />)
-
-      await waitFor(() => {
-        const link = getByRole('link')
-
-        expect(link).toHaveAttribute(
-          'href',
-          '/products?region_id=encoded-vtex:BRA:90210'
-        )
+    await waitFor(() => {
+      expect(mockDispatch).toHaveBeenCalledWith({
+        type: 'UPDATE_ZIPCODE',
+        args: { zipcode: '90210' },
       })
     })
   })
 
-  describe('CSS handles and styling', () => {
-    it('applies CSS handles correctly', async () => {
-      const { container } = renderWithSuccessfulLocationDetection()
+  it('applies CSS handles on the button', () => {
+    const { container } = render(<ShopperLocationDetectorButton />)
 
-      // Check loading container handle
-      expect(
-        container.querySelector('.shopperLocationDetectorButtonContainer')
-      ).toBeInTheDocument()
-
-      // Check button and icon handles after successful load
-      await waitFor(() => {
-        expect(
-          container.querySelector('.shopperLocationDetectorButton')
-        ).toBeInTheDocument()
-        expect(
-          container.querySelector('.shopperLocationDetectorButtonIcon')
-        ).toBeInTheDocument()
-      })
-    })
+    expect(
+      container.querySelector('.shopperLocationDetectorButton')
+    ).toBeInTheDocument()
+    expect(
+      container.querySelector('.shopperLocationDetectorButtonIcon')
+    ).toBeInTheDocument()
   })
 
-  describe('Component behavior edge cases', () => {
-    it('handles missing postcode in API response', async () => {
-      mockSuccessfulGeolocation()
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ address: {} }), // No postcode
-      })
+  it('shows error when geolocation is not supported', async () => {
+    Object.defineProperty(global, 'navigator', {
+      value: {},
+      writable: true,
+    })
 
-      const { getByTestId } = render(<ShopperLocationDetectorButton />)
+    const { getByRole, getByText } = render(<ShopperLocationDetectorButton />)
 
-      await waitFor(() => {
-        // Should continue showing loading state when no postcode (not an error)
-        expect(getByTestId('empty-state')).toBeInTheDocument()
-      })
+    fireEvent.click(getByRole('button', { name: 'Use my location' }))
+
+    await waitFor(() => {
+      expect(getByText('Location detection failed')).toBeInTheDocument()
     })
   })
 })

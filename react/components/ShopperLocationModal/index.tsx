@@ -21,7 +21,7 @@ interface Props {
   inputErrorMessage?: ZipCodeError
   selectedZipcode?: string
   nonDismissibleModal?: boolean
-  showShopperLocationDetectorButton?: boolean
+  showLocationDetectorButton?: boolean
 }
 
 const ShopperLocationModal = ({
@@ -32,7 +32,7 @@ const ShopperLocationModal = ({
   inputErrorMessage,
   selectedZipcode,
   nonDismissibleModal,
-  showShopperLocationDetectorButton = false,
+  showLocationDetectorButton = false,
 }: Props) => {
   const [zipcode, setZipcode] = useState<string>('')
   const [stage, setStage] = useState<Stages>(LOCATION_SELECTION)
@@ -52,7 +52,7 @@ const ShopperLocationModal = ({
       content: (
         <AddLocation
           onSubmit={onSubmit}
-          showShopperLocationDetectorButton={showShopperLocationDetectorButton}
+          showLocationDetectorButton={showLocationDetectorButton}
           isLoading={isLoading}
           inputErrorMessage={inputErrorMessage?.message}
           onChange={(value: string) => setZipcode(value)}

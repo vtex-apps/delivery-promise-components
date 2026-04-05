@@ -23,7 +23,7 @@ interface ShopperLocationSetterProps {
   callToAction?: CallToAction
   mode: Mode
   icon: React.ReactNode
-  showShopperLocationDetectorButton?: boolean
+  showLocationDetectorButton?: boolean
 }
 
 const ShopperLocationSetter = ({
@@ -37,7 +37,7 @@ const ShopperLocationSetter = ({
   callToAction,
   mode,
   icon,
-  showShopperLocationDetectorButton,
+  showLocationDetectorButton,
 }: ShopperLocationSetterProps) => {
   const handles = useCssHandles(CSS_HANDLES)
   const popoverStore = usePopoverStore({ defaultOpen: false })
@@ -47,6 +47,16 @@ const ShopperLocationSetter = ({
     callToAction === 'popover-button' || callToAction === 'popover-input'
       ? callToAction
       : undefined
+
+  const handleAnchorClick = () => {
+    if (popoverOverlay) {
+      popoverStore.toggle()
+
+      return
+    }
+
+    onClick()
+  }
 
   useEffect(() => {
     if (anchorRef.current) {
@@ -60,7 +70,7 @@ const ShopperLocationSetter = ({
     >
       <button
         ref={anchorRef}
-        onClick={onClick}
+        onClick={handleAnchorClick}
         className={`${handles.shopperLocationSetterButtonWrapper} flex items-center br3 pt4 pr4 pb4 pl0 b--none`}
       >
         {loading ? (
@@ -86,7 +96,7 @@ const ShopperLocationSetter = ({
           selectedZipcode={selectedZipcode}
           variant={popoverOverlay}
           popoverStore={popoverStore}
-          showShopperLocationDetectorButton={showShopperLocationDetectorButton}
+          showLocationDetectorButton={showLocationDetectorButton}
         />
       )}
     </div>

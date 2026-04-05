@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import type { PopoverStore } from '@ariakit/react'
 import { Popover, PopoverArrow } from '@ariakit/react'
 import { useIntl } from 'react-intl'
@@ -25,7 +25,7 @@ interface ShopperLocationPopoverProps {
   inputErrorMessage?: string
   popoverStore: PopoverStore
   selectedZipcode?: string
-  showShopperLocationDetectorButton?: boolean
+  showLocationDetectorButton?: boolean
 }
 
 const ShopperLocationPopover = ({
@@ -36,10 +36,13 @@ const ShopperLocationPopover = ({
   inputErrorMessage,
   popoverStore,
   selectedZipcode,
-  showShopperLocationDetectorButton,
+  showLocationDetectorButton,
 }: ShopperLocationPopoverProps) => {
   const [zipcode, setZipcode] = useState<string>('')
   const [alreadyOpen, setAlreadyOpen] = useState<boolean>(false)
+  const submitInFlightRef = useRef(false)
+  const sawLoadingRef = useRef(false)
+  const lastSubmittedZipRef = useRef<string | null>(null)
   const handles = useCssHandles(CSS_HANDLES)
   const intl = useIntl()
 
@@ -54,6 +57,54 @@ const ShopperLocationPopover = ({
     }
   }, [openPopover, popoverStore])
 
+  useEffect(() => {
+    if (variant !== 'popover-input' || !submitInFlightRef.current) {
+      return
+    }
+
+    if (isLoading) {
+      sawLoadingRef.current = true
+
+      return
+    }
+
+    if (inputErrorMessage) {
+      popoverStore.setOpen(true)
+      submitInFlightRef.current = false
+      sawLoadingRef.current = false
+      lastSubmittedZipRef.current = null
+
+      return
+    }
+
+    if (
+      sawLoadingRef.current &&
+      !isLoading &&
+      !inputErrorMessage &&
+      selectedZipcode &&
+      lastSubmittedZipRef.current != null &&
+      selectedZipcode === lastSubmittedZipRef.current
+    ) {
+      submitInFlightRef.current = false
+      sawLoadingRef.current = false
+      lastSubmittedZipRef.current = null
+    }
+  }, [isLoading, inputErrorMessage, selectedZipcode, variant, popoverStore])
+
+  const handleZipSubmit = (zipCode: string) => {
+    if (variant !== 'popover-input') {
+      onSubmit(zipCode)
+
+      return
+    }
+
+    popoverStore.setOpen(false)
+    submitInFlightRef.current = true
+    sawLoadingRef.current = false
+    lastSubmittedZipRef.current = zipCode
+    onSubmit(zipCode)
+  }
+
   const handlePopoverClick = () => {
     onClick()
     popoverStore.setOpen(false)
@@ -64,6 +115,7 @@ const ShopperLocationPopover = ({
       className={handles.shopperLocationPopover}
       hideOnInteractOutside
       autoFocusOnShow={false}
+      autoFocusOnHide={false}
       store={popoverStore}
     >
       <p className={`${handles.shopperLocationPopoverText} ma0`}>
@@ -76,26 +128,41 @@ const ShopperLocationPopover = ({
           {intl.formatMessage(messages.shopperLocationPopoverButtonLabel)}
         </Button>
       ) : (
-        <div className={`${handles.shopperLocationPopoverInputContainer} flex`}>
+        <form
+          className={`${handles.shopperLocationPopoverInputContainer} flex`}
+          onSubmit={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            handleZipSubmit(zipcode)
+          }}
+        >
           <PostalCodeInput
             onChange={(value: string) => setZipcode(value)}
             zipcode={zipcode}
-            onSubmit={onSubmit}
+            onSubmit={handleZipSubmit}
             errorMessage={inputErrorMessage}
             showClearButton={false}
+            submitOnEnter={false}
             placeholder={intl.formatMessage(
               messages.shopperLocationPopoverPostalCodePlaceholder
             )}
           />
-          <Button isLoading={isLoading} onClick={() => onSubmit(zipcode)}>
+          <Button
+            type="button"
+            isLoading={isLoading}
+            onClick={(e: React.MouseEvent) => {
+              e.preventDefault()
+              handleZipSubmit(zipcode)
+            }}
+          >
             {intl.formatMessage(
               messages.shopperLocationPopoverSubmitButtonLabel
             )}
           </Button>
-        </div>
+        </form>
       )}
 
-      {showShopperLocationDetectorButton && <ShopperLocationDetectorButton />}
+      {showLocationDetectorButton && <ShopperLocationDetectorButton />}
 
       <PopoverArrow className={handles.shopperLocationPopoverArrow} />
     </Popover>

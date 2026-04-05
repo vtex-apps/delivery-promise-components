@@ -5,6 +5,11 @@ import * as useDeliveryPromise from '../context/useDeliveryPromise'
 import * as DeliveryPromiseProviderCore from '../context/DeliveryPromiseProviderCore'
 import { DeliveryPromiseProvider } from '../context/DeliveryPromiseContext'
 
+jest.mock('../components/UnavailableItemsModal', () => ({
+  __esModule: true,
+  default: () => null,
+}))
+
 describe('DeliveryPromiseContext should render its children even when', () => {
   it('useDeliveryPromise throws an error', () => {
     jest

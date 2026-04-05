@@ -23,6 +23,7 @@ const ShippingMethodOptionButton = ({
 
   return (
     <button
+      type="button"
       onClick={onClick}
       className={`br2 w-100 ${handles.shippingMethodOptionButton} ${
         isSelected ? handles.shippingMethodOptionButtonSelected : ''

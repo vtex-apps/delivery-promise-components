@@ -16,9 +16,9 @@
 >
 > For more information on setting up Delivery Promise components on Store Framework, see the [developer documentation](https://developers.vtex.com/docs/guides/setting-up-delivery-promise-components).
 
-The Delivery Promise Components app exports a component that allows you to filter store products by location or pickup point. Shoppers can share their location automatically (for example, through browser or device settings) or enter it manually.
+The Delivery Promise Components app exposes blocks that let shoppers set a postal code, choose delivery versus pickup, and pick a pickup point. Shoppers can use geolocation (when enabled) or enter a postal code manually. The store should wrap the theme with `DeliveryPromiseProvider` (for example via `store`’s `StoreWrapper`) so every block shares the same session state.
 
-Merchants can choose whether providing a location is optional or required. However, the shopper must provide their location for the Delivery Promise feature to work.
+Merchants control whether postal code and shipping method are optional or required per block. The shopper must have a valid postal code for Delivery Promise to apply; required shipping method blocks keep the method modal open until a choice is made.
 
 ![delivery-promise-components](https://vtexhelp.vtexassets.com/assets/docs/src/shipping-option-components___c5a1d86b0ebf692a3eb9ca49f79b55f8.png)
 
@@ -34,48 +34,90 @@ Add the `delivery-promise-components` app to your theme dependencies in the `man
   }
 ```
 
-You can now use all blocks exported by the `delivery-promise-components` app. See the full list below:
+You can now use all blocks exported by the `delivery-promise-components` app. Use **one instance per block** in the theme (no ref-counting; the last mounted block of each type wins if duplicates exist).
 
-| Block name                          | Description                                                                                          |
-| ----------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `delivery-promise-location-selector` | Renders a set of components that allow users to add their location and/or select a store for pickup. |
+| Block name                   | Description                                                                 |
+| ---------------------------- | --------------------------------------------------------------------------- |
+| `shopper-location-setter`    | Postal code control: popover when optional, blocking modal when `required`. |
+| `shipping-method-selector`   | Delivery vs pickup modal (after a postal code exists).                     |
+| `pickup-point-selector`      | Pickup point choice (when applicable).                                     |
+| `availability-badges`        | Product-summary badges driven by delivery promise data.                      |
 
-### Adding Delivery Promise Components blocks to the theme
+### Adding blocks to the theme
 
-Declare the `delivery-promise-location-selector` block as a child block of your [header](https://developers.vtex.com/docs/apps/vtex.store-header) block, exported by the `store-header` app. Example:
+Place the blocks where you need them (commonly under [header](https://developers.vtex.com/docs/apps/vtex.store-header) rows). Example:
 
 ```json
-"header.full": {
-   "blocks": ["header-layout.desktop", "header-layout.mobile"]
- },
+"header-row#1-desktop": {
+  "children": [
+    "shopper-location-setter",
+    "shipping-method-selector",
+    "pickup-point-selector"
+  ]
+},
 
- "header-layout.desktop": {
-   "children": [
-     "header-row#1-desktop",
-   ]
- },
-
- "header-row#1-desktop": {
-   "children": ["delivery-promise-location-selector"],
- },
-
-"delivery-promise-location-selector": {
+"shopper-location-setter": {
   "props": {
-    "compactMode": true,
-    "showShopperLocationDetectorButton": true
+    "required": false,
+    "mode": "default",
+    "showLocationDetectorButton": true
   }
 },
+
+"shipping-method-selector": {
+  "props": {
+    "required": false,
+    "mode": "default",
+    "shippingSelection": "delivery-and-pickup"
+  }
+},
+
+"pickup-point-selector": {
+  "props": {
+    "mode": "default"
+  }
+}
 ```
 
-#### `delivery-promise-location-selector` props
+### Behavior: reload after postal code, registry, and shipping-method modal
 
-| Prop name                           | Type      | Description                                                                                                                                                                                                                           | Default value         |
-| ----------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
-| `callToAction`                      | `enum`    | Defines the type of overlay that opens when the page loads. Possible values: `modal` (modal that requires a postal code input), `popover-input` (popover for postal code input), `popover-button` (popover that opens with a button). | `popover-input`       |
-| `compactMode`                       | `boolean` | Determines whether the button displays its label. When true, the label is hidden, showing only its value.                                                                                                                             | `false`               |
-| `dismissible`                       | `boolean` | Controls whether the modal can be dismissed without entering a postal code. When set to `false`, the modal can't be closed until a postal code is entered. Must be used along with `callToAction` to correctly set a blocking modal.  | `true`                |
-| `shippingSelection`                 | `enum`    | Defines the type of shipping option selector to be displayed. Possible values: `delivery-and-pickup` (shows both options), `only-pickup` (shows only the pickup store selector)                                                       | `delivery-and-pickup` |
-| `showShopperLocationDetectorButton` | `boolean` | When set to `true`, displays a shopper location detector control that uses the geolocation API and sets the postal code from coordinates. It appears in the main flow and in the shopper location modal.                              | `false`               |
+- **Reload policy:** After a successful postal code update, the app may call `location.reload()` when the flow asks for reload. If a `shipping-method-selector` block is mounted with **`required: true`**, reload is **deferred** until after the shopper picks a method (session and local state still update without reloading). After the shopper selects delivery or pickup (or resets in flows that reload), the existing reload behavior applies.
+- **UI registry:** On mount, `shopper-location-setter` registers `REGISTER_SHOPPER_LOCATION_BLOCK` and `shipping-method-selector` registers `REGISTER_SHIPPING_METHOD_BLOCK` with their `required` flags. The hook uses this registry for `effectiveReload` and for coordinating the shipping-method modal.
+- **Opening the shipping-method modal from another block:** The context increments `shippingMethodModalRequestId` when `REQUEST_OPEN_SHIPPING_METHOD_MODAL` runs—either from the hook after postal code submit (required shipping, location **not** in the “both required” pair) or from `shopper-location-setter` after CEP completes when **both** blocks are `required` (see below). The `shipping-method-selector` opens its modal when the id changes and a postal code is present.
+- **Strict sequence when both are required:** If **both** `shopper-location-setter` and `shipping-method-selector` use `required: true`, the shipping-method modal is **not** requested at postal-code submit time. It is requested only **after** a valid postal code exists and the location flow has finished (so the method modal does not stack on top of the postal code modal).
+- **Optional postal code + required method:** Once a postal code exists, the shipping-method modal may open automatically. With `required: true` on `shipping-method-selector`, the modal is **non-dismissible** until `deliveryPromiseMethod` is set.
+
+### Block props
+
+#### `shopper-location-setter`
+
+| Prop name                    | Type      | Description                                                                 |
+| ---------------------------- | --------- | --------------------------------------------------------------------------- |
+| `required`                   | `boolean` | If `true`, blocking postal code modal until valid code. If `false`, popover flow. Default `false`. |
+| `mode`                       | `enum`    | `default` or `icon`.                                                        |
+| `showLocationDetectorButton` | `boolean` | Shows geolocation control in the postal code UI. Default `false`.           |
+
+#### `shipping-method-selector`
+
+| Prop name            | Type      | Description                                                                 |
+| -------------------- | --------- | --------------------------------------------------------------------------- |
+| `required`           | `boolean` | If `true`, modal cannot be dismissed until a method is chosen (after postal code exists). Default `false`. |
+| `mode`               | `enum`    | `default` or `icon`.                                                        |
+| `shippingSelection`  | `enum`    | `delivery-and-pickup` or `only-pickup`.                                     |
+
+#### `pickup-point-selector`
+
+| Prop name | Type   | Description          |
+| --------- | ------ | -------------------- |
+| `mode`    | `enum` | `default` or `icon`. |
+
+#### `availability-badges`
+
+No content schema; add the block in product-summary templates as documented in `docs/AvailabilityBadges.md`.
+
+### Global UI
+
+`UnavailableItemsModal` is rendered once inside `DeliveryPromiseProvider` (not inside each block).
 
 ## Customization
 
