@@ -7,16 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-
-- **`PickupModalPresentational`:** root React export wrapping the presentational pickup modal UI for apps (for example `search-result`) that control zip/pickup outside global context.
-- **`pickupSearchClient` / `pickupInPointPreference`:** helpers for pickup list fetch and PLP preference storage patterns.
-- Dispatch action `CLEAR_ZIPCODE` resets navigation context: clears order form `shippingData`, clears shipping facets via `clearShippingSession`, and resets related state (then reloads).
-
-### Changed
-
-- `PostalCodeModal`, context, and `useDeliveryPromise` adjustments to support controlled flows and shared pickup-fetch behavior with optional integrations.
-
 ### Breaking changes
 
 - **Store Framework:** removed the monolithic `delivery-promise-location-selector` interface. Themes must declare the split blocks instead: `shopper-location-setter`, `shipping-method-selector`, and `pickup-point-selector` (each with its own React entry point). There is no bundled legacy block or in-repo migration guide from the old block to the new ones—only the new contract is supported.
@@ -32,9 +22,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`UnavailableItemsModal`:** rendered **once** in `DeliveryPromiseProviderCore`, bound to shared context state; individual blocks do not mount their own copy.
 - **README** (`docs/README.md`): blocks list, theme example, reload policy, registry, modal-request flow, **CEP → method** rules when both `required` are true vs optional CEP + required method, and global overlays.
 - **Tests:** `uiRegistry` register/unregister; `effectiveReload` / `shippingMethodModalRequestId` combinations (required shipping with optional vs required location); `nonDismissibleModal` on `shipping-method-selector`.
+- **`PickupModalPresentational`:** root React export wrapping the presentational pickup modal UI for apps (for example `search-result`) that control zip/pickup outside global context.
+- **`pickupSearchClient` / `pickupInPointPreference`:** helpers for pickup list fetch and PLP preference storage patterns.
+- Dispatch action `CLEAR_ZIPCODE` resets navigation context: clears order form `shippingData`, clears shipping facets via `clearShippingSession`, and resets related state (then reloads).
 
 ### Changed
 
+- `PostalCodeModal`, context, and `useDeliveryPromise` adjustments to support controlled flows and shared pickup-fetch behavior with optional integrations.
 - **Reload after postal code (`submitZipcode` / `UPDATE_ZIPCODE`):** when `reload` is true, **`location.reload()`** is skipped if a **required** shipping-method block is registered (`effectiveReload = reload && !shippingMethodRequired`). Session and in-memory state still update; reload continues to apply after method selection (and in other flows that already reload). When **both** location and shipping blocks are `required`, the hook does **not** bump `shippingMethodModalRequestId` on postal-code submit—the **location setter** requests the method modal only after CEP is valid and its flow has finished, avoiding stacked modals. When shipping is `required` but location is **not**, the hook bumps `shippingMethodModalRequestId` on successful postal-code submit so `shipping-method-selector` can open immediately.
 - Dispatch action for the **delivery** shipping method is `SELECT_DELIVERY_SHIPPING_OPTION` (replaces `SELECT_HOME_DELIVERY`; same name as `vtex.shipping-option-components`).
 - Pickup points are loaded via Intelligent Search `pickup-point-availability` using the session sales channel as trade policy (fallback `1`), with `vtex.session-client`.
