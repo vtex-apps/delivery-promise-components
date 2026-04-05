@@ -109,6 +109,14 @@ const ShopperLocationPopover = ({
     onSubmit(zipCode)
   }
 
+  const handleClearZipcode = () => {
+    if (variant === 'popover-input') {
+      popoverStore.setOpen(false)
+    }
+
+    onClearZipcode?.()
+  }
+
   const handlePopoverClick = () => {
     onClick()
     popoverStore.setOpen(false)
@@ -146,7 +154,7 @@ const ShopperLocationPopover = ({
             onSubmit={handleZipSubmit}
             errorMessage={inputErrorMessage}
             submitOnEnter={false}
-            onClear={selectedZipcode ? onClearZipcode : undefined}
+            onClear={selectedZipcode ? handleClearZipcode : undefined}
             placeholder={intl.formatMessage(
               messages.shopperLocationPopoverPostalCodePlaceholder
             )}

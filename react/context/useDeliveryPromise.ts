@@ -673,7 +673,6 @@ export const useDeliveryPromise = () => {
         setUnavailableCartItems([])
         setUnavailabilityMessage(undefined)
         setActionInterruptedByCartValidation(undefined)
-        setIsLoading(false)
 
         location.reload()
 
