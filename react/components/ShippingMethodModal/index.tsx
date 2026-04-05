@@ -44,6 +44,7 @@ const ShippingMethodModal = ({
       title: intl.formatMessage(messages.shippingMethodModalTitle),
       content: (
         <ShippingMethodStage
+          isModalOpen={isOpen}
           selectedShipping={selectedShipping}
           onDeliverySelection={onDeliverySelection}
           onPickupSelection={() => setStage('pickupSelection')}

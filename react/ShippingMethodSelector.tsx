@@ -81,12 +81,20 @@ function ShippingMethodSelector({
   const onSelectPickup = (pickup: Pickup) => {
     dispatch({
       type: 'UPDATE_PICKUP',
-      args: { pickup },
+      args: { pickup, canUnselect: !required },
     })
   }
 
   const onShippingMethodDeliveryToggle = () => {
     if (deliveryPromiseMethod === 'delivery') {
+      if (required) {
+        dispatch({
+          type: 'SELECT_DELIVERY_SHIPPING_OPTION',
+        })
+
+        return
+      }
+
       dispatch({
         type: 'RESET_FULFILLMENT_METHOD',
       })
@@ -124,7 +132,7 @@ function ShippingMethodSelector({
         }}
         pickupProps={{
           onSelectPickup,
-          onSubmit: (value) => onSubmit(value, true),
+          onSubmit: (value) => onSubmit(value, false),
           pickups,
           inputErrorMessage: submitErrorMessage?.message,
           selectedPickup: pickup,

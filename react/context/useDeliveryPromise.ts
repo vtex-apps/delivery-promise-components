@@ -19,6 +19,11 @@ import {
   validateProductAvailabilityByPickup,
   validateProductAvailabilityByDelivery,
 } from '../client'
+import {
+  getNearestPickup,
+  persistPickupPreference,
+  resolvePickupForShippingSession,
+} from '../pickupInPointPreference'
 import type { AvailabilityItem } from '../client'
 import type { CartItem, CartProduct } from '../components/UnavailableItemsModal'
 import { getCountryCode, getFacetsData, getOrderFormId } from '../utils/cookie'
@@ -43,6 +48,7 @@ export const useDeliveryPromise = () => {
 
   const [city, setCity] = useState<string>()
   const [pickups, setPickups] = useState<Pickup[]>([])
+  const [pickupSuggestion, setPickupSuggestion] = useState<Pickup>()
   const [selectedPickup, setSelectedPickup] = useState<Pickup>()
   const [geoCoordinates, setGeoCoordinates] = useState<number[]>()
   const [addressLabel, setAddressLabel] = useState<string>()
@@ -71,8 +77,8 @@ export const useDeliveryPromise = () => {
   uiRegistryRef.current = uiRegistry
 
   const dispatchImplRef = useRef<
-    (action: DeliveryPromiseActions) => Promise<void>
-  >(async () => {})
+    (action: DeliveryPromiseActions) => Promise<boolean | undefined>
+  >(async () => undefined)
 
   const { account } = useRuntime()
   const { session, loading: isSessionLoading } = useRenderSession()
@@ -133,6 +139,9 @@ export const useDeliveryPromise = () => {
       setPickups(pickupsFormatted ?? [])
 
       if (pickupsFormatted.length === 0) {
+        setPickupSuggestion(undefined)
+        setSelectedPickup(undefined)
+
         if (!keepLoading) {
           setIsLoading(false)
         }
@@ -140,37 +149,27 @@ export const useDeliveryPromise = () => {
         return
       }
 
-      const pickupPointId = getFacetsData('pickupPoint')
+      const nearest = getNearestPickup(pickupsFormatted)
 
-      // Only auto-select pickup if there's already a shipping method or saved pickup preference
-      if (pickupPointId || shippingMethod === 'pickup-in-point') {
-        const [defaultPickup] = pickupsFormatted
+      setPickupSuggestion(nearest)
 
-        const pickup = pickupPointId
-          ? pickupsFormatted.find(
-              (p: Pickup) => p.pickupPoint.id === pickupPointId
-            ) || defaultPickup
-          : defaultPickup
+      const segmentPickupId = getFacetsData('pickupPoint')
+      const pickupForSession = resolvePickupForShippingSession(
+        pickupsFormatted,
+        selectedZipcode,
+        segmentPickupId,
+        shippingMethod
+      )
 
-        setSelectedPickup(pickup)
+      setSelectedPickup(pickupForSession)
 
-        await updateSession(
-          country,
-          selectedZipcode,
-          coordinates,
-          pickup,
-          shippingMethod
-        )
-      } else {
-        // Don't auto-select pickup - let user choose
-        await updateSession(
-          country,
-          selectedZipcode,
-          coordinates,
-          undefined,
-          shippingMethod
-        )
-      }
+      await updateSession(
+        country,
+        selectedZipcode,
+        coordinates,
+        pickupForSession,
+        shippingMethod
+      )
 
       if (!keepLoading) {
         setIsLoading(false)
@@ -292,18 +291,21 @@ export const useDeliveryPromise = () => {
     }
   }
 
-  const submitZipcode = async (selectedZipcode: string, reload = true) => {
+  const submitZipcode = async (
+    selectedZipcode: string,
+    reload = true
+  ): Promise<boolean> => {
     if (!selectedZipcode) {
       onError(
         'POSTAL_CODE_NOT_FOUND',
         intl.formatMessage(messages.shopperLocationPostalCodeInputPlaceholder)
       )
 
-      return
+      return false
     }
 
     if (!countryCode) {
-      return
+      return false
     }
 
     setIsLoading(true)
@@ -321,7 +323,7 @@ export const useDeliveryPromise = () => {
           intl.formatMessage(messages.shopperLocationPostalCodeInputError)
         )
 
-        return
+        return false
       }
 
       const { total } = await getCatalogCount(selectedZipcode, coordinates)
@@ -337,7 +339,7 @@ export const useDeliveryPromise = () => {
           )
         )
 
-        return
+        return false
       }
 
       const orderFormId = getOrderFormId()
@@ -350,19 +352,16 @@ export const useDeliveryPromise = () => {
       setGeoCoordinates(coordinates)
       setZipCode(selectedZipcode)
 
-      await updateSession(
-        countryCode,
-        selectedZipcode,
-        coordinates,
-        selectedPickup
-        // Removed automatic 'delivery' default - let user choose shipping method
-      )
+      setDeliveryPromiseMethod(undefined)
+      setSelectedPickup(undefined)
+
+      await updateSession(countryCode, selectedZipcode, coordinates, undefined)
 
       await fetchPickups(
         countryCode,
         selectedZipcode,
         coordinates,
-        deliveryPromiseMethod,
+        undefined,
         true
       )
     } catch {
@@ -371,11 +370,8 @@ export const useDeliveryPromise = () => {
         intl.formatMessage(messages.shopperLocationPostalCodeInputError)
       )
 
-      return
+      return false
     }
-
-    setDeliveryPromiseMethod(undefined)
-    setSelectedPickup(undefined)
 
     const registry = uiRegistryRef.current
     const shippingMethodRequired = registry.shippingMethod?.required === true
@@ -398,6 +394,8 @@ export const useDeliveryPromise = () => {
       setIsLoading(true)
       location.reload()
     }
+
+    return true
   }
 
   const selectPickup = async (pickup: Pickup, canUnselect = true) => {
@@ -405,26 +403,33 @@ export const useDeliveryPromise = () => {
       return
     }
 
-    let shippingMethod = 'pickup-in-point'
-    let pickupUpdated = pickup
+    let shippingOption: ShippingMethod | undefined = 'pickup-in-point'
+    let pickupUpdated: Pickup | undefined = pickup
 
     if (
       canUnselect &&
       deliveryPromiseMethod === 'pickup-in-point' &&
       pickup.pickupPoint.id === selectedPickup?.pickupPoint.id
     ) {
-      shippingMethod = ''
-      pickupUpdated = pickups[0]
+      shippingOption = undefined
+      pickupUpdated = undefined
     }
 
     setSelectedPickup(pickupUpdated)
+
+    if (
+      shippingOption === 'pickup-in-point' &&
+      pickupUpdated?.pickupPoint?.id
+    ) {
+      persistPickupPreference(pickupUpdated, zipcode!)
+    }
 
     await updateSession(
       countryCode,
       zipcode!,
       geoCoordinates!,
       pickupUpdated,
-      shippingMethod
+      shippingOption
     )
 
     setIsLoading(true)
@@ -440,7 +445,7 @@ export const useDeliveryPromise = () => {
       countryCode,
       zipcode,
       geoCoordinates,
-      selectedPickup,
+      undefined,
       'delivery'
     )
 
@@ -512,8 +517,9 @@ export const useDeliveryPromise = () => {
         )
 
         if (unavailableItems.length === 0) {
-          await submitZipcode(zipcodeSelected, reload)
-          break
+          const applied = await submitZipcode(zipcodeSelected, reload)
+
+          return applied
         }
 
         setUnavailabilityMessage(
@@ -526,7 +532,7 @@ export const useDeliveryPromise = () => {
           () => () => submitZipcode(zipcodeSelected, reload)
         )
 
-        break
+        return false
       }
 
       case 'UPDATE_PICKUP': {
@@ -635,14 +641,7 @@ export const useDeliveryPromise = () => {
           return
         }
 
-        // Reset fulfillment method to undefined (no selection)
-        await updateSession(
-          countryCode,
-          zipcode,
-          geoCoordinates,
-          selectedPickup
-          // No shipping option parameter = reset to no selection
-        )
+        await updateSession(countryCode, zipcode, geoCoordinates, undefined)
 
         setIsLoading(true)
         location.reload()
@@ -653,6 +652,8 @@ export const useDeliveryPromise = () => {
       default:
         break
     }
+
+    return undefined
   }
 
   const dispatch = useCallback((action: DeliveryPromiseActions) => {
@@ -670,6 +671,7 @@ export const useDeliveryPromise = () => {
       submitErrorMessage,
       city,
       pickups,
+      pickupSuggestion,
       selectedPickup,
       geoCoordinates,
       addressLabel,

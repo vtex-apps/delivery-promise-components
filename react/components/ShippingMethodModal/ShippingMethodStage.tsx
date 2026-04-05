@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { useCssHandles } from 'vtex.css-handles'
 import { useIntl } from 'react-intl'
 
@@ -9,19 +9,40 @@ import messages from '../../messages'
 
 const CSS_HANDLES = ['shippingMethodModalOptions']
 
+type ClickHighlight = 'delivery' | 'pickup-in-point' | null
+
 interface Props {
+  isModalOpen: boolean
   onPickupSelection: () => void
   onDeliverySelection: () => void
   selectedShipping?: 'delivery' | 'pickup-in-point'
 }
 
 const ShippingMethodStage = ({
+  isModalOpen,
   onDeliverySelection,
   onPickupSelection,
   selectedShipping,
 }: Props) => {
   const intl = useIntl()
   const handles = useCssHandles(CSS_HANDLES)
+  const [clickHighlight, setClickHighlight] = useState<ClickHighlight>(null)
+
+  useEffect(() => {
+    if (!isModalOpen) {
+      setClickHighlight(null)
+    }
+  }, [isModalOpen])
+
+  const deliverySelected =
+    clickHighlight != null
+      ? clickHighlight === 'delivery'
+      : selectedShipping === 'delivery'
+
+  const pickupSelected =
+    clickHighlight != null
+      ? clickHighlight === 'pickup-in-point'
+      : selectedShipping === 'pickup-in-point'
 
   return (
     <>
@@ -32,20 +53,26 @@ const ShippingMethodStage = ({
         className={`flex flex-column w-100 mt8 justify-around ${handles.shippingMethodModalOptions}`}
       >
         <ShippingMethodOptionButton
-          onClick={onDeliverySelection}
+          onClick={() => {
+            setClickHighlight('delivery')
+            onDeliverySelection()
+          }}
           icon={<DeliveryIcon />}
           label={intl.formatMessage(
             messages.shippingMethodModalDeliveryOptionLabel
           )}
-          isSelected={selectedShipping === 'delivery'}
+          isSelected={deliverySelected}
         />
         <ShippingMethodOptionButton
-          onClick={onPickupSelection}
+          onClick={() => {
+            setClickHighlight('pickup-in-point')
+            onPickupSelection()
+          }}
           icon={<PickupPointIcon />}
           label={intl.formatMessage(
             messages.shippingMethodModalPickupPointOptionLabel
           )}
-          isSelected={selectedShipping === 'pickup-in-point'}
+          isSelected={pickupSelected}
         />
       </div>
     </>

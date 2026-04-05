@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`PickupModalPresentational`:** root React export wrapping the presentational pickup modal UI for apps (for example `search-result`) that control zip/pickup outside global context.
+- **`pickupSearchClient` / `pickupInPointPreference`:** helpers for pickup list fetch and PLP preference storage patterns.
+
+### Changed
+
+- `PostalCodeModal`, context, and `useDeliveryPromise` adjustments to support controlled flows and shared pickup-fetch behavior with optional integrations.
+
 ### Breaking changes
 
 - **Store Framework:** removed the monolithic `delivery-promise-location-selector` interface. Themes must declare the split blocks instead: `shopper-location-setter`, `shipping-method-selector`, and `pickup-point-selector` (each with its own React entry point). There is no bundled legacy block or in-repo migration guide from the old block to the new ones—only the new contract is supported.

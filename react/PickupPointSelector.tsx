@@ -65,7 +65,7 @@ function PickupPointSelector({ mode = 'default' }: Props) {
         onClose={() => setIsPickupModalOpen(false)}
         pickupProps={{
           onSelectPickup,
-          onSubmit: (value) => onSubmit(value, true),
+          onSubmit: (value) => onSubmit(value, false),
           pickups,
           inputErrorMessage: submitErrorMessage?.message,
           selectedPickup: pickup,

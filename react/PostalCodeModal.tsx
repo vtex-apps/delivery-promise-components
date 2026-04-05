@@ -6,9 +6,14 @@ import { useDeliveryPromiseDispatch, useDeliveryPromiseState } from './context'
 interface Props {
   isOpen: boolean
   onClose: () => void
+  onSuccessfulZipSubmit?: () => void
 }
 
-const LocationModalWithContext = ({ isOpen, onClose }: Props) => {
+const LocationModalWithContext = ({
+  isOpen,
+  onClose,
+  onSuccessfulZipSubmit,
+}: Props) => {
   const {
     zipcode: selectedZipcode,
     isLoading,
@@ -17,11 +22,19 @@ const LocationModalWithContext = ({ isOpen, onClose }: Props) => {
 
   const dispatch = useDeliveryPromiseDispatch()
 
-  const onSubmit = (zipcode: string, reload?: boolean) => {
-    dispatch({
+  const onSubmit = async (zipcode: string, reload?: boolean) => {
+    const skipReload = Boolean(onSuccessfulZipSubmit)
+    const applied = (await dispatch({
       type: 'UPDATE_ZIPCODE',
-      args: { zipcode, reload },
-    })
+      args: {
+        zipcode,
+        reload: skipReload ? false : reload,
+      },
+    })) as boolean | undefined
+
+    if (skipReload && applied === true) {
+      onSuccessfulZipSubmit?.()
+    }
   }
 
   return (

@@ -20,6 +20,8 @@ export type DeliveryPromiseUiRegistry = {
 export interface State {
   zipcode?: string
   pickups: Pickup[]
+  /** Closest pickup to the current zip (from API distance); used for PLP label when nothing is selected. */
+  pickupSuggestion?: Pickup
   selectedPickup?: Pickup
   geoCoordinates?: number[]
   countryCode?: string
