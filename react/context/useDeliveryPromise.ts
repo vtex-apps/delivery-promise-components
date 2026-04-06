@@ -526,7 +526,7 @@ export const useDeliveryPromise = () => {
 
         setUnavailabilityMessage(
           intl.formatMessage(messages.unavailableItemsModalDescription, {
-            addressLabel,
+            addressLabel: zipcodeSelected,
           })
         )
 
