@@ -50,6 +50,7 @@ const UnavailableItemsModal = ({
       isOpen={isOpen}
       onClose={onClose}
       nonDismissible
+      overlayZIndex={100000}
     >
       <div className="flex-auto flex flex-column justify-between mt0">
         <p className="mid-gray ma0">{unavailabilityMessage}</p>
