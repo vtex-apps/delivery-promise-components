@@ -1,5 +1,5 @@
 /* eslint-disable no-restricted-globals */
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Button } from 'vtex.styleguide'
 import { useIntl } from 'react-intl'
 
@@ -35,11 +35,21 @@ const UnavailableItemsModal = ({
 
   const [isLoading, setIsLoading] = useState(false)
 
+  useEffect(() => {
+    if (!isOpen) {
+      setIsLoading(false)
+    }
+  }, [isOpen])
+
   const handleRemoveItemsClick = async () => {
     setIsLoading(true)
-    await onRemoveItems()
 
-    onClose()
+    try {
+      await onRemoveItems()
+      onClose()
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (

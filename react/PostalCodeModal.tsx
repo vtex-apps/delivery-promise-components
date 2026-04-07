@@ -7,12 +7,18 @@ interface Props {
   isOpen: boolean
   onClose: () => void
   onSuccessfulZipSubmit?: () => void
+  /**
+   * Cart availability BFF route for zip submit. Search PLP should use `delivery`;
+   * other call sites keep default `deliveryorpickup`.
+   */
+  cartAvailability?: 'delivery' | 'deliveryorpickup'
 }
 
 const LocationModalWithContext = ({
   isOpen,
   onClose,
   onSuccessfulZipSubmit,
+  cartAvailability = 'deliveryorpickup',
 }: Props) => {
   const {
     zipcode: selectedZipcode,
@@ -24,17 +30,21 @@ const LocationModalWithContext = ({
 
   const onSubmit = async (zipcode: string, reload?: boolean) => {
     const skipReload = Boolean(onSuccessfulZipSubmit)
-    const applied = (await dispatch({
+
+    await dispatch({
       type: 'UPDATE_ZIPCODE',
       args: {
         zipcode,
         reload: skipReload ? false : reload,
+        onAppliedWithoutReload:
+          skipReload && onSuccessfulZipSubmit
+            ? onSuccessfulZipSubmit
+            : undefined,
+        ...(cartAvailability === 'delivery'
+          ? { cartAvailability: 'delivery' as const }
+          : {}),
       },
-    })) as boolean | undefined
-
-    if (skipReload && applied === true) {
-      onSuccessfulZipSubmit?.()
-    }
+    })
   }
 
   return (

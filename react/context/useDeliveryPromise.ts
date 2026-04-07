@@ -65,10 +65,11 @@ export const useDeliveryPromise = () => {
 
   const [unavailabilityMessage, setUnavailabilityMessage] = useState<string>()
 
+  /** Stores a thunk: setState(updater) must return the callback, hence `() => () => run()`. */
   const [
     actionInterruptedByCartValidation,
     setActionInterruptedByCartValidation,
-  ] = useState<() => void>()
+  ] = useState<(() => () => void | Promise<void | boolean>) | undefined>()
 
   const [uiRegistry, setUiRegistry] = useState<DeliveryPromiseUiRegistry>({})
   const [shippingMethodModalRequestId, setShippingMethodModalRequestId] =
@@ -288,8 +289,16 @@ export const useDeliveryPromise = () => {
       unavailableCartItems.map((item) => item.cartItemIndex)
     )
 
-    if (actionInterruptedByCartValidation) {
-      actionInterruptedByCartValidation()
+    const outer = actionInterruptedByCartValidation
+
+    if (typeof outer !== 'function') {
+      return
+    }
+
+    const inner = outer()
+
+    if (typeof inner === 'function') {
+      await inner()
     }
   }
 
@@ -505,23 +514,53 @@ export const useDeliveryPromise = () => {
         return
 
       case 'UPDATE_ZIPCODE': {
-        const { zipcode: zipcodeSelected, reload } = action.args
+        const {
+          zipcode: zipcodeSelected,
+          reload,
+          onAppliedWithoutReload,
+          cartAvailability = 'deliveryorpickup',
+        } = action.args
+
+        const validateZipCartAvailability = (
+          items: AvailabilityItem[]
+        ): Promise<unknown> =>
+          cartAvailability === 'delivery'
+            ? validateProductAvailabilityByDelivery(
+                zipcodeSelected,
+                countryCode!,
+                items,
+                account,
+                salesChannel
+              )
+            : validateProductAvailability(
+                zipcodeSelected,
+                countryCode!,
+                items,
+                account,
+                salesChannel
+              )
+
+        const applyZipAndFacetCallback = async () => {
+          const applied = await submitZipcode(zipcodeSelected, reload)
+
+          if (applied && reload === false && onAppliedWithoutReload) {
+            // Close unavailable-items UI before client navigation so the modal is not left
+            // loading if navigate interrupts the follow-up ABORT from the modal.
+            await resetUnavailableCartItems()
+            setActionInterruptedByCartValidation(undefined)
+            setUnavailabilityMessage(undefined)
+            onAppliedWithoutReload()
+          }
+
+          return applied
+        }
 
         const unavailableItems = await validateCartItems(
-          async (items: AvailabilityItem[]) =>
-            validateProductAvailability(
-              zipcodeSelected,
-              countryCode!,
-              items,
-              account,
-              salesChannel
-            )
+          validateZipCartAvailability
         )
 
         if (unavailableItems.length === 0) {
-          const applied = await submitZipcode(zipcodeSelected, reload)
-
-          return applied
+          return applyZipAndFacetCallback()
         }
 
         setUnavailabilityMessage(
@@ -531,7 +570,7 @@ export const useDeliveryPromise = () => {
         )
 
         setActionInterruptedByCartValidation(
-          () => () => submitZipcode(zipcodeSelected, reload)
+          () => () => applyZipAndFacetCallback()
         )
 
         return false
@@ -630,11 +669,13 @@ export const useDeliveryPromise = () => {
 
       case 'ABORT_UNAVAILABLE_ITEMS_ACTION': {
         resetUnavailableCartItems()
+        setActionInterruptedByCartValidation(undefined)
+        setUnavailabilityMessage(undefined)
         break
       }
 
       case 'CONTINUE_UNAVAILABLE_ITEMS_ACTION': {
-        removeUnavailableItems()
+        await removeUnavailableItems()
         break
       }
 

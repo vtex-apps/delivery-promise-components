@@ -40,7 +40,17 @@ export interface State {
 
 interface UpdateZipCode {
   type: 'UPDATE_ZIPCODE'
-  args: { zipcode: string; reload?: boolean }
+  args: {
+    zipcode: string
+    reload?: boolean
+    /** When reload is false (e.g. PLP facet navigation), run after zip is applied — including after “remove unavailable items”. */
+    onAppliedWithoutReload?: () => void
+    /**
+     * Cart availability check before applying zip. PLP postal facet uses `delivery` (BFF `/availability/delivery`);
+     * header / ShopperLocationSetter uses default `deliveryorpickup` (`/availability/deliveryorpickup`).
+     */
+    cartAvailability?: 'delivery' | 'deliveryorpickup'
+  }
 }
 
 interface UpdatePickup {
