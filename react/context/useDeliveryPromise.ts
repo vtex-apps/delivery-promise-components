@@ -236,7 +236,7 @@ export const useDeliveryPromise = () => {
 
     setTimeout(() => {
       setSubmitErrorMessage(undefined)
-    }, 3000)
+    }, 8000)
   }
 
   const validateCartItems = async (

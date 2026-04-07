@@ -89,6 +89,14 @@ const messages = defineMessages({
     id: 'store/delivery-promise-components.shippingMethodModal.pickupPointOption.label',
     defaultMessage: '',
   },
+  shippingMethodSelectorFilterByShipping: {
+    id: 'store/delivery-promise-components.shippingMethodSelector.filterByShipping.label',
+    defaultMessage: '',
+  },
+  shippingMethodSelectorFilteringByDelivery: {
+    id: 'store/delivery-promise-components.shippingMethodSelector.filteringByDelivery.label',
+    defaultMessage: '',
+  },
   pickupPointSelectionTitle: {
     id: 'store/delivery-promise-components.pickupPointSelection.title',
     defaultMessage: '',

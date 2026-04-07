@@ -1,8 +1,10 @@
 import React from 'react'
+import { useIntl } from 'react-intl'
 import { useCssHandles } from 'vtex.css-handles'
 import { Spinner } from 'vtex.styleguide'
 import { useDevice } from 'vtex.device-detector'
 
+import messages from '../../messages'
 import ShippingIcon from './ShippingIcon'
 import PickupPointIcon from './PickupPointIcon'
 import DeliveryIcon from './DeliveryIcon'
@@ -33,6 +35,7 @@ const ShippingMethodSelector = ({
   loading,
   mode = 'default',
 }: Props) => {
+  const intl = useIntl()
   const handles = useCssHandles(CSS_HANDLES)
   const { isMobile } = useDevice()
 
@@ -65,9 +68,13 @@ const ShippingMethodSelector = ({
             >
               {selectedShipping
                 ? selectedShipping === 'delivery'
-                  ? 'Filtrando por entrega'
+                  ? intl.formatMessage(
+                      messages.shippingMethodSelectorFilteringByDelivery
+                    )
                   : selectedPickup?.pickupPoint.friendlyName
-                : 'Filtrar por envío'}
+                : intl.formatMessage(
+                    messages.shippingMethodSelectorFilterByShipping
+                  )}
             </span>
           )}
         </>
