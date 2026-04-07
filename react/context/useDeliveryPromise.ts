@@ -3,7 +3,7 @@ import { useRuntime, useSSR } from 'vtex.render-runtime'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useIntl } from 'react-intl'
 import { useOrderItems } from 'vtex.order-items/OrderItems'
-import { usePixelEventCallback } from 'vtex.pixel-manager'
+import { usePixel, usePixelEventCallback } from 'vtex.pixel-manager'
 import { useRenderSession } from 'vtex.session-client'
 
 import {
@@ -16,7 +16,6 @@ import {
   clearShippingSession,
   getCartProducts,
   orderFormItemsToAvailabilityItems,
-  removeCartProductsById,
   validateProductAvailability,
   validateProductAvailabilityByPickup,
   validateProductAvailabilityByDelivery,
@@ -28,6 +27,8 @@ import {
 } from '../pickupInPointPreference'
 import type { AvailabilityItem } from '../client'
 import type { CartItem, CartProduct } from '../components/UnavailableItemsModal'
+import type { OrderFormCartLine } from '../modules/pixelHelper'
+import { mapCartItemToPixel } from '../modules/pixelHelper'
 import { getCountryCode, getFacetsData, getOrderFormId } from '../utils/cookie'
 import messages from '../messages'
 import type {
@@ -87,7 +88,13 @@ export const useDeliveryPromise = () => {
   const { session, loading: isSessionLoading } = useRenderSession()
   const isSSR = useSSR()
   const intl = useIntl()
-  const { addItems } = useOrderItems()
+  const { addItems, removeItem } = useOrderItems()
+  const { push } = usePixel()
+
+  const orderItemsUpdateOptions = {
+    allowedOutdatedData: ['paymentData'] as const,
+    splitItem: true,
+  }
 
   const salesChannel = isSessionLoading
     ? undefined
@@ -282,11 +289,20 @@ export const useDeliveryPromise = () => {
   }
 
   const removeUnavailableItems = async () => {
-    const orderFormId = getOrderFormId()
+    await unavailableCartItems.reduce<Promise<void>>(
+      async (previous, { product }) => {
+        await previous
 
-    await removeCartProductsById(
-      orderFormId,
-      unavailableCartItems.map((item) => item.cartItemIndex)
+        const line = product as unknown as OrderFormCartLine
+
+        push({
+          event: 'removeFromCart',
+          items: [mapCartItemToPixel(line)],
+        })
+
+        await removeItem({ uniqueId: line.uniqueId }, orderItemsUpdateOptions)
+      },
+      Promise.resolve()
     )
 
     const outer = actionInterruptedByCartValidation

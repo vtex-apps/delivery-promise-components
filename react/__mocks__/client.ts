@@ -22,8 +22,6 @@ export const clearShippingSession = async (_countryCode?: string) => undefined
 
 export const getCartProducts = async () => []
 
-export const removeCartProductsById = async () => undefined
-
 export const validateProductAvailability = async (..._args: unknown[]) => ({
   unavailableItemIds: [],
 })

@@ -222,31 +222,6 @@ export const orderFormItemsToAvailabilityItems = (
     return { itemId, productId }
   })
 
-export const removeCartProductsById = async (
-  orderFormId: string,
-  cartProductsIndex: number[]
-) => {
-  const requestBody = {
-    orderItems: cartProductsIndex.map((productIndex) => ({
-      quantity: 0,
-      index: productIndex,
-    })),
-  }
-
-  const orderForm = await fetch(
-    `/api/checkout/pub/orderForm/${orderFormId}/items/update`,
-    {
-      method: 'POST',
-      body: JSON.stringify(requestBody),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    }
-  ).then((res) => res.json())
-
-  return orderForm.items
-}
-
 export const validateProductAvailability = async (
   zipCode: string,
   countryCode: string,
