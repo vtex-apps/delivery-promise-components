@@ -1,7 +1,7 @@
 {
   "vendor": "vtex",
   "name": "delivery-promise-components",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "title": "Delivery Promise Components",
   "description": "Delivery Promise UI components",
   "builders": {
