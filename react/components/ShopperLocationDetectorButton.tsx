@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react'
-import { useRuntime } from 'vtex.render-runtime'
+import React, { useCallback, useEffect, useState } from 'react'
 import { useIntl } from 'react-intl'
 import { useCssHandles } from 'vtex.css-handles'
 
 import EmptyState from './EmptyState'
 import ShopperLocationPinIcon from './ShopperLocationPinIcon'
 import messages from '../messages'
+import { useDeliveryPromiseDispatch, useDeliveryPromiseState } from '../context'
 
 const CSS_HANDLES = [
   'shopperLocationDetectorButton',
@@ -13,95 +13,128 @@ const CSS_HANDLES = [
   'shopperLocationDetectorButtonIcon',
 ] as const
 
-const getGeolocation = async (): Promise<any> => {
+/** Narrow shape we read from `getCurrentPosition` (DOM lib may omit `GeolocationPosition`). */
+type BrowserGeoPosition = {
+  coords: { latitude: number; longitude: number }
+}
+
+const getGeolocation = async (): Promise<BrowserGeoPosition> => {
   if (!navigator?.geolocation) {
     throw new Error('Geolocation not supported')
   }
 
   return new Promise((resolve, reject) => {
     navigator.geolocation.getCurrentPosition(resolve, reject)
-  })
+  }) as Promise<BrowserGeoPosition>
+}
+
+const reverseGeocodeToZip = async (
+  latitude: number,
+  longitude: number
+): Promise<string> => {
+  const response = await fetch(
+    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+  )
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`)
+  }
+
+  const data = await response.json()
+  const postcode = data.address?.postcode || data.address?.postal_code
+
+  if (!postcode) {
+    throw new Error('No postcode in reverse geocode response')
+  }
+
+  return postcode.replace(/-/g, '')
 }
 
 const ShopperLocationDetectorButton: React.FC = () => {
-  const [regionId, setRegionId] = useState<string>('')
-  const [error, setError] = useState<boolean>(false)
+  const [uiPhase, setUiPhase] = useState<'idle' | 'working' | 'error'>('idle')
+  const [awaitingContextIdle, setAwaitingContextIdle] = useState(false)
+  const dispatch = useDeliveryPromiseDispatch()
+  const { countryCode, isLoading } = useDeliveryPromiseState()
   const handles = useCssHandles(CSS_HANDLES)
-
-  const {
-    culture: { country },
-    route: { path, queryString },
-  } = useRuntime()
-
   const intl = useIntl()
 
   useEffect(() => {
-    const getCurrentPosition = async (): Promise<void> => {
-      try {
-        const position = await getGeolocation()
-        const { latitude, longitude } = position.coords
-
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
-        )
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
-        }
-
-        const data = await response.json()
-        const postcode = data.address?.postcode || data.address?.postal_code
-
-        if (postcode) {
-          const cep = postcode.replace(/-/g, '')
-          const newRegionId = btoa(`vtex:${country}:${cep}`)
-
-          setRegionId(newRegionId)
-          setError(false)
-        }
-      } catch (err) {
-        setError(true)
-      }
+    if (!awaitingContextIdle) {
+      return
     }
 
-    if (regionId || !navigator?.geolocation) return
+    if (!isLoading) {
+      setUiPhase('idle')
+      setAwaitingContextIdle(false)
+    }
+  }, [awaitingContextIdle, isLoading])
 
-    getCurrentPosition()
-  }, [country, regionId])
+  const handleUseLocation = useCallback(async () => {
+    if (!navigator?.geolocation || !countryCode) {
+      setUiPhase('error')
 
-  if (queryString?.region_id) {
-    return null
-  }
+      return
+    }
 
-  if (!regionId || error) {
+    setUiPhase('working')
+    setAwaitingContextIdle(false)
+
+    try {
+      const position = await getGeolocation()
+      const { latitude, longitude } = position.coords
+      const zipcode = await reverseGeocodeToZip(latitude, longitude)
+
+      await dispatch({
+        type: 'UPDATE_ZIPCODE',
+        args: { zipcode },
+      })
+
+      setAwaitingContextIdle(true)
+    } catch {
+      setUiPhase('error')
+      setAwaitingContextIdle(false)
+    }
+  }, [countryCode, dispatch])
+
+  if (uiPhase === 'working') {
     return (
       <div className={`${handles.shopperLocationDetectorButtonContainer}`}>
         <EmptyState
           description={intl.formatMessage(
-            error
-              ? messages.shopperLocationDetectorButtonErrorDescription
-              : messages.shopperLocationDetectorButtonLoadingDescription
+            messages.shopperLocationDetectorButtonLoadingDescription
           )}
           variant="secondary"
-          iconProps={{ useIcon: !!error, width: '20', height: '20' }}
+          iconProps={{ useIcon: false, width: '20', height: '20' }}
         />
       </div>
     )
   }
 
-  const separator = Object.keys(queryString).length === 0 ? '?' : '&'
-  const href = `${path}${separator}region_id=${regionId}`
+  if (uiPhase === 'error') {
+    return (
+      <div className={`${handles.shopperLocationDetectorButtonContainer}`}>
+        <EmptyState
+          description={intl.formatMessage(
+            messages.shopperLocationDetectorButtonErrorDescription
+          )}
+          variant="secondary"
+          iconProps={{ useIcon: true, width: '20', height: '20' }}
+        />
+      </div>
+    )
+  }
 
   return (
-    <a
-      href={href}
-      className={`${handles.shopperLocationDetectorButton} no-underline flex items-center c-link hover-c-link`}
+    <button
+      type="button"
+      onClick={handleUseLocation}
+      className={`${handles.shopperLocationDetectorButton} bn bg-transparent pa0 pointer no-underline flex items-center c-link hover-c-link`}
     >
-      <span className={handles.shopperLocationDetectorButtonIcon}>
+      <span className={handles.shopperLocationDetectorButtonIcon} aria-hidden>
         <ShopperLocationPinIcon filled={false} />
       </span>
       {intl.formatMessage(messages.shopperLocationDetectorButtonTitle)}
-    </a>
+    </button>
   )
 }
 

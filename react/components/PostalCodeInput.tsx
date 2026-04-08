@@ -14,14 +14,14 @@ interface Props {
   onChange: (zipcode: string) => void
   zipcode: string
   errorMessage?: string
-  showClearButton?: boolean
   placeholder?: string
+  /** When false, Enter is not handled here (use a wrapping form onSubmit). Default true. */
+  submitOnEnter?: boolean
+  onClear?: () => void
 }
 
 const postalCodeInputClearButton = {
   backgroundColor: 'unset',
-  width: '32px',
-  height: '32px',
 }
 
 const PostalCodeInput = ({
@@ -29,8 +29,9 @@ const PostalCodeInput = ({
   errorMessage,
   onSubmit,
   onChange,
-  showClearButton = false,
   placeholder,
+  submitOnEnter = true,
+  onClear,
 }: Props) => {
   const handles = useCssHandles(CSS_HANDLES)
 
@@ -41,24 +42,36 @@ const PostalCodeInput = ({
         onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
           onChange(e.target.value.replace(/[^0-9]/g, ''))
         }
-        onKeyDown={(e: { key: string }) => {
-          if (e.key === 'Enter') {
-            onSubmit(zipcode ?? '')
+        onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+          if (!submitOnEnter || e.key !== 'Enter') {
+            return
           }
+
+          e.preventDefault()
+          e.stopPropagation()
+
+          const raw =
+            typeof e.currentTarget?.value === 'string'
+              ? e.currentTarget.value
+              : zipcode ?? ''
+
+          onSubmit(raw.replace(/[^0-9]/g, ''))
         }}
         value={zipcode}
         errorMessage={errorMessage}
         placeholder={placeholder}
         suffix={
-          showClearButton ? (
+          onClear ? (
             <button
+              type="button"
               style={postalCodeInputClearButton}
-              className={`bn pointer flex justify-center items-center pa3 ${handles.postalCodeInputClearButton}`}
+              className={`bn pointer flex justify-center items-center pr0 ${handles.postalCodeInputClearButton}`}
               onClick={() => {
                 onChange('')
+                onClear?.()
               }}
             >
-              <IconClear />
+              <IconClear color="#727273" />
             </button>
           ) : null
         }

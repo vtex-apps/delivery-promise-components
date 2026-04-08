@@ -1,6 +1,63 @@
 {
-  "delivery-promise-location-selector": {
-    "component": "index"
+  "shopper-location-setter": {
+    "component": "ShopperLocationSetter",
+    "content": {
+      "type": "object",
+      "properties": {
+        "required": {
+          "title": "Require postal code",
+          "description": "When true, opens a non-dismissible postal code modal until a valid code is set. When false, uses the popover flow.",
+          "type": "boolean",
+          "default": false
+        },
+        "mode": {
+          "title": "Display mode",
+          "type": "string",
+          "enum": ["default", "icon"],
+          "default": "default"
+        },
+        "showLocationDetectorButton": {
+          "title": "Show geolocation button",
+          "description": "Shows the control that uses the browser geolocation API to fill the postal code.",
+          "type": "boolean",
+          "default": false
+        }
+      }
+    }
+  },
+  "shipping-method-selector": {
+    "component": "ShippingMethodSelector",
+    "content": {
+      "type": "object",
+      "properties": {
+        "required": {
+          "title": "Require shipping method",
+          "description": "When true, the shipping method modal cannot be dismissed until a method is chosen (after a postal code exists).",
+          "type": "boolean",
+          "default": false
+        },
+        "mode": {
+          "title": "Display mode",
+          "type": "string",
+          "enum": ["default", "icon"],
+          "default": "default"
+        }
+      }
+    }
+  },
+  "pickup-point-selector": {
+    "component": "PickupPointSelector",
+    "content": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "title": "Display mode",
+          "type": "string",
+          "enum": ["default", "icon"],
+          "default": "default"
+        }
+      }
+    }
   },
   "availability-badges": {
     "component": "AvailabilityBadges"

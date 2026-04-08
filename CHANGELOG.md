@@ -7,11 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Breaking changes
+
+- **Store Framework:** removed the monolithic `delivery-promise-location-selector` interface. Themes must declare the split blocks instead: `shopper-location-setter`, `shipping-method-selector`, and `pickup-point-selector` (each with its own React entry point). There is no bundled legacy block or in-repo migration guide from the old block to the new ones—only the new contract is supported.
+- **Assumption:** at most **one mounted instance** of each block type in the theme. The context keeps a single registration per type (no ref counting); the last mount wins if duplicates exist.
+
+### Added
+
+- **`shopper-location-setter` block:** postal code UI—non-dismissible **modal** when `required` is true, **popover** flow when `required` is false; props `mode` (`default` | `icon`) and `showLocationDetectorButton` (geolocation control; **only** on this block).
+- **`shipping-method-selector` block:** delivery vs pickup after a postal code exists; props `required`, `mode`, and `shippingSelection` (`delivery-and-pickup` | `only-pickup`). When `required` is true and there is no `deliveryPromiseMethod`, the shipping-method modal is **non-dismissible** until the shopper chooses a method.
+- **`pickup-point-selector` block:** pickup point selection; prop `mode` only (no `required` in this version).
+- **Delivery promise context — UI registry:** blocks register on mount via `REGISTER_SHOPPER_LOCATION_BLOCK` / `UNREGISTER_SHOPPER_LOCATION_BLOCK` and `REGISTER_SHIPPING_METHOD_BLOCK` / `UNREGISTER_SHIPPING_METHOD_BLOCK`, each passing `{ required: boolean }`. Exposed on state as `uiRegistry`.
+- **Cross-block shipping-method modal:** `REQUEST_OPEN_SHIPPING_METHOD_MODAL` and state field `shippingMethodModalRequestId` so the method modal can open from context when the postal code control and the method control are **sibling** blocks (not the same React subtree).
+- **`UnavailableItemsModal`:** rendered **once** in `DeliveryPromiseProviderCore`, bound to shared context state; individual blocks do not mount their own copy.
+- **README** (`docs/README.md`): blocks list, theme example, reload policy, registry, modal-request flow, **CEP → method** rules when both `required` are true vs optional CEP + required method, and global overlays.
+- **Tests:** `uiRegistry` register/unregister; `effectiveReload` / `shippingMethodModalRequestId` combinations (required shipping with optional vs required location); `nonDismissibleModal` on `shipping-method-selector`.
+- **`PickupModalPresentational`:** root React export wrapping the presentational pickup modal UI for apps (for example `search-result`) that control zip/pickup outside global context.
+- **`pickupSearchClient` / `pickupInPointPreference`:** helpers for pickup list fetch and PLP preference storage patterns.
+- Dispatch action `CLEAR_ZIPCODE` resets navigation context: clears order form `shippingData`, clears shipping facets via `clearShippingSession`, and resets related state (then reloads).
+
+### Changed
+
+- `PostalCodeModal`, context, and `useDeliveryPromise` adjustments to support controlled flows and shared pickup-fetch behavior with optional integrations.
+- **Reload after postal code (`submitZipcode` / `UPDATE_ZIPCODE`):** when `reload` is true, **`location.reload()`** is skipped if a **required** shipping-method block is registered (`effectiveReload = reload && !shippingMethodRequired`). Session and in-memory state still update; reload continues to apply after method selection (and in other flows that already reload). When **both** location and shipping blocks are `required`, the hook does **not** bump `shippingMethodModalRequestId` on postal-code submit—the **location setter** requests the method modal only after CEP is valid and its flow has finished, avoiding stacked modals. When shipping is `required` but location is **not**, the hook bumps `shippingMethodModalRequestId` on successful postal-code submit so `shipping-method-selector` can open immediately.
+- Dispatch action for the **delivery** shipping method is `SELECT_DELIVERY_SHIPPING_OPTION` (replaces `SELECT_HOME_DELIVERY`; same name as `vtex.shipping-option-components`).
+- Pickup points are loaded via Intelligent Search `pickup-point-availability` using the session sales channel as trade policy (fallback `1`), with `vtex.session-client`.
+- Cart availability checks call **delivery-promises-bff** at `/api/delivery-promises-bff/availability/*` with `{ items: [{ itemId, productId }] }` and read `unavailableItemIds` from the response.
+
 ## [0.1.1] - 2026-03-26
 
 ### Changed
 
-- React context API renamed from `ShippingOption*` to `DeliveryPromise*` (for example `DeliveryPromiseProvider`, `useDeliveryPromiseState`, `useDeliveryPromiseDispatch`). State field `shippingOption` is now `deliveryPromiseMethod`. Dispatch action types `SELECT_DELIVERY_SHIPPING_OPTION` / `RESET_SHIPPING_OPTION` are now `SELECT_HOME_DELIVERY` / `RESET_FULFILLMENT_METHOD`. Default export component for the location selector block renamed from `ShippingOptionZipcode` to `DeliveryPromiseLocationSelector`.
+- React context API renamed from `ShippingOption*` to `DeliveryPromise*` (for example `DeliveryPromiseProvider`, `useDeliveryPromiseState`, `useDeliveryPromiseDispatch`). State field `shippingOption` is now `deliveryPromiseMethod`. `RESET_SHIPPING_OPTION` is now `RESET_FULFILLMENT_METHOD`. Default export component for the location selector block renamed from `ShippingOptionZipcode` to `DeliveryPromiseLocationSelector`.
 
 ## [0.1.0] - 2026-03-26
 

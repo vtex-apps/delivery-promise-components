@@ -17,7 +17,11 @@ interface Props {
   nonDismissible?: boolean
   nonDismissibleModal?: boolean // Add support for the existing prop name
   onArrowBack?: () => void
+  /** Overlay z-index; use higher than other modals when this dialog must stack above them */
+  overlayZIndex?: number
 }
+
+const DEFAULT_OVERLAY_Z_INDEX = 99999
 
 const customStyles = {
   content: {
@@ -38,7 +42,7 @@ const customStyles = {
   },
   overlay: {
     backgroundColor: 'rgba(3, 4, 78, 0.55)',
-    zIndex: '99999',
+    zIndex: DEFAULT_OVERLAY_Z_INDEX,
     width: '100vw',
     height: '100vh',
   },
@@ -66,6 +70,7 @@ const Modal = ({
   isTopCloseButton,
   nonDismissible = false,
   nonDismissibleModal = false,
+  overlayZIndex = DEFAULT_OVERLAY_Z_INDEX,
 }: PropsWithChildren<Props>) => {
   const handles = useCssHandles(CSS_HANDLES)
   const { isMobile } = useDevice()
@@ -86,9 +91,17 @@ const Modal = ({
     customStyles.content.padding = '40px 40px 64px 40px'
   }
 
+  const modalStyles = {
+    ...customStyles,
+    overlay: {
+      ...customStyles.overlay,
+      zIndex: overlayZIndex,
+    },
+  }
+
   return (
     <ReactModal
-      style={customStyles}
+      style={modalStyles}
       isOpen={isOpen}
       onRequestClose={isNonDismissible ? undefined : onClose}
       shouldCloseOnOverlayClick={!isNonDismissible}
