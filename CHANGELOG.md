@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-04-08
+
 ### Breaking changes
 
 - **Store Framework:** removed the monolithic `delivery-promise-location-selector` interface. Themes must declare the split blocks instead: `shopper-location-setter`, `shipping-method-selector`, and `pickup-point-selector` (each with its own React entry point). There is no bundled legacy block or in-repo migration guide from the old block to the new ones—only the new contract is supported.

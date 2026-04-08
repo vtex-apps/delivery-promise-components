@@ -1,7 +1,7 @@
 {
   "vendor": "vtex",
   "name": "delivery-promise-components",
-  "version": "0.1.1",
+  "version": "1.0.0",
   "title": "Delivery Promise Components",
   "description": "Delivery Promise UI components",
   "builders": {
@@ -21,7 +21,9 @@
     "vtex.order-items": "0.x",
     "vtex.session-client": "1.x"
   },
-  "registries": ["smartcheckout"],
+  "registries": [
+    "smartcheckout"
+  ],
   "policies": [],
   "$schema": "https://raw.githubusercontent.com/vtex/node-vtex-api/master/gen/manifest.schema"
 }
