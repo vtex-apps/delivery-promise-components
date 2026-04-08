@@ -38,7 +38,6 @@ const AddLocation = ({
           zipcode={zipcode}
           onSubmit={onSubmit}
           errorMessage={inputErrorMessage}
-          showClearButton={false}
           placeholder={intl.formatMessage(
             messages.shopperLocationPopoverPostalCodePlaceholder
           )}

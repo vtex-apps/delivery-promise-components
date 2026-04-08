@@ -7,10 +7,11 @@ import * as client from '../client'
 import { DEFAULT_TRADE_POLICY } from '../constants'
 
 jest.mock('vtex.order-items/OrderItems', () => ({
-  useOrderItems: () => ({ addItems: jest.fn() }),
+  useOrderItems: () => ({ addItems: jest.fn(), removeItem: jest.fn() }),
 }))
 
 jest.mock('vtex.pixel-manager', () => ({
+  usePixel: () => ({ push: jest.fn() }),
   usePixelEventCallback: () => {},
 }))
 

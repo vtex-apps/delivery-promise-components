@@ -3,7 +3,7 @@ import { useRuntime, useSSR } from 'vtex.render-runtime'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useIntl } from 'react-intl'
 import { useOrderItems } from 'vtex.order-items/OrderItems'
-import { usePixelEventCallback } from 'vtex.pixel-manager'
+import { usePixel, usePixelEventCallback } from 'vtex.pixel-manager'
 import { useRenderSession } from 'vtex.session-client'
 
 import {
@@ -11,16 +11,24 @@ import {
   getCatalogCount,
   getPickups,
   updateOrderForm,
+  clearOrderFormShipping,
   updateSession,
+  clearShippingSession,
   getCartProducts,
   orderFormItemsToAvailabilityItems,
-  removeCartProductsById,
   validateProductAvailability,
   validateProductAvailabilityByPickup,
   validateProductAvailabilityByDelivery,
 } from '../client'
+import {
+  getNearestPickup,
+  persistPickupPreference,
+  resolvePickupForShippingSession,
+} from '../pickupInPointPreference'
 import type { AvailabilityItem } from '../client'
 import type { CartItem, CartProduct } from '../components/UnavailableItemsModal'
+import type { OrderFormCartLine } from '../modules/pixelHelper'
+import { mapCartItemToPixel } from '../modules/pixelHelper'
 import { getCountryCode, getFacetsData, getOrderFormId } from '../utils/cookie'
 import messages from '../messages'
 import type {
@@ -43,6 +51,7 @@ export const useDeliveryPromise = () => {
 
   const [city, setCity] = useState<string>()
   const [pickups, setPickups] = useState<Pickup[]>([])
+  const [pickupSuggestion, setPickupSuggestion] = useState<Pickup>()
   const [selectedPickup, setSelectedPickup] = useState<Pickup>()
   const [geoCoordinates, setGeoCoordinates] = useState<number[]>()
   const [addressLabel, setAddressLabel] = useState<string>()
@@ -57,10 +66,11 @@ export const useDeliveryPromise = () => {
 
   const [unavailabilityMessage, setUnavailabilityMessage] = useState<string>()
 
+  /** Stores a thunk: setState(updater) must return the callback, hence `() => () => run()`. */
   const [
     actionInterruptedByCartValidation,
     setActionInterruptedByCartValidation,
-  ] = useState<() => void>()
+  ] = useState<(() => () => void | Promise<void | boolean>) | undefined>()
 
   const [uiRegistry, setUiRegistry] = useState<DeliveryPromiseUiRegistry>({})
   const [shippingMethodModalRequestId, setShippingMethodModalRequestId] =
@@ -71,14 +81,20 @@ export const useDeliveryPromise = () => {
   uiRegistryRef.current = uiRegistry
 
   const dispatchImplRef = useRef<
-    (action: DeliveryPromiseActions) => Promise<void>
-  >(async () => {})
+    (action: DeliveryPromiseActions) => Promise<boolean | undefined>
+  >(async () => undefined)
 
   const { account } = useRuntime()
   const { session, loading: isSessionLoading } = useRenderSession()
   const isSSR = useSSR()
   const intl = useIntl()
-  const { addItems } = useOrderItems()
+  const { addItems, removeItem } = useOrderItems()
+  const { push } = usePixel()
+
+  const orderItemsUpdateOptions = {
+    allowedOutdatedData: ['paymentData'] as const,
+    splitItem: true,
+  }
 
   const salesChannel = isSessionLoading
     ? undefined
@@ -133,6 +149,9 @@ export const useDeliveryPromise = () => {
       setPickups(pickupsFormatted ?? [])
 
       if (pickupsFormatted.length === 0) {
+        setPickupSuggestion(undefined)
+        setSelectedPickup(undefined)
+
         if (!keepLoading) {
           setIsLoading(false)
         }
@@ -140,37 +159,27 @@ export const useDeliveryPromise = () => {
         return
       }
 
-      const pickupPointId = getFacetsData('pickupPoint')
+      const nearest = getNearestPickup(pickupsFormatted)
 
-      // Only auto-select pickup if there's already a shipping method or saved pickup preference
-      if (pickupPointId || shippingMethod === 'pickup-in-point') {
-        const [defaultPickup] = pickupsFormatted
+      setPickupSuggestion(nearest)
 
-        const pickup = pickupPointId
-          ? pickupsFormatted.find(
-              (p: Pickup) => p.pickupPoint.id === pickupPointId
-            ) || defaultPickup
-          : defaultPickup
+      const segmentPickupId = getFacetsData('pickupPoint')
+      const pickupForSession = resolvePickupForShippingSession(
+        pickupsFormatted,
+        selectedZipcode,
+        segmentPickupId,
+        shippingMethod
+      )
 
-        setSelectedPickup(pickup)
+      setSelectedPickup(pickupForSession)
 
-        await updateSession(
-          country,
-          selectedZipcode,
-          coordinates,
-          pickup,
-          shippingMethod
-        )
-      } else {
-        // Don't auto-select pickup - let user choose
-        await updateSession(
-          country,
-          selectedZipcode,
-          coordinates,
-          undefined,
-          shippingMethod
-        )
-      }
+      await updateSession(
+        country,
+        selectedZipcode,
+        coordinates,
+        pickupForSession,
+        shippingMethod
+      )
 
       if (!keepLoading) {
         setIsLoading(false)
@@ -234,7 +243,7 @@ export const useDeliveryPromise = () => {
 
     setTimeout(() => {
       setSubmitErrorMessage(undefined)
-    }, 3000)
+    }, 8000)
   }
 
   const validateCartItems = async (
@@ -280,30 +289,50 @@ export const useDeliveryPromise = () => {
   }
 
   const removeUnavailableItems = async () => {
-    const orderFormId = getOrderFormId()
+    await unavailableCartItems.reduce<Promise<void>>(
+      async (previous, { product }) => {
+        await previous
 
-    await removeCartProductsById(
-      orderFormId,
-      unavailableCartItems.map((item) => item.cartItemIndex)
+        const line = product as unknown as OrderFormCartLine
+
+        push({
+          event: 'removeFromCart',
+          items: [mapCartItemToPixel(line)],
+        })
+
+        await removeItem({ uniqueId: line.uniqueId }, orderItemsUpdateOptions)
+      },
+      Promise.resolve()
     )
 
-    if (actionInterruptedByCartValidation) {
-      actionInterruptedByCartValidation()
+    const outer = actionInterruptedByCartValidation
+
+    if (typeof outer !== 'function') {
+      return
+    }
+
+    const inner = outer()
+
+    if (typeof inner === 'function') {
+      await inner()
     }
   }
 
-  const submitZipcode = async (selectedZipcode: string, reload = true) => {
+  const submitZipcode = async (
+    selectedZipcode: string,
+    reload = true
+  ): Promise<boolean> => {
     if (!selectedZipcode) {
       onError(
         'POSTAL_CODE_NOT_FOUND',
         intl.formatMessage(messages.shopperLocationPostalCodeInputPlaceholder)
       )
 
-      return
+      return false
     }
 
     if (!countryCode) {
-      return
+      return false
     }
 
     setIsLoading(true)
@@ -321,7 +350,7 @@ export const useDeliveryPromise = () => {
           intl.formatMessage(messages.shopperLocationPostalCodeInputError)
         )
 
-        return
+        return false
       }
 
       const { total } = await getCatalogCount(selectedZipcode, coordinates)
@@ -337,7 +366,7 @@ export const useDeliveryPromise = () => {
           )
         )
 
-        return
+        return false
       }
 
       const orderFormId = getOrderFormId()
@@ -350,19 +379,16 @@ export const useDeliveryPromise = () => {
       setGeoCoordinates(coordinates)
       setZipCode(selectedZipcode)
 
-      await updateSession(
-        countryCode,
-        selectedZipcode,
-        coordinates,
-        selectedPickup
-        // Removed automatic 'delivery' default - let user choose shipping method
-      )
+      setDeliveryPromiseMethod(undefined)
+      setSelectedPickup(undefined)
+
+      await updateSession(countryCode, selectedZipcode, coordinates, undefined)
 
       await fetchPickups(
         countryCode,
         selectedZipcode,
         coordinates,
-        deliveryPromiseMethod,
+        undefined,
         true
       )
     } catch {
@@ -371,11 +397,8 @@ export const useDeliveryPromise = () => {
         intl.formatMessage(messages.shopperLocationPostalCodeInputError)
       )
 
-      return
+      return false
     }
-
-    setDeliveryPromiseMethod(undefined)
-    setSelectedPickup(undefined)
 
     const registry = uiRegistryRef.current
     const shippingMethodRequired = registry.shippingMethod?.required === true
@@ -398,6 +421,8 @@ export const useDeliveryPromise = () => {
       setIsLoading(true)
       location.reload()
     }
+
+    return true
   }
 
   const selectPickup = async (pickup: Pickup, canUnselect = true) => {
@@ -405,26 +430,33 @@ export const useDeliveryPromise = () => {
       return
     }
 
-    let shippingMethod = 'pickup-in-point'
-    let pickupUpdated = pickup
+    let shippingOption: ShippingMethod | undefined = 'pickup-in-point'
+    let pickupUpdated: Pickup | undefined = pickup
 
     if (
       canUnselect &&
       deliveryPromiseMethod === 'pickup-in-point' &&
       pickup.pickupPoint.id === selectedPickup?.pickupPoint.id
     ) {
-      shippingMethod = ''
-      pickupUpdated = pickups[0]
+      shippingOption = undefined
+      pickupUpdated = undefined
     }
 
     setSelectedPickup(pickupUpdated)
+
+    if (
+      shippingOption === 'pickup-in-point' &&
+      pickupUpdated?.pickupPoint?.id
+    ) {
+      persistPickupPreference(pickupUpdated, zipcode!)
+    }
 
     await updateSession(
       countryCode,
       zipcode!,
       geoCoordinates!,
       pickupUpdated,
-      shippingMethod
+      shippingOption
     )
 
     setIsLoading(true)
@@ -440,7 +472,7 @@ export const useDeliveryPromise = () => {
       countryCode,
       zipcode,
       geoCoordinates,
-      selectedPickup,
+      undefined,
       'delivery'
     )
 
@@ -498,35 +530,66 @@ export const useDeliveryPromise = () => {
         return
 
       case 'UPDATE_ZIPCODE': {
-        const { zipcode: zipcodeSelected, reload } = action.args
+        const {
+          zipcode: zipcodeSelected,
+          reload,
+          onAppliedWithoutReload,
+          cartAvailability = 'deliveryorpickup',
+        } = action.args
+
+        const validateZipCartAvailability = (
+          items: AvailabilityItem[]
+        ): Promise<unknown> =>
+          cartAvailability === 'delivery'
+            ? validateProductAvailabilityByDelivery(
+                zipcodeSelected,
+                countryCode!,
+                items,
+                account,
+                salesChannel
+              )
+            : validateProductAvailability(
+                zipcodeSelected,
+                countryCode!,
+                items,
+                account,
+                salesChannel
+              )
+
+        const applyZipAndFacetCallback = async () => {
+          const applied = await submitZipcode(zipcodeSelected, reload)
+
+          if (applied && reload === false && onAppliedWithoutReload) {
+            // Close unavailable-items UI before client navigation so the modal is not left
+            // loading if navigate interrupts the follow-up ABORT from the modal.
+            await resetUnavailableCartItems()
+            setActionInterruptedByCartValidation(undefined)
+            setUnavailabilityMessage(undefined)
+            onAppliedWithoutReload()
+          }
+
+          return applied
+        }
 
         const unavailableItems = await validateCartItems(
-          async (items: AvailabilityItem[]) =>
-            validateProductAvailability(
-              zipcodeSelected,
-              countryCode!,
-              items,
-              account,
-              salesChannel
-            )
+          validateZipCartAvailability
         )
 
         if (unavailableItems.length === 0) {
-          await submitZipcode(zipcodeSelected, reload)
-          break
+          return applyZipAndFacetCallback()
         }
 
         setUnavailabilityMessage(
           intl.formatMessage(messages.unavailableItemsModalDescription, {
-            addressLabel,
+            addressLabel: zipcodeSelected,
           })
         )
 
         setActionInterruptedByCartValidation(
-          () => () => submitZipcode(zipcodeSelected, reload)
+          () => () => applyZipAndFacetCallback()
         )
 
-        break
+        return false
       }
 
       case 'UPDATE_PICKUP': {
@@ -622,11 +685,13 @@ export const useDeliveryPromise = () => {
 
       case 'ABORT_UNAVAILABLE_ITEMS_ACTION': {
         resetUnavailableCartItems()
+        setActionInterruptedByCartValidation(undefined)
+        setUnavailabilityMessage(undefined)
         break
       }
 
       case 'CONTINUE_UNAVAILABLE_ITEMS_ACTION': {
-        removeUnavailableItems()
+        await removeUnavailableItems()
         break
       }
 
@@ -635,16 +700,37 @@ export const useDeliveryPromise = () => {
           return
         }
 
-        // Reset fulfillment method to undefined (no selection)
-        await updateSession(
-          countryCode,
-          zipcode,
-          geoCoordinates,
-          selectedPickup
-          // No shipping option parameter = reset to no selection
-        )
+        await updateSession(countryCode, zipcode, geoCoordinates, undefined)
 
         setIsLoading(true)
+        location.reload()
+
+        break
+      }
+
+      case 'CLEAR_ZIPCODE': {
+        const orderFormId = getOrderFormId()
+
+        setIsLoading(true)
+
+        if (orderFormId) {
+          await clearOrderFormShipping(orderFormId)
+        }
+
+        await clearShippingSession()
+
+        setZipCode(undefined)
+        setCity(undefined)
+        setGeoCoordinates(undefined)
+        setPickups([])
+        setSelectedPickup(undefined)
+        setDeliveryPromiseMethod(undefined)
+        setAddressLabel(undefined)
+        setSubmitErrorMessage(undefined)
+        setUnavailableCartItems([])
+        setUnavailabilityMessage(undefined)
+        setActionInterruptedByCartValidation(undefined)
+
         location.reload()
 
         break
@@ -653,6 +739,8 @@ export const useDeliveryPromise = () => {
       default:
         break
     }
+
+    return undefined
   }
 
   const dispatch = useCallback((action: DeliveryPromiseActions) => {
@@ -670,6 +758,7 @@ export const useDeliveryPromise = () => {
       submitErrorMessage,
       city,
       pickups,
+      pickupSuggestion,
       selectedPickup,
       geoCoordinates,
       addressLabel,

@@ -21,6 +21,7 @@ interface ShopperLocationPopoverProps {
   onClick: () => void
   variant?: 'popover-button' | 'popover-input'
   onSubmit: (zipcode: string) => void
+  onClearZipcode?: () => void
   isLoading?: boolean
   inputErrorMessage?: string
   popoverStore: PopoverStore
@@ -32,6 +33,7 @@ const ShopperLocationPopover = ({
   onClick,
   variant = 'popover-input',
   onSubmit,
+  onClearZipcode,
   isLoading,
   inputErrorMessage,
   popoverStore,
@@ -49,6 +51,8 @@ const ShopperLocationPopover = ({
   const isFirstLoading = !zipcode && isLoading
 
   const openPopover = !isFirstLoading && !selectedZipcode && !alreadyOpen
+
+  useEffect(() => setZipcode(selectedZipcode ?? ''), [selectedZipcode])
 
   useEffect(() => {
     if (openPopover) {
@@ -105,6 +109,14 @@ const ShopperLocationPopover = ({
     onSubmit(zipCode)
   }
 
+  const handleClearZipcode = () => {
+    if (variant === 'popover-input') {
+      popoverStore.setOpen(false)
+    }
+
+    onClearZipcode?.()
+  }
+
   const handlePopoverClick = () => {
     onClick()
     popoverStore.setOpen(false)
@@ -141,8 +153,8 @@ const ShopperLocationPopover = ({
             zipcode={zipcode}
             onSubmit={handleZipSubmit}
             errorMessage={inputErrorMessage}
-            showClearButton={false}
             submitOnEnter={false}
+            onClear={selectedZipcode ? handleClearZipcode : undefined}
             placeholder={intl.formatMessage(
               messages.shopperLocationPopoverPostalCodePlaceholder
             )}

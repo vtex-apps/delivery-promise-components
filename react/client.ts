@@ -119,6 +119,24 @@ function mapPickupPointDistanceRow(ppd: PickupPointDistance) {
   }
 }
 
+export const clearShippingSession = async () => {
+  document.cookie = `${SHIPPING_INFO_COOKIE}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`
+
+  await fetch('/api/sessions', {
+    method: 'POST',
+    body: JSON.stringify({
+      public: {
+        facets: {
+          value: '',
+        },
+      },
+    }),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
 export const getPickups = (
   countryCode: string,
   zipCode: string,
@@ -161,6 +179,15 @@ export const updateOrderForm = (
     },
   }).then((res) => res.json())
 
+export const clearOrderFormShipping = (orderFormId: string) =>
+  fetch(`/api/checkout/pub/orderForm/${orderFormId}/attachments/shippingData`, {
+    method: 'POST',
+    body: JSON.stringify({ selectedAddresses: [] }),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  }).then((res) => res.json())
+
 export const getCatalogCount = (zipCode: string, geoCoordinates: number[]) =>
   fetch(
     `/api/io/_v/api/intelligent-search/catalog_count?zip-code=${zipCode}&coordinates=${geoCoordinates.join(
@@ -194,31 +221,6 @@ export const orderFormItemsToAvailabilityItems = (
 
     return { itemId, productId }
   })
-
-export const removeCartProductsById = async (
-  orderFormId: string,
-  cartProductsIndex: number[]
-) => {
-  const requestBody = {
-    orderItems: cartProductsIndex.map((productIndex) => ({
-      quantity: 0,
-      index: productIndex,
-    })),
-  }
-
-  const orderForm = await fetch(
-    `/api/checkout/pub/orderForm/${orderFormId}/items/update`,
-    {
-      method: 'POST',
-      body: JSON.stringify(requestBody),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    }
-  ).then((res) => res.json())
-
-  return orderForm.items
-}
 
 export const validateProductAvailability = async (
   zipCode: string,

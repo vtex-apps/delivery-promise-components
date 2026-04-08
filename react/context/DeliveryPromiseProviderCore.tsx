@@ -27,11 +27,10 @@ export const DeliveryPromiseProviderCore = ({ children }: Props) => {
     })
   }
 
-  const onContinueUnavailableItemsAction = () => {
+  const onContinueUnavailableItemsAction = () =>
     dispatch({
       type: 'CONTINUE_UNAVAILABLE_ITEMS_ACTION',
     })
-  }
 
   return (
     <DeliveryPromiseStateContext.Provider value={state}>

@@ -67,11 +67,8 @@
   padding: 28px 40px;
 }
 
+.shippingMethodOptionButton:hover,
 .shippingMethodOptionButtonSelected {
-  border: 1px solid var(--border-1, #7e7e7e);
-}
-
-.shippingMethodOptionButton:hover {
   border: 1px solid var(--border-1, #7e7e7e);
 }
 

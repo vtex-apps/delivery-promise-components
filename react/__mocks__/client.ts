@@ -8,6 +8,8 @@ export const getPickups = async () => ({
 
 export const updateOrderForm = async () => undefined
 
+export const clearOrderFormShipping = async (_orderFormId: string) => undefined
+
 export const updateSession = async (
   _countryCode: string,
   _zipCode: string,
@@ -16,9 +18,9 @@ export const updateSession = async (
   _sessionShippingValue?: string
 ) => undefined
 
-export const getCartProducts = async () => []
+export const clearShippingSession = async (_countryCode?: string) => undefined
 
-export const removeCartProductsById = async () => undefined
+export const getCartProducts = async () => []
 
 export const validateProductAvailability = async (..._args: unknown[]) => ({
   unavailableItemIds: [],

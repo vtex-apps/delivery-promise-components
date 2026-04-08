@@ -20,6 +20,8 @@ export type DeliveryPromiseUiRegistry = {
 export interface State {
   zipcode?: string
   pickups: Pickup[]
+  /** Closest pickup to the current zip (from API distance); used for PLP label when nothing is selected. */
+  pickupSuggestion?: Pickup
   selectedPickup?: Pickup
   geoCoordinates?: number[]
   countryCode?: string
@@ -38,7 +40,17 @@ export interface State {
 
 interface UpdateZipCode {
   type: 'UPDATE_ZIPCODE'
-  args: { zipcode: string; reload?: boolean }
+  args: {
+    zipcode: string
+    reload?: boolean
+    /** When reload is false (e.g. PLP facet navigation), run after zip is applied — including after “remove unavailable items”. */
+    onAppliedWithoutReload?: () => void
+    /**
+     * Cart availability check before applying zip. PLP postal facet uses `delivery` (BFF `/availability/delivery`);
+     * header / ShopperLocationSetter uses default `deliveryorpickup` (`/availability/deliveryorpickup`).
+     */
+    cartAvailability?: 'delivery' | 'deliveryorpickup'
+  }
 }
 
 interface UpdatePickup {
@@ -84,6 +96,10 @@ interface RequestOpenShippingMethodModal {
   type: 'REQUEST_OPEN_SHIPPING_METHOD_MODAL'
 }
 
+interface ClearZipCode {
+  type: 'CLEAR_ZIPCODE'
+}
+
 export type DeliveryPromiseActions =
   | UpdateZipCode
   | UpdatePickup
@@ -96,6 +112,7 @@ export type DeliveryPromiseActions =
   | RegisterShippingMethodBlock
   | UnregisterShippingMethodBlock
   | RequestOpenShippingMethodModal
+  | ClearZipCode
 
 const DEFAULT_STATE: State = {
   pickups: [],

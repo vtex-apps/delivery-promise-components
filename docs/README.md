@@ -119,6 +119,10 @@ No content schema; add the block in product-summary templates as documented in `
 
 `UnavailableItemsModal` is rendered once inside `DeliveryPromiseProvider` (not inside each block).
 
+### Optional React exports (e.g. PLP / search)
+
+The default `PickupModal` block is wired to `DeliveryPromiseProvider` and session updates. For integrations that need **only the UI** (controlled zip and pickup list, no `UPDATE_ZIPCODE` / session side effects), import **`PickupModalPresentational`** from `vtex.delivery-promise-components`. Supporting modules such as **`pickupSearchClient`** / **`pickupInPointPreference`** are available for fetching pickup points and persisting pickup-in-point preferences in the host app.
+
 ## Customization
 
 In order to apply CSS customizations in this and other blocks, follow the instructions given in the recipe on [Using CSS Handles for store customization](https://vtex.io/docs/recipes/style/using-css-handles-for-store-customization).
