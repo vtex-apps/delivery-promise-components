@@ -127,44 +127,38 @@ The default `PickupModal` block is wired to `DeliveryPromiseProvider` and sessio
 
 In order to apply CSS customizations in this and other blocks, follow the instructions given in the recipe on [Using CSS Handles for store customization](https://vtex.io/docs/recipes/style/using-css-handles-for-store-customization).
 
-| CSS Handles                               |
-| ----------------------------------------- |
-| `availabilityBadgeCircle`                 |
-| `availabilityPickupButton`                |
-| `modalBackButton`                         |
-| `modalCloseButton`                        |
-| `noPickupPointStateContent`               |
-| `pickupPointIconPath`                     |
-| `pickupPointIconSVG`                      |
-| `pickupPointItem`                         |
-| `pickupPointItemSelected`                 |
-| `pickupPointSelectorButtonValue`          |
-| `pickupPointSelectorButtonWrapper`        |
-| `pickupPointSelectorContainer`            |
-| `postalCodeHelpLink`                      |
-| `postalCodeInputClearButton`              |
-| `postalCodeInputContainer`                |
-| `shippingMethodModalOptions`              |
-| `shippingMethodModalTitle`                |
-| `shippingMethodOptionButton`              |
-| `shippingMethodOptionButtonSelected`      |
-| `shippingMethodSelector`                  |
-| `shippingMethodSelectorLabel`             |
-| `shippingMethodSelectorLabelLimited`      |
-| `shopperLocationDetectorButton`           |
-| `shopperLocationDetectorButtonContainer`  |
-| `shopperLocationDetectorButtonIcon`       |
-| `shopperLocationPinIconPath`              |
-| `shopperLocationPinIconSVG`               |
-| `shopperLocationPopover`                  |
-| `shopperLocationPopoverArrow`             |
-| `shopperLocationPopoverInputContainer`    |
-| `shopperLocationPopoverText`              |
-| `shopperLocationSetterButtonLabel`        |
-| `shopperLocationSetterButtonValue`        |
-| `shopperLocationSetterButtonWrapper`      |
-| `shopperLocationSetterContainer`          |
-| `updateButtonContainer`                   |
+| CSS Handles                              |
+| ---------------------------------------- |
+| `shopperLocationSetterButtonLabel`       |
+| `shopperLocationSetterButtonValue`       |
+| `shopperLocationSetterButtonWrapper`     |
+| `shopperLocationSetterContainer`         |
+| `shopperLocationPopover`                 |
+| `shopperLocationPopoverArrow`            |
+| `shopperLocationPopoverInputContainer`   |
+| `shippingMethodSelector`                 |
+| `shippingMethodSelectorLabel`            |
+| `shippingMethodSelectorLabelLimited`     |
+| `shippingMethodOptionButton`             |
+| `shippingMethodOptionButtonSelected`     |
+| `shippingMethodModalOptions`             |
+| `shopperLocationDetectorButton`          |
+| `shopperLocationDetectorButtonContainer` |
+| `shopperLocationDetectorButtonIcon`      |
+| `noPickupPointStateContent`              |
+| `pickupPointItem`                        |
+| `pickupPointItemSelected`                |
+| `postalCodeHelpLink`                     |
+| `postalCodeInputClearButton`             |
+| `postalCodeInputContainer`               |
+| `shopperLocationPopoverText`             |
+| `pickupPointIconPath`                    |
+| `pickupPointIconSVG`                     |
+| `pickupPointSelectorButtonValue`         |
+| `pickupPointSelectorButtonWrapper`       |
+| `pickupPointSelectorContainer`           |
+| `shopperLocationPinIconPath`             |
+| `shopperLocationPinIconSVG`              |
 
 <!-- DOCS-IGNORE:start -->
 
