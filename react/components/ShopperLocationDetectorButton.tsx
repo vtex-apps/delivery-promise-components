@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useIntl } from 'react-intl'
 import { useCssHandles } from 'vtex.css-handles'
 
@@ -53,8 +53,9 @@ const reverseGeocodeToZip = async (
 const ShopperLocationDetectorButton: React.FC = () => {
   const [uiPhase, setUiPhase] = useState<'idle' | 'working' | 'error'>('idle')
   const [awaitingContextIdle, setAwaitingContextIdle] = useState(false)
+  const autoLocationRequestedRef = useRef(false)
   const dispatch = useDeliveryPromiseDispatch()
-  const { countryCode, isLoading } = useDeliveryPromiseState()
+  const { countryCode, isLoading, zipcode } = useDeliveryPromiseState()
   const handles = useCssHandles(CSS_HANDLES)
   const intl = useIntl()
 
@@ -69,9 +70,10 @@ const ShopperLocationDetectorButton: React.FC = () => {
     }
   }, [awaitingContextIdle, isLoading])
 
-  const handleUseLocation = useCallback(async () => {
+  const detectAndUpdateZip = useCallback(async () => {
     if (!navigator?.geolocation || !countryCode) {
       setUiPhase('error')
+      setAwaitingContextIdle(false)
 
       return
     }
@@ -82,11 +84,11 @@ const ShopperLocationDetectorButton: React.FC = () => {
     try {
       const position = await getGeolocation()
       const { latitude, longitude } = position.coords
-      const zipcode = await reverseGeocodeToZip(latitude, longitude)
+      const zipFromGeo = await reverseGeocodeToZip(latitude, longitude)
 
       await dispatch({
         type: 'UPDATE_ZIPCODE',
-        args: { zipcode },
+        args: { zipcode: zipFromGeo },
       })
 
       setAwaitingContextIdle(true)
@@ -95,6 +97,23 @@ const ShopperLocationDetectorButton: React.FC = () => {
       setAwaitingContextIdle(false)
     }
   }, [countryCode, dispatch])
+
+  useEffect(() => {
+    if (autoLocationRequestedRef.current || isLoading || zipcode) {
+      return
+    }
+
+    if (!countryCode || !navigator?.geolocation) {
+      return
+    }
+
+    autoLocationRequestedRef.current = true
+    detectAndUpdateZip().catch(() => undefined)
+  }, [countryCode, detectAndUpdateZip, isLoading, zipcode])
+
+  const handleUseLocation = useCallback(() => {
+    detectAndUpdateZip().catch(() => undefined)
+  }, [detectAndUpdateZip])
 
   if (uiPhase === 'working') {
     return (

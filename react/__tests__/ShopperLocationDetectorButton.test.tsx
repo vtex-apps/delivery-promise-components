@@ -15,12 +15,19 @@ const messages = {
 
 const mockDispatch = jest.fn().mockResolvedValue(undefined)
 
+const mockDeliveryPromiseState: {
+  countryCode?: string
+  isLoading: boolean
+  zipcode?: string
+} = {
+  countryCode: 'BRA',
+  isLoading: false,
+  zipcode: undefined,
+}
+
 jest.mock('../context', () => ({
   useDeliveryPromiseDispatch: () => mockDispatch,
-  useDeliveryPromiseState: () => ({
-    countryCode: 'BRA',
-    isLoading: false,
-  }),
+  useDeliveryPromiseState: () => ({ ...mockDeliveryPromiseState }),
 }))
 
 // Mock geolocation
@@ -92,6 +99,10 @@ describe('ShopperLocationDetectorButton', () => {
   beforeEach(() => {
     jest.clearAllMocks()
 
+    mockDeliveryPromiseState.countryCode = 'BRA'
+    mockDeliveryPromiseState.isLoading = false
+    mockDeliveryPromiseState.zipcode = undefined
+
     Object.defineProperty(global, 'navigator', {
       value: { geolocation: mockGeolocation },
       writable: true,
@@ -113,20 +124,20 @@ describe('ShopperLocationDetectorButton', () => {
     jest.restoreAllMocks()
   })
 
-  it('renders use-location button initially without calling geolocation', () => {
+  it('does not call geolocation when a zipcode is already registered', () => {
+    mockDeliveryPromiseState.zipcode = '01310100'
+
     const { getByRole } = render(<ShopperLocationDetectorButton />)
 
     expect(getByRole('button', { name: 'Use my location' })).toBeInTheDocument()
     expect(mockGeolocation.getCurrentPosition).not.toHaveBeenCalled()
   })
 
-  it('calls geolocation and dispatches UPDATE_ZIPCODE after click', async () => {
+  it('calls geolocation and dispatches UPDATE_ZIPCODE on mount when zipcode is empty', async () => {
     mockSuccessfulGeolocation()
     mockSuccessfulFetch()
 
-    const { getByRole } = render(<ShopperLocationDetectorButton />)
-
-    fireEvent.click(getByRole('button', { name: 'Use my location' }))
+    render(<ShopperLocationDetectorButton />)
 
     await waitFor(() => {
       expect(mockGeolocation.getCurrentPosition).toHaveBeenCalled()
@@ -143,9 +154,7 @@ describe('ShopperLocationDetectorButton', () => {
     })
     mockSuccessfulFetch()
 
-    const { getByRole, getByText } = render(<ShopperLocationDetectorButton />)
-
-    fireEvent.click(getByRole('button', { name: 'Use my location' }))
+    const { getByText } = render(<ShopperLocationDetectorButton />)
 
     await waitFor(() => {
       expect(getByText('Detecting location...')).toBeInTheDocument()
@@ -155,9 +164,7 @@ describe('ShopperLocationDetectorButton', () => {
   it('handles geolocation error gracefully', async () => {
     mockGeolocationError()
 
-    const { getByRole, getByText } = render(<ShopperLocationDetectorButton />)
-
-    fireEvent.click(getByRole('button', { name: 'Use my location' }))
+    const { getByText } = render(<ShopperLocationDetectorButton />)
 
     await waitFor(() => {
       expect(getByText('Location detection failed')).toBeInTheDocument()
@@ -170,9 +177,7 @@ describe('ShopperLocationDetectorButton', () => {
     mockSuccessfulGeolocation()
     mockFailedFetch()
 
-    const { getByRole, getByText } = render(<ShopperLocationDetectorButton />)
-
-    fireEvent.click(getByRole('button', { name: 'Use my location' }))
+    const { getByText } = render(<ShopperLocationDetectorButton />)
 
     await waitFor(() => {
       expect(getByText('Location detection failed')).toBeInTheDocument()
@@ -191,9 +196,7 @@ describe('ShopperLocationDetectorButton', () => {
         }),
     })
 
-    const { getByRole } = render(<ShopperLocationDetectorButton />)
-
-    fireEvent.click(getByRole('button', { name: 'Use my location' }))
+    render(<ShopperLocationDetectorButton />)
 
     await waitFor(() => {
       expect(mockDispatch).toHaveBeenCalledWith({
@@ -203,8 +206,13 @@ describe('ShopperLocationDetectorButton', () => {
     })
   })
 
-  it('applies CSS handles on the button', () => {
-    const { container } = render(<ShopperLocationDetectorButton />)
+  it('applies CSS handles on the button after auto-detection completes', async () => {
+    mockSuccessfulGeolocation()
+    mockSuccessfulFetch()
+
+    const { container, findByRole } = render(<ShopperLocationDetectorButton />)
+
+    await findByRole('button', { name: 'Use my location' })
 
     expect(
       container.querySelector('.shopperLocationDetectorButton')
@@ -214,7 +222,7 @@ describe('ShopperLocationDetectorButton', () => {
     ).toBeInTheDocument()
   })
 
-  it('shows error when geolocation is not supported', async () => {
+  it('shows error when geolocation is not supported after manual click', async () => {
     Object.defineProperty(global, 'navigator', {
       value: {},
       writable: true,
@@ -226,6 +234,24 @@ describe('ShopperLocationDetectorButton', () => {
 
     await waitFor(() => {
       expect(getByText('Location detection failed')).toBeInTheDocument()
+    })
+  })
+
+  it('defers geolocation until context is not loading', async () => {
+    mockDeliveryPromiseState.isLoading = true
+
+    mockSuccessfulGeolocation()
+    mockSuccessfulFetch()
+
+    const { rerender } = render(<ShopperLocationDetectorButton />)
+
+    expect(mockGeolocation.getCurrentPosition).not.toHaveBeenCalled()
+
+    mockDeliveryPromiseState.isLoading = false
+    rerender(<ShopperLocationDetectorButton />)
+
+    await waitFor(() => {
+      expect(mockGeolocation.getCurrentPosition).toHaveBeenCalled()
     })
   })
 })
