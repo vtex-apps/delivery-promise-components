@@ -42,6 +42,10 @@ import {
   PRODUCTS_NOT_FOUND_ERROR_CODE,
   DEFAULT_TRADE_POLICY,
 } from '../constants'
+import {
+  clearSuppressAutoGeolocation,
+  setSuppressAutoGeolocation,
+} from '../modules/suppressAutoGeolocationSession'
 
 export const useDeliveryPromise = () => {
   const [zipcode, setZipCode] = useState<string>()
@@ -417,6 +421,8 @@ export const useDeliveryPromise = () => {
       setShippingMethodModalRequestId((n) => n + 1)
     }
 
+    clearSuppressAutoGeolocation()
+
     if (effectiveReload) {
       setIsLoading(true)
       location.reload()
@@ -718,6 +724,8 @@ export const useDeliveryPromise = () => {
         }
 
         await clearShippingSession()
+
+        setSuppressAutoGeolocation()
 
         setZipCode(undefined)
         setCity(undefined)

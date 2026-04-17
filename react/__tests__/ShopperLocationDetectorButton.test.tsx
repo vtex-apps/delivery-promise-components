@@ -3,6 +3,7 @@ import { render, waitFor, fireEvent } from '@vtex/test-tools/react'
 import * as reactIntl from 'react-intl'
 
 import ShopperLocationDetectorButton from '../components/ShopperLocationDetectorButton'
+import { setSuppressAutoGeolocation } from '../modules/suppressAutoGeolocationSession'
 
 const messages = {
   'store/delivery-promise-components.shopperLocationDetectorButton.title':
@@ -102,6 +103,12 @@ describe('ShopperLocationDetectorButton', () => {
     mockDeliveryPromiseState.countryCode = 'BRA'
     mockDeliveryPromiseState.isLoading = false
     mockDeliveryPromiseState.zipcode = undefined
+
+    try {
+      sessionStorage.clear()
+    } catch {
+      /* ignore */
+    }
 
     Object.defineProperty(global, 'navigator', {
       value: { geolocation: mockGeolocation },
@@ -253,5 +260,15 @@ describe('ShopperLocationDetectorButton', () => {
     await waitFor(() => {
       expect(mockGeolocation.getCurrentPosition).toHaveBeenCalled()
     })
+  })
+
+  it('does not auto-detect when suppress flag is set (after CLEAR_ZIPCODE)', () => {
+    setSuppressAutoGeolocation()
+    mockSuccessfulGeolocation()
+    mockSuccessfulFetch()
+
+    render(<ShopperLocationDetectorButton />)
+
+    expect(mockGeolocation.getCurrentPosition).not.toHaveBeenCalled()
   })
 })

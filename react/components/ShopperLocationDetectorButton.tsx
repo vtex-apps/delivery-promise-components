@@ -5,6 +5,7 @@ import { useCssHandles } from 'vtex.css-handles'
 import EmptyState from './EmptyState'
 import ShopperLocationPinIcon from './ShopperLocationPinIcon'
 import messages from '../messages'
+import { readSuppressAutoGeolocation } from '../modules/suppressAutoGeolocationSession'
 import { useDeliveryPromiseDispatch, useDeliveryPromiseState } from '../context'
 
 const CSS_HANDLES = [
@@ -100,6 +101,12 @@ const ShopperLocationDetectorButton: React.FC = () => {
 
   useEffect(() => {
     if (autoLocationRequestedRef.current || isLoading || zipcode) {
+      return
+    }
+
+    if (readSuppressAutoGeolocation()) {
+      autoLocationRequestedRef.current = true
+
       return
     }
 
