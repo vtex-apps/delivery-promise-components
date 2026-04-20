@@ -129,36 +129,36 @@ In order to apply CSS customizations in this and other blocks, follow the instru
 
 | CSS Handles                              |
 | ---------------------------------------- |
+| `shopperLocationSetterButtonLabel`       |
+| `shopperLocationSetterButtonValue`       |
+| `shopperLocationSetterButtonWrapper`     |
+| `shopperLocationSetterContainer`         |
 | `shopperLocationPopover`                 |
 | `shopperLocationPopoverArrow`            |
 | `shopperLocationPopoverInputContainer`   |
-| `shopperLocationPopoverText`             |
+| `shippingMethodSelector`                 |
+| `shippingMethodSelectorLabel`            |
+| `shippingMethodSelectorLabelLimited`     |
+| `shippingMethodOptionButton`             |
+| `shippingMethodOptionButtonSelected`     |
+| `shippingMethodModalOptions`             |
 | `shopperLocationDetectorButton`          |
 | `shopperLocationDetectorButtonContainer` |
 | `shopperLocationDetectorButtonIcon`      |
 | `noPickupPointStateContent`              |
 | `pickupPointItem`                        |
 | `pickupPointItemSelected`                |
+| `postalCodeHelpLink`                     |
+| `postalCodeInputClearButton`             |
+| `postalCodeInputContainer`               |
+| `shopperLocationPopoverText`             |
 | `pickupPointIconPath`                    |
 | `pickupPointIconSVG`                     |
 | `pickupPointSelectorButtonValue`         |
 | `pickupPointSelectorButtonWrapper`       |
 | `pickupPointSelectorContainer`           |
-| `postalCodeHelpLink`                     |
-| `postalCodeInputClearButton`             |
-| `postalCodeInputContainer`               |
-| `shippingMethodModalOptions`             |
-| `shippingMethodOptionButton`             |
-| `shippingMethodOptionButtonSelected`     |
-| `shippingMethodSelector`                 |
-| `shippingMethodSelectorLabel`            |
-| `shippingMethodSelectorLabelLimited`     |
 | `shopperLocationPinIconPath`             |
 | `shopperLocationPinIconSVG`              |
-| `shopperLocationSetterButtonLabel`       |
-| `shopperLocationSetterButtonValue`       |
-| `shopperLocationSetterButtonWrapper`     |
-| `shopperLocationSetterContainer`         |
 
 <!-- DOCS-IGNORE:start -->
 
