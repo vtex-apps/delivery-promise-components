@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-04-27
+
 ### Added
 
 - **`ShopperLocationDetectorButton` (via `shopper-location-setter` / `showLocationDetectorButton`):** after the delivery-promise context finishes its initial load, if there is **no** postal code yet, the control **once** requests browser geolocation, reverse-geocodes to a postal code, and dispatches `UPDATE_ZIPCODE`. Manual “use my location” still works after errors. Waits for `isLoading` to become false so session or facet postal codes are respected before prompting.
