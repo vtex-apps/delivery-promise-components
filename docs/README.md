@@ -30,18 +30,18 @@ Add the `delivery-promise-components` app to your theme dependencies in the `man
 
 ```json
   "dependencies": {
-    "vtex.delivery-promise-components": "0.x"
+    "vtex.delivery-promise-components": "1.x"
   }
 ```
 
 You can now use all blocks exported by the `delivery-promise-components` app. Use **one instance per block** in the theme (no ref-counting; the last mounted block of each type wins if duplicates exist).
 
-| Block name                   | Description                                                                 |
-| ---------------------------- | --------------------------------------------------------------------------- |
-| `shopper-location-setter`    | Postal code control: popover when optional, blocking modal when `required`. |
-| `shipping-method-selector`   | Delivery vs pickup modal (after a postal code exists).                     |
-| `pickup-point-selector`      | Pickup point choice (when applicable).                                     |
-| `availability-badges`        | Product-summary badges driven by delivery promise data.                      |
+| Block name                 | Description                                                                 |
+| -------------------------- | --------------------------------------------------------------------------- |
+| `shopper-location-setter`  | Postal code control: popover when optional, blocking modal when `required`. |
+| `shipping-method-selector` | Delivery vs pickup modal (after a postal code exists).                      |
+| `pickup-point-selector`    | Pickup point choice (when applicable).                                      |
+| `availability-badges`      | Product-summary badges driven by delivery promise data.                     |
 
 ### Adding blocks to the theme
 
@@ -91,19 +91,19 @@ Place the blocks where you need them (commonly under [header](https://developers
 
 #### `shopper-location-setter`
 
-| Prop name                    | Type      | Description                                                                 |
-| ---------------------------- | --------- | --------------------------------------------------------------------------- |
+| Prop name                    | Type      | Description                                                                                        |
+| ---------------------------- | --------- | -------------------------------------------------------------------------------------------------- |
 | `required`                   | `boolean` | If `true`, blocking postal code modal until valid code. If `false`, popover flow. Default `false`. |
-| `mode`                       | `enum`    | `default` or `icon`.                                                        |
-| `showLocationDetectorButton` | `boolean` | Shows geolocation control in the postal code UI. Default `false`.           |
+| `mode`                       | `enum`    | `default` or `icon`.                                                                               |
+| `showLocationDetectorButton` | `boolean` | Shows geolocation control in the postal code UI. Default `false`.                                  |
 
 #### `shipping-method-selector`
 
-| Prop name            | Type      | Description                                                                 |
-| -------------------- | --------- | --------------------------------------------------------------------------- |
-| `required`           | `boolean` | If `true`, modal cannot be dismissed until a method is chosen (after postal code exists). Default `false`. |
-| `mode`               | `enum`    | `default` or `icon`.                                                        |
-| `shippingSelection`  | `enum`    | `delivery-and-pickup` or `only-pickup`.                                     |
+| Prop name           | Type      | Description                                                                                                |
+| ------------------- | --------- | ---------------------------------------------------------------------------------------------------------- |
+| `required`          | `boolean` | If `true`, modal cannot be dismissed until a method is chosen (after postal code exists). Default `false`. |
+| `mode`              | `enum`    | `default` or `icon`.                                                                                       |
+| `shippingSelection` | `enum`    | `delivery-and-pickup` or `only-pickup`.                                                                    |
 
 #### `pickup-point-selector`
 
