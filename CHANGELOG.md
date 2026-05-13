@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`Makefile`:** standard targets for VTEX IO dev loop — `dev`, `build`, `test`, `coverage`, `lint`, `format-check`, `check`, `link`, `run`, `clean`. Managed by Golden Path.
+- **`README.md`** (repo root): contributor-facing guide with all required sections — Prerequisites, How to run, How to test, How to publish, Documentation. Distinct from `docs/README.md` (user-facing block reference).
+- **`AGENTS.md`:** canonical AI agent guidance with Repository Purpose, Sources of Truth, Verified Commands, Expected Skills, Expected MCPs, and Autonomy Limits. `CLAUDE.md` symlinked to it.
+- **`.agents/skills/`:** directory layout for repo-scoped agent skills.
+- **`docs/glossary.md`:** domain terms for Delivery Promise, blocks, context state, and tooling.
+- **`docs/data-model.md`:** Store Framework blocks, React context state, block registry actions, and VTEX platform integrations.
+- **`docs/sdd/model-guide.md`:** SDD command-to-model reference table (managed by Golden Path).
+- **`react/jest.config.js`:** coverage threshold (60% lines/functions/statements) scoped to `react/**/*.{ts,tsx}`, excluding typings and declarative builders.
+- **`.nvmrc`:** pinned Node.js version (`20`).
+- **`SECURITY.md`:** vulnerability reporting policy pointing to `security@vtex.com`.
+- **`.github/dependabot.yml`:** weekly Dependabot updates for npm (root), npm (react), and GitHub Actions.
+- **`.mcp.json`:** project-scoped MCP config with GitHub MCP declared.
+
+### Changed
+
+- **`.editorconfig`:** added `[Makefile]` section with `indent_style = tab`.
+- **`.github/CODEOWNERS`:** added wildcard `* @vtex-apps/intelligent-search-apps` as catch-all owner.
+- **`.github/workflows/pull-request.yml`:** `actions/checkout` and `actions/setup-node` pinned to `@v4`; switched from hard-coded `node-version` to `node-version-file: '.nvmrc'`; added yarn cache.
+- **`.github/workflows/danger.yml`:** same action upgrades as above.
+- **`.gitignore`:** added spec-kit canonical ignore block (Golden Path).
+
 ## [1.1.1] - 2026-04-27
 
 ### Added
