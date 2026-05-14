@@ -157,6 +157,19 @@ Root `yarn` scripts: `yarn lint`, `yarn format`, `yarn lint:locales` (intl-equal
 - **GitHub MCP** — cross-repo references, issues, PRs (declared in `.mcp.json`).
 - **Atlassian MCP** — Jira/Confluence context when tracking against the roadmap.
 
+## Multi-repo Specs
+
+Part of the **`is-io-specs`** multi-repo workspace alongside `vtex.intelligent-search-api`, `vtex.search-graphql`, `vtex.search-resolver`, `vtex.search-result`, and `vtex.search-session`. SpecKit artifacts (`constitution.md`, `scope_of_work/`, `specs/<feature>/`) live at the parent aggregator:
+
+```
+is-io-specs/
+├── .specify/memory/constitution.md     # team contract across all 6 apps
+├── docs/scope_of_work/                  # per-feature inputs to /speckit.specify
+└── specs/<feature>/                     # spec.md, plan.md, tasks.md, analysis.md
+```
+
+This repo intentionally has no local `.specify/`. Because this is a **public** repo, multi-repo storage is required (see the [Multi-repo spec-kit extension](https://github.com/vtex/speckit-multi-repo)).
+
 ## Autonomy Limits
 
 ### Toolbelt and platform
