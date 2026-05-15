@@ -73,7 +73,7 @@ const ShopperLocationSetter = ({
       <button
         ref={anchorRef}
         onClick={handleAnchorClick}
-        className={`${handles.shopperLocationSetterButtonWrapper} flex items-center br3 pt4 pr4 pb4 pl0 b--none`}
+        className={`${handles.shopperLocationSetterButtonWrapper} flex items-center br3 pa4 b--none`}
       >
         {loading ? (
           <div className="ml4">

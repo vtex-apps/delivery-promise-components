@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **`ShopperLocationSetter` / `PickupPointSelector` button wrappers:** left padding was `0` while top, right, and bottom were at Tachyons scale `4`. Replaced `pt4 pr4 pb4 pl0` with the uniform shorthand `pa4`, matching the existing behaviour of `ShippingMethodSelector`. CSS handle names are unchanged; theme overrides on `shopperLocationSetterButtonWrapper` and `pickupPointSelectorButtonWrapper` continue to work.
+
 ### Added
 
 - **`Makefile`:** standard targets for VTEX IO dev loop — `dev`, `build`, `test`, `coverage`, `lint`, `format-check`, `check`, `link`, `run`, `clean`. Managed by Golden Path.
