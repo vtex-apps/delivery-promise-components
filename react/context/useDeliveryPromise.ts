@@ -2,6 +2,7 @@
 import { useRuntime, useSSR } from 'vtex.render-runtime'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useIntl } from 'react-intl'
+import { useApolloClient } from 'react-apollo'
 import { useOrderItems } from 'vtex.order-items/OrderItems'
 import { usePixel, usePixelEventCallback } from 'vtex.pixel-manager'
 import { useRenderSession } from 'vtex.session-client'
@@ -109,6 +110,39 @@ export const useDeliveryPromise = () => {
   const intl = useIntl()
   const { addItems, removeItem } = useOrderItems()
   const { push } = usePixel()
+  const apolloClient = useApolloClient()
+
+  /**
+   * Refreshes the storefront after a session write. The session POST sets a
+   * new `vtex_segment` cookie (which carries the delivery / pickup hashes) in
+   * the response, so by the time we land here every cached observable query
+   * is one network round trip away from the new shopper context. We call
+   * `reFetchObservableQueries(true)` to pull those refreshed payloads into
+   * Apollo (productSearch, facets, suggestions, anything `@withSegment`),
+   * keeping the React tree alive and avoiding a hard `location.reload()`.
+   *
+   * Falls back to `location.reload()` when Apollo is unavailable (e.g. the
+   * provider isn't mounted in tests / custom hosts) or the refetch throws —
+   * a hard reload is always a correct, if expensive, way to converge on the
+   * post-session state.
+   */
+  const refreshStorefront = useCallback(async (): Promise<void> => {
+    if (
+      apolloClient &&
+      typeof apolloClient.reFetchObservableQueries === 'function'
+    ) {
+      try {
+        await apolloClient.reFetchObservableQueries(true)
+        setIsLoading(false)
+
+        return
+      } catch {
+        // fall through to the hard reload below
+      }
+    }
+
+    location.reload()
+  }, [apolloClient])
 
   const orderItemsUpdateOptions = {
     allowedOutdatedData: ['paymentData'] as const,
@@ -532,7 +566,7 @@ export const useDeliveryPromise = () => {
 
     if (effectiveReload) {
       setIsLoading(true)
-      location.reload()
+      await refreshStorefront()
     }
 
     return true
@@ -573,7 +607,7 @@ export const useDeliveryPromise = () => {
     )
 
     setIsLoading(true)
-    location.reload()
+    await refreshStorefront()
   }
 
   const selectDeliveryShippingOption = async () => {
@@ -590,7 +624,7 @@ export const useDeliveryPromise = () => {
     )
 
     setIsLoading(true)
-    location.reload()
+    await refreshStorefront()
   }
 
   useEffect(() => {
@@ -871,7 +905,7 @@ export const useDeliveryPromise = () => {
         await updateSession(countryCode, zipcode, geoCoordinates, undefined)
 
         setIsLoading(true)
-        location.reload()
+        await refreshStorefront()
 
         break
       }
@@ -901,7 +935,7 @@ export const useDeliveryPromise = () => {
         setUnavailabilityMessage(undefined)
         setActionInterruptedByCartValidation(undefined)
 
-        location.reload()
+        await refreshStorefront()
 
         break
       }
