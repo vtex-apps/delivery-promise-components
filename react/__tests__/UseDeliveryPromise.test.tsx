@@ -1022,3 +1022,160 @@ describe('useDeliveryPromise — K-2 single updateSession per UPDATE_ZIPCODE dis
     expect(getPickupsSpy).not.toHaveBeenCalled()
   })
 })
+
+describe('useDeliveryPromise — K-6 temporary perf instrumentation', () => {
+  let logSpy: jest.SpyInstance
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    const sessionMod = jest.requireMock('vtex.session-client') as {
+      useRenderSession: jest.Mock
+    }
+
+    sessionMod.useRenderSession.mockImplementation(() => ({
+      session: { namespaces: { store: { channel: { value: '1' } } } },
+      loading: false,
+    }))
+    jest.spyOn(client, 'updateSession').mockResolvedValue(undefined)
+    jest
+      .spyOn(client, 'getAddress')
+      .mockResolvedValue({ city: 'City', geoCoordinates: [1, 2] } as never)
+    jest
+      .spyOn(client, 'getCatalogCount')
+      .mockResolvedValue({ total: 1 } as never)
+    jest.spyOn(client, 'updateOrderForm').mockResolvedValue(undefined as never)
+    jest.spyOn(client, 'getPickups').mockResolvedValue({ items: [] } as never)
+    jest.spyOn(client, 'getCartProducts').mockResolvedValue([] as never)
+
+    const cookie = jest.requireMock('../utils/cookie') as {
+      getCountryCode: () => string
+      getFacetsData: (k: unknown) => unknown
+      getOrderFormId: () => unknown
+    }
+
+    jest.spyOn(cookie, 'getCountryCode').mockReturnValue('BR')
+    jest.spyOn(cookie, 'getFacetsData').mockReturnValue(undefined)
+    jest.spyOn(cookie, 'getOrderFormId').mockReturnValue('order-form-id')
+
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { ...window.location, reload: jest.fn() },
+    })
+
+    logSpy = jest.spyOn(console, 'log').mockImplementation(() => undefined)
+  })
+
+  afterEach(() => {
+    logSpy.mockRestore()
+  })
+
+  const perfEntries = () =>
+    logSpy.mock.calls.filter((call) =>
+      typeof call[0] === 'string'
+        ? call[0].startsWith('delivery-promise:zipcode-perf')
+        : false
+    )
+
+  const parsePerfLog = (logStr: string) => {
+    const parts = logStr.split(' ')
+    const payload: any = { durations: {} }
+
+    parts.forEach((part) => {
+      const [key, value] = part.split('=')
+
+      if (key === 'outcome' || key === 'errorCode') {
+        payload[key] = value
+      } else if (
+        key !== 'delivery-promise:zipcode-perf' &&
+        key &&
+        value !== undefined
+      ) {
+        payload.durations[key] = parseFloat(value)
+      }
+    })
+
+    return payload
+  }
+
+  it('emits one perf log entry with outcome=success on the happy path', async () => {
+    const actions = [
+      {
+        type: 'UPDATE_ZIPCODE',
+        args: { zipcode: '12345-678', reload: false },
+      },
+    ]
+
+    const { getByTestId } = render(<ActionRunner actions={actions} />)
+
+    fireEvent.click(getByTestId('btn'))
+
+    await waitFor(() => {
+      expect(perfEntries().length).toBeGreaterThanOrEqual(1)
+    })
+
+    const lastEntry = perfEntries()[perfEntries().length - 1]
+    const payload = parsePerfLog(lastEntry[0])
+
+    expect(payload.outcome).toBe('success')
+    expect(typeof payload.durations.total).toBe('number')
+    // Per-step durations are populated for the steps that actually ran.
+    expect(typeof payload.durations.getAddress).toBe('number')
+    expect(typeof payload.durations.validate).toBe('number')
+    expect(typeof payload.durations.submitZipcodeParallel).toBe('number')
+    expect(typeof payload.durations.updateSession).toBe('number')
+  })
+
+  it('emits outcome=error with errorCode=INVALID_POSTAL_CODE when getAddress rejects', async () => {
+    jest
+      .spyOn(client, 'getAddress')
+      .mockRejectedValue(new Error('postal-code 4xx'))
+
+    const actions = [
+      {
+        type: 'UPDATE_ZIPCODE',
+        args: { zipcode: '12345-678', reload: false },
+      },
+    ]
+
+    const { getByTestId } = render(<ActionRunner actions={actions} />)
+
+    fireEvent.click(getByTestId('btn'))
+
+    await waitFor(() => {
+      expect(perfEntries().length).toBeGreaterThanOrEqual(1)
+    })
+
+    const lastEntry = perfEntries()[perfEntries().length - 1]
+    const payload = parsePerfLog(lastEntry[0])
+
+    expect(payload.outcome).toBe('error')
+    expect(payload.errorCode).toBe('INVALID_POSTAL_CODE')
+  })
+
+  it('emits outcome=error with errorCode=PRODUCTS_NOT_FOUND when catalog count is zero', async () => {
+    jest
+      .spyOn(client, 'getCatalogCount')
+      .mockResolvedValue({ total: 0 } as never)
+
+    const actions = [
+      {
+        type: 'UPDATE_ZIPCODE',
+        args: { zipcode: '12345-678', reload: false },
+      },
+    ]
+
+    const { getByTestId } = render(<ActionRunner actions={actions} />)
+
+    fireEvent.click(getByTestId('btn'))
+
+    await waitFor(() => {
+      expect(perfEntries().length).toBeGreaterThanOrEqual(1)
+    })
+
+    const lastEntry = perfEntries()[perfEntries().length - 1]
+    const payload = parsePerfLog(lastEntry[0])
+
+    expect(payload.outcome).toBe('error')
+    expect(payload.errorCode).toBe('products-not-found-error')
+  })
+})
