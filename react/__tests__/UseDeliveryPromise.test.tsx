@@ -33,6 +33,16 @@ jest.mock('vtex.session-client', () => ({
   })),
 }))
 
+// Prefix `mock` is required so jest.mock's hoisting allows access to this
+// binding from inside the module factory below.
+const mockReFetchObservableQueries = jest.fn().mockResolvedValue([])
+
+jest.mock('react-apollo', () => ({
+  useApolloClient: () => ({
+    reFetchObservableQueries: mockReFetchObservableQueries,
+  }),
+}))
+
 const mockIntl = {
   formatMessage: ({ id }: { id: string }) => String(id),
 } as unknown as reactIntl.IntlShape
@@ -133,7 +143,7 @@ describe('useDeliveryPromise actions and behavior', () => {
 
   it.each([
     [
-      'UPDATE_ZIPCODE + SELECT_DELIVERY_SHIPPING_OPTION triggers reload',
+      'UPDATE_ZIPCODE + SELECT_DELIVERY_SHIPPING_OPTION triggers a soft refresh',
       [
         {
           type: 'UPDATE_ZIPCODE',
@@ -143,7 +153,7 @@ describe('useDeliveryPromise actions and behavior', () => {
       ],
     ],
     [
-      'UPDATE_ZIPCODE + RESET_FULFILLMENT_METHOD triggers reload',
+      'UPDATE_ZIPCODE + RESET_FULFILLMENT_METHOD triggers a soft refresh',
       [
         {
           type: 'UPDATE_ZIPCODE',
@@ -194,7 +204,7 @@ describe('useDeliveryPromise actions and behavior', () => {
     })
   })
 
-  it('UPDATE_ZIPCODE skips location.reload when shipping method block is registered as required', async () => {
+  it('UPDATE_ZIPCODE does NOT refresh (soft or hard) when shipping method block is registered as required', async () => {
     const reloadMock = window.location.reload as jest.Mock
     const actions = [
       {
@@ -214,6 +224,8 @@ describe('useDeliveryPromise actions and behavior', () => {
     await waitFor(() => {
       expect(reloadMock).not.toHaveBeenCalled()
     })
+
+    expect(mockReFetchObservableQueries).not.toHaveBeenCalled()
   })
 
   it('UPDATE_ZIPCODE with required shipping (optional setter) bumps shippingMethodModalRequestId', async () => {
@@ -307,8 +319,37 @@ describe('useDeliveryPromise actions and behavior', () => {
     })
   })
 
-  it('UPDATE_ZIPCODE still calls location.reload when shipping method is registered as optional', async () => {
+  it('UPDATE_ZIPCODE soft-refreshes (no hard reload) when shipping method is registered as optional', async () => {
     const reloadMock = window.location.reload as jest.Mock
+    const actions = [
+      {
+        type: 'REGISTER_SHIPPING_METHOD_BLOCK',
+        args: { required: false },
+      },
+      {
+        type: 'UPDATE_ZIPCODE',
+        args: { zipcode: '12345-678', reload: true },
+      },
+    ]
+
+    const { getByTestId } = render(<ActionRunner actions={actions} />)
+
+    fireEvent.click(getByTestId('btn'))
+
+    await waitFor(() => {
+      expect(mockReFetchObservableQueries).toHaveBeenCalledWith(true)
+    })
+
+    expect(reloadMock).not.toHaveBeenCalled()
+  })
+
+  it('UPDATE_ZIPCODE falls back to location.reload when Apollo refetch throws', async () => {
+    const reloadMock = window.location.reload as jest.Mock
+
+    mockReFetchObservableQueries.mockRejectedValueOnce(
+      new Error('apollo offline')
+    )
+
     const actions = [
       {
         type: 'REGISTER_SHIPPING_METHOD_BLOCK',
@@ -327,6 +368,8 @@ describe('useDeliveryPromise actions and behavior', () => {
     await waitFor(() => {
       expect(reloadMock).toHaveBeenCalled()
     })
+
+    expect(mockReFetchObservableQueries).toHaveBeenCalledWith(true)
   })
 
   it('REGISTER_*_BLOCK updates uiRegistry and UNREGISTER clears entries', async () => {
@@ -1020,5 +1063,229 @@ describe('useDeliveryPromise — single updateSession per UPDATE_ZIPCODE dispatc
 
     expect(pickupArg).toBeUndefined()
     expect(getPickupsSpy).not.toHaveBeenCalled()
+  })
+})
+
+describe('useDeliveryPromise — soft refresh (replaces location.reload)', () => {
+  let reloadMock: jest.Mock
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+
+    const sessionMod = jest.requireMock('vtex.session-client') as {
+      useRenderSession: jest.Mock
+    }
+
+    sessionMod.useRenderSession.mockImplementation(() => ({
+      session: { namespaces: { store: { channel: { value: '1' } } } },
+      loading: false,
+    }))
+
+    jest.spyOn(client, 'updateSession').mockResolvedValue(undefined)
+    jest
+      .spyOn(client, 'getAddress')
+      .mockResolvedValue({ city: 'City', geoCoordinates: [1, 2] } as never)
+    jest
+      .spyOn(client, 'getCatalogCount')
+      .mockResolvedValue({ total: 1 } as never)
+    jest.spyOn(client, 'updateOrderForm').mockResolvedValue(undefined as never)
+    jest.spyOn(client, 'getPickups').mockResolvedValue({
+      items: [
+        {
+          pickupPoint: { isActive: true, id: 'p1', friendlyName: 'Store 1' },
+        },
+      ],
+    } as never)
+    jest.spyOn(client, 'getCartProducts').mockResolvedValue([] as never)
+    jest
+      .spyOn(client, 'validateProductAvailability')
+      .mockResolvedValue({ unavailableItemIds: [] } as never)
+    jest
+      .spyOn(client, 'validateProductAvailabilityByDelivery')
+      .mockResolvedValue({ unavailableItemIds: [] } as never)
+    jest
+      .spyOn(client, 'validateProductAvailabilityByPickup')
+      .mockResolvedValue({ unavailableItemIds: [] } as never)
+    jest.spyOn(client, 'clearOrderFormShipping').mockResolvedValue(undefined)
+    jest.spyOn(client, 'clearShippingSession').mockResolvedValue(undefined)
+
+    const cookie = jest.requireMock('../utils/cookie') as {
+      getCountryCode: () => string
+      getFacetsData: (k: unknown) => unknown
+      getOrderFormId: () => unknown
+    }
+
+    jest.spyOn(cookie, 'getCountryCode').mockReturnValue('BR')
+    jest
+      .spyOn(cookie, 'getFacetsData')
+      .mockImplementation((key: unknown) =>
+        key === 'zip-code' ? '12345-678' : undefined
+      )
+    jest.spyOn(cookie, 'getOrderFormId').mockReturnValue('order-form-id')
+
+    reloadMock = jest.fn()
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { ...window.location, reload: reloadMock },
+    })
+  })
+
+  it('UPDATE_ZIPCODE refetches Apollo observable queries instead of reloading', async () => {
+    const actions = [
+      {
+        type: 'UPDATE_ZIPCODE',
+        args: { zipcode: '12345-678', reload: true },
+      },
+    ]
+
+    const { getByTestId } = render(<ActionRunner actions={actions} />)
+
+    fireEvent.click(getByTestId('btn'))
+
+    await waitFor(() => {
+      expect(mockReFetchObservableQueries).toHaveBeenCalledWith(true)
+    })
+
+    expect(reloadMock).not.toHaveBeenCalled()
+  })
+
+  it('UPDATE_ZIPCODE with reload:false neither refetches nor reloads (caller owns navigation)', async () => {
+    // Start with no segment zip-code so the segment-restoration useEffect does
+    // not write the session before our dispatched action runs.
+    const cookie = jest.requireMock('../utils/cookie') as {
+      getFacetsData: jest.Mock
+    }
+
+    cookie.getFacetsData.mockImplementation(() => undefined)
+
+    const onApplied = jest.fn()
+    const actions = [
+      {
+        type: 'UPDATE_ZIPCODE',
+        args: {
+          zipcode: '12345-678',
+          reload: false,
+          onAppliedWithoutReload: onApplied,
+        },
+      },
+    ]
+
+    const { getByTestId } = render(<ActionRunner actions={actions} />)
+
+    fireEvent.click(getByTestId('btn'))
+
+    await waitFor(() => {
+      expect(onApplied).toHaveBeenCalledTimes(1)
+    })
+
+    expect(mockReFetchObservableQueries).not.toHaveBeenCalled()
+    expect(reloadMock).not.toHaveBeenCalled()
+  })
+
+  it('SELECT_DELIVERY_SHIPPING_OPTION soft-refreshes', async () => {
+    const actions = [
+      {
+        type: 'UPDATE_ZIPCODE',
+        args: { zipcode: '12345-678', reload: true },
+      },
+      { type: 'SELECT_DELIVERY_SHIPPING_OPTION' },
+    ]
+
+    const { getByTestId } = render(<ActionRunner actions={actions} />)
+
+    fireEvent.click(getByTestId('btn'))
+
+    await waitFor(() => {
+      // UPDATE_ZIPCODE + SELECT_DELIVERY_SHIPPING_OPTION = 2 refetches.
+      expect(mockReFetchObservableQueries).toHaveBeenCalledTimes(2)
+    })
+
+    expect(reloadMock).not.toHaveBeenCalled()
+  })
+
+  it('RESET_FULFILLMENT_METHOD soft-refreshes', async () => {
+    const actions = [
+      {
+        type: 'UPDATE_ZIPCODE',
+        args: { zipcode: '12345-678', reload: true },
+      },
+      { type: 'RESET_FULFILLMENT_METHOD' },
+    ]
+
+    const { getByTestId } = render(<ActionRunner actions={actions} />)
+
+    fireEvent.click(getByTestId('btn'))
+
+    await waitFor(() => {
+      expect(mockReFetchObservableQueries).toHaveBeenCalledTimes(2)
+    })
+
+    expect(reloadMock).not.toHaveBeenCalled()
+  })
+
+  it('CLEAR_ZIPCODE soft-refreshes', async () => {
+    const actions = [{ type: 'CLEAR_ZIPCODE' }]
+
+    const { getByTestId } = render(<ActionRunner actions={actions} />)
+
+    fireEvent.click(getByTestId('btn'))
+
+    await waitFor(() => {
+      expect(mockReFetchObservableQueries).toHaveBeenCalledWith(true)
+    })
+
+    expect(reloadMock).not.toHaveBeenCalled()
+  })
+
+  it('falls back to location.reload when Apollo refetch throws', async () => {
+    mockReFetchObservableQueries.mockRejectedValueOnce(new Error('apollo down'))
+
+    const actions = [
+      {
+        type: 'UPDATE_ZIPCODE',
+        args: { zipcode: '12345-678', reload: true },
+      },
+    ]
+
+    const { getByTestId } = render(<ActionRunner actions={actions} />)
+
+    fireEvent.click(getByTestId('btn'))
+
+    await waitFor(() => {
+      expect(reloadMock).toHaveBeenCalledTimes(1)
+    })
+
+    expect(mockReFetchObservableQueries).toHaveBeenCalledTimes(1)
+  })
+
+  it('falls back to location.reload when no Apollo provider is mounted', async () => {
+    const apolloMod = jest.requireMock('react-apollo') as {
+      useApolloClient: jest.Mock | (() => unknown)
+    }
+
+    const originalUseApolloClient = apolloMod.useApolloClient
+
+    apolloMod.useApolloClient = () => null
+
+    try {
+      const actions = [
+        {
+          type: 'UPDATE_ZIPCODE',
+          args: { zipcode: '12345-678', reload: true },
+        },
+      ]
+
+      const { getByTestId } = render(<ActionRunner actions={actions} />)
+
+      fireEvent.click(getByTestId('btn'))
+
+      await waitFor(() => {
+        expect(reloadMock).toHaveBeenCalledTimes(1)
+      })
+
+      expect(mockReFetchObservableQueries).not.toHaveBeenCalled()
+    } finally {
+      apolloMod.useApolloClient = originalUseApolloClient
+    }
   })
 })
