@@ -62,80 +62,6 @@ const settle = <T>(promise: Promise<T>): Promise<SettledResult<T>> =>
     (reason) => ({ status: 'rejected' as const, reason })
   )
 
-// === K-6 (TEMPORARY) — performance instrumentation ==========================
-// All of this — marks, measures, and the console.log — WILL BE REMOVED in a
-// follow-up commit after the zipcode-submission-performance changes are
-// validated. Do not depend on the timeline marks or the log payload.
-type ZipcodeDurations = {
-  getAddress?: number
-  validate?: number
-  submitZipcodeParallel?: number
-  updateSession?: number
-  total: number
-}
-
-type ZipcodePerfContext = {
-  durations: ZipcodeDurations
-  errorCode?: string
-}
-
-const hasPerformanceApi = (): boolean =>
-  typeof performance !== 'undefined' &&
-  typeof performance.mark === 'function' &&
-  typeof performance.measure === 'function'
-
-const perfNow = (): number => {
-  if (
-    typeof performance !== 'undefined' &&
-    typeof performance.now === 'function'
-  ) {
-    return performance.now()
-  }
-
-  return Date.now()
-}
-
-// Module-level start-time bookkeeping. Duration is computed from
-// performance.now() rather than performance.measure(...).duration because
-// older jsdom builds (used by vtex-test-tools) do not return a measure
-// object. Marks and measures are still emitted to the timeline best-effort
-// for production debugging.
-const perfStepStarts = new Map<string, number>()
-
-const perfMarkStart = (label: string): void => {
-  perfStepStarts.set(label, perfNow())
-
-  if (!hasPerformanceApi()) return
-
-  try {
-    performance.mark(`dp:${label}:start`)
-  } catch {
-    // ignore — temporary instrumentation
-  }
-}
-
-const perfMeasureEnd = (label: string): number | undefined => {
-  const start = perfStepStarts.get(label)
-
-  perfStepStarts.delete(label)
-
-  const duration = start !== undefined ? perfNow() - start : undefined
-
-  if (hasPerformanceApi()) {
-    try {
-      const endName = `dp:${label}:end`
-
-      performance.mark(endName)
-      performance.measure(`dp:${label}`, `dp:${label}:start`, endName)
-    } catch {
-      // ignore — temporary instrumentation
-    }
-  }
-
-  return duration
-}
-// === end K-6 ================================================================
-
 export const useDeliveryPromise = () => {
   const [zipcode, setZipCode] = useState<string>()
   const [isLoading, setIsLoading] = useState(true)
@@ -209,7 +135,7 @@ export const useDeliveryPromise = () => {
   })
 
   // Shared pickup-state sync used by both applyPickupsResult (fetchPickups
-  // consumers) and submitZipcode's K-2 single-write block. Updates the
+  // consumers) and the submitZipcode session-write block. Updates the
   // pickup-related local state from a getPickups response and returns the
   // pickup that the next session write should carry (and a flag indicating
   // whether any active pickup was returned, so callers can preserve their
@@ -253,10 +179,10 @@ export const useDeliveryPromise = () => {
     []
   )
 
-  // K-3/K-5: post-fetch processing for fetchPickups consumers. When the
-  // response carries no active pickups, the session write is skipped so
-  // existing callers (segment-restoration useEffect, pendingPickupsFetch
-  // effect) keep their "don't re-write an already-correct session" behavior.
+  // Post-fetch processing for fetchPickups consumers. When the response
+  // carries no active pickups, the session write is skipped so callers
+  // (segment-restoration useEffect, pendingPickupsFetch effect) keep their
+  // "don't re-write an already-correct session" behavior.
   const applyPickupsResult = useCallback(
     async (
       country: string,
@@ -402,7 +328,7 @@ export const useDeliveryPromise = () => {
 
       const orderLines = await getCartProducts(orderFormId)
 
-      // K-4: skip the BFF availability call entirely for empty carts.
+      // Skip the BFF availability call entirely for empty carts.
       if (orderLines.length === 0) {
         setIsLoading(false)
 
@@ -474,10 +400,7 @@ export const useDeliveryPromise = () => {
   const submitZipcode = async (
     selectedZipcode: string,
     resolvedAddress: ResolvedAddress,
-    reload = true,
-    /** K-6 (temporary): when provided, the step durations + errorCode are
-     * populated so the dispatch handler can emit a single perf log entry. */
-    perfContext?: ZipcodePerfContext
+    reload = true
   ): Promise<boolean> => {
     if (!countryCode) {
       return false
@@ -489,11 +412,9 @@ export const useDeliveryPromise = () => {
       const { geoCoordinates: coordinates, city: cityName } = resolvedAddress
       const orderFormId = getOrderFormId()
 
-      // K-3/K-5: launch the three independent calls in parallel.
-      // getCatalogCount is kept on the critical path (UX gate) but no longer
-      // blocks updateOrderForm and getPickups behind it.
-      perfMarkStart('submitZipcodeParallel')
-
+      // Run the three independent calls in parallel. getCatalogCount stays
+      // on the critical path (UX gate) but no longer blocks updateOrderForm
+      // and getPickups behind it.
       const catalogCountPromise = getCatalogCount(selectedZipcode, coordinates)
       const updateOrderFormPromise = orderFormId
         ? updateOrderForm(countryCode, selectedZipcode, orderFormId)
@@ -510,15 +431,6 @@ export const useDeliveryPromise = () => {
           settle(pickupsPromise),
         ])
 
-      const submitZipcodeParallelDuration = perfMeasureEnd(
-        'submitZipcodeParallel'
-      )
-
-      if (perfContext) {
-        perfContext.durations.submitZipcodeParallel =
-          submitZipcodeParallelDuration
-      }
-
       // Catalog-count rejection keeps the existing INVALID_POSTAL_CODE path.
       if (catalogCountResult.status === 'rejected') {
         throw catalogCountResult.reason
@@ -527,10 +439,6 @@ export const useDeliveryPromise = () => {
       const { total } = catalogCountResult.value
 
       if (total === 0) {
-        if (perfContext) {
-          perfContext.errorCode = PRODUCTS_NOT_FOUND_ERROR_CODE
-        }
-
         onError(
           PRODUCTS_NOT_FOUND_ERROR_CODE,
           intl.formatMessage(
@@ -559,17 +467,17 @@ export const useDeliveryPromise = () => {
       setDeliveryPromiseMethod(undefined)
       setSelectedPickup(undefined)
 
-      // K-2: collapse the two POST /api/sessions writes into one. Pickup
-      // resolution happens before the session write so the single write
-      // carries the resolved pickup (or undefined when there are no active
-      // pickups, when getPickups rejected, or when salesChannel is not yet
-      // loaded and pickup fetching is deferred).
+      // Single session write per dispatch. Pickup resolution happens before
+      // the write so the single write carries the resolved pickup (or
+      // undefined when there are no active pickups, when getPickups rejected,
+      // or when salesChannel is not yet loaded and pickup fetching is
+      // deferred).
       let pickupForSession: Pickup | undefined
 
       if (!salesChannel) {
         // Deferral path preserved: pendingPickupsFetch will run once the
-        // session loads, identical to today. The session still gets the
-        // zipcode/coordinates immediately via the single write below.
+        // session loads. The session still gets the zipcode/coordinates
+        // immediately via the single write below.
         setPendingPickupsFetch({
           country: countryCode,
           selectedZipcode,
@@ -588,25 +496,13 @@ export const useDeliveryPromise = () => {
         ).pickupForSession
       }
 
-      perfMarkStart('updateSession')
-
       await updateSession(
         countryCode,
         selectedZipcode,
         coordinates,
         pickupForSession
       )
-
-      const updateSessionDuration = perfMeasureEnd('updateSession')
-
-      if (perfContext) {
-        perfContext.durations.updateSession = updateSessionDuration
-      }
     } catch {
-      if (perfContext) {
-        perfContext.errorCode = 'INVALID_POSTAL_CODE'
-      }
-
       onError(
         'INVALID_POSTAL_CODE',
         intl.formatMessage(messages.shopperLocationPostalCodeInputError)
@@ -754,28 +650,6 @@ export const useDeliveryPromise = () => {
           cartAvailability = 'deliveryorpickup',
         } = action.args
 
-        // K-6 (TEMPORARY): performance instrumentation. Marks/measures and
-        // the console.log emission will be removed in a follow-up commit.
-        perfMarkStart('UPDATE_ZIPCODE')
-        const perfContext: ZipcodePerfContext = { durations: { total: 0 } }
-        const logPerf = (
-          outcome: 'success' | 'error',
-          errorCode?: string
-        ): void => {
-          perfContext.durations.total = perfMeasureEnd('UPDATE_ZIPCODE') ?? 0
-          const durationEntries = Object.entries(perfContext.durations)
-            .map(([key, value]) => `${key}=${value ?? 0}`)
-            .join(' ')
-
-          // eslint-disable-next-line no-console
-          console.log(
-            `delivery-promise:zipcode-perf outcome=${outcome} errorCode=${
-              errorCode ?? perfContext.errorCode ?? 'none'
-            } ${durationEntries}`
-          )
-        }
-
-        // Fail-fast input gates (same error semantics submitZipcode used to apply).
         if (!zipcodeSelected) {
           onError(
             'POSTAL_CODE_NOT_FOUND',
@@ -783,25 +657,21 @@ export const useDeliveryPromise = () => {
               messages.shopperLocationPostalCodeInputPlaceholder
             )
           )
-          logPerf('error', 'POSTAL_CODE_NOT_FOUND')
 
           return false
         }
 
         if (!countryCode) {
-          logPerf('error', 'NO_COUNTRY_CODE')
-
           return false
         }
 
         setIsLoading(true)
 
-        // K-1: resolve the address ONCE; every downstream step reuses it.
+        // Resolve the address ONCE; every downstream step reuses it.
         // On failure, surface INVALID_POSTAL_CODE without attempting the
         // BFF availability call or any further getAddress retry.
         let resolvedAddress: ResolvedAddress
 
-        perfMarkStart('getAddress')
         try {
           resolvedAddress = await getAddress(
             countryCode,
@@ -809,17 +679,13 @@ export const useDeliveryPromise = () => {
             account
           )
         } catch {
-          perfContext.durations.getAddress = perfMeasureEnd('getAddress')
           onError(
             'INVALID_POSTAL_CODE',
             intl.formatMessage(messages.shopperLocationPostalCodeInputError)
           )
-          logPerf('error', 'INVALID_POSTAL_CODE')
 
           return false
         }
-
-        perfContext.durations.getAddress = perfMeasureEnd('getAddress')
 
         if (
           !resolvedAddress.geoCoordinates ||
@@ -829,7 +695,6 @@ export const useDeliveryPromise = () => {
             'INVALID_POSTAL_CODE',
             intl.formatMessage(messages.shopperLocationPostalCodeInputError)
           )
-          logPerf('error', 'INVALID_POSTAL_CODE')
 
           return false
         }
@@ -859,8 +724,7 @@ export const useDeliveryPromise = () => {
           const applied = await submitZipcode(
             zipcodeSelected,
             resolvedAddress,
-            reload,
-            perfContext
+            reload
           )
 
           if (applied && reload === false && onAppliedWithoutReload) {
@@ -872,17 +736,12 @@ export const useDeliveryPromise = () => {
             onAppliedWithoutReload()
           }
 
-          logPerf(applied ? 'success' : 'error')
-
           return applied
         }
 
-        perfMarkStart('validate')
         const unavailableItems = await validateCartItems(
           validateZipCartAvailability
         )
-
-        perfContext.durations.validate = perfMeasureEnd('validate')
 
         if (unavailableItems.length === 0) {
           return applyZipAndFacetCallback()
@@ -897,7 +756,6 @@ export const useDeliveryPromise = () => {
         setActionInterruptedByCartValidation(
           () => () => applyZipAndFacetCallback()
         )
-        logPerf('success', 'CART_VALIDATION_DEFERRED')
 
         return false
       }

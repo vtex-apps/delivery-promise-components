@@ -159,7 +159,7 @@ describe('client.getPickups', () => {
   })
 })
 
-describe('client.validateProductAvailability — pre-resolved address (K-1)', () => {
+describe('client.validateProductAvailability — pre-resolved address', () => {
   beforeEach(() => {
     jest.clearAllMocks()
   })
@@ -227,7 +227,7 @@ describe('client.validateProductAvailability — pre-resolved address (K-1)', ()
   })
 })
 
-describe('client.validateProductAvailabilityByDelivery — pre-resolved address (K-1)', () => {
+describe('client.validateProductAvailabilityByDelivery — pre-resolved address', () => {
   beforeEach(() => {
     jest.clearAllMocks()
   })
@@ -255,7 +255,7 @@ describe('client.validateProductAvailabilityByDelivery — pre-resolved address 
   })
 })
 
-describe('client.validateProductAvailabilityByPickup — pre-resolved address (K-1)', () => {
+describe('client.validateProductAvailabilityByPickup — pre-resolved address', () => {
   beforeEach(() => {
     jest.clearAllMocks()
   })

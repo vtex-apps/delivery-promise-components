@@ -16,7 +16,7 @@ export type ResolvedAddress = {
   geoCoordinates: number[]
 }
 
-/** Optional bag accepted by availability calls so callers can pass a pre-resolved address (K-1). */
+/** Optional bag accepted by availability calls so callers can pass a pre-resolved address. */
 export type AvailabilityCallOptions = {
   address?: ResolvedAddress
 }
