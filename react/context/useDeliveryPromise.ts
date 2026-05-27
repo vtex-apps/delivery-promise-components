@@ -134,18 +134,18 @@ export const useDeliveryPromise = () => {
     },
   })
 
-  // K-3/K-5: post-fetch processing extracted so it can be reused after
-  // submitZipcode's parallel block (where getPickups is launched alongside
-  // getCatalogCount and updateOrderForm).
-  const applyPickupsResult = useCallback(
-    async (
-      country: string,
-      selectedZipcode: string,
-      coordinates: number[],
+  // Shared pickup-state sync used by both applyPickupsResult (fetchPickups
+  // consumers) and submitZipcode's K-2 single-write block. Updates the
+  // pickup-related local state from a getPickups response and returns the
+  // pickup that the next session write should carry (and a flag indicating
+  // whether any active pickup was returned, so callers can preserve their
+  // own conditional updateSession semantics).
+  const syncPickupsState = useCallback(
+    (
       responsePickups: { items?: Pickup[] } | null | undefined,
-      shippingMethod?: ShippingMethod,
-      keepLoading = false
-    ) => {
+      selectedZipcode: string,
+      shippingMethod?: ShippingMethod
+    ): { pickupForSession: Pickup | undefined; hasAnyPickup: boolean } => {
       const pickupsFormatted =
         responsePickups?.items?.filter(
           (pickup: Pickup) => pickup.pickupPoint.isActive
@@ -157,11 +157,7 @@ export const useDeliveryPromise = () => {
         setPickupSuggestion(undefined)
         setSelectedPickup(undefined)
 
-        if (!keepLoading) {
-          setIsLoading(false)
-        }
-
-        return
+        return { pickupForSession: undefined, hasAnyPickup: false }
       }
 
       const nearest = getNearestPickup(pickupsFormatted)
@@ -178,6 +174,38 @@ export const useDeliveryPromise = () => {
 
       setSelectedPickup(pickupForSession)
 
+      return { pickupForSession, hasAnyPickup: true }
+    },
+    []
+  )
+
+  // K-3/K-5: post-fetch processing for fetchPickups consumers. When the
+  // response carries no active pickups, the session write is skipped so
+  // existing callers (segment-restoration useEffect, pendingPickupsFetch
+  // effect) keep their "don't re-write an already-correct session" behavior.
+  const applyPickupsResult = useCallback(
+    async (
+      country: string,
+      selectedZipcode: string,
+      coordinates: number[],
+      responsePickups: { items?: Pickup[] } | null | undefined,
+      shippingMethod?: ShippingMethod,
+      keepLoading = false
+    ) => {
+      const { pickupForSession, hasAnyPickup } = syncPickupsState(
+        responsePickups,
+        selectedZipcode,
+        shippingMethod
+      )
+
+      if (!hasAnyPickup) {
+        if (!keepLoading) {
+          setIsLoading(false)
+        }
+
+        return
+      }
+
       await updateSession(
         country,
         selectedZipcode,
@@ -190,7 +218,7 @@ export const useDeliveryPromise = () => {
         setIsLoading(false)
       }
     },
-    []
+    [syncPickupsState]
   )
 
   const fetchPickups = useCallback(
@@ -439,13 +467,17 @@ export const useDeliveryPromise = () => {
       setDeliveryPromiseMethod(undefined)
       setSelectedPickup(undefined)
 
-      await updateSession(countryCode, selectedZipcode, coordinates, undefined)
+      // K-2: collapse the two POST /api/sessions writes into one. Pickup
+      // resolution happens before the session write so the single write
+      // carries the resolved pickup (or undefined when there are no active
+      // pickups, when getPickups rejected, or when salesChannel is not yet
+      // loaded and pickup fetching is deferred).
+      let pickupForSession: Pickup | undefined
 
-      // Pickup processing: when salesChannel is not yet available, defer the
-      // fetch through the existing pendingPickupsFetch path. Otherwise, apply
-      // the result from the parallel block (treat getPickups rejection as no
-      // pickups, matching today's behavior when the call errors out).
       if (!salesChannel) {
+        // Deferral path preserved: pendingPickupsFetch will run once the
+        // session loads, identical to today. The session still gets the
+        // zipcode/coordinates immediately via the single write below.
         setPendingPickupsFetch({
           country: countryCode,
           selectedZipcode,
@@ -457,15 +489,19 @@ export const useDeliveryPromise = () => {
         const pickupsValue =
           pickupsResult.status === 'fulfilled' ? pickupsResult.value : null
 
-        await applyPickupsResult(
-          countryCode,
-          selectedZipcode,
-          coordinates,
+        pickupForSession = syncPickupsState(
           pickupsValue,
-          undefined,
-          true
-        )
+          selectedZipcode,
+          undefined
+        ).pickupForSession
       }
+
+      await updateSession(
+        countryCode,
+        selectedZipcode,
+        coordinates,
+        pickupForSession
+      )
     } catch {
       onError(
         'INVALID_POSTAL_CODE',

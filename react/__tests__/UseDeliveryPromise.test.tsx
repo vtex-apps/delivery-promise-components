@@ -856,3 +856,169 @@ describe('useDeliveryPromise — K-3/K-5 parallel block in submitZipcode', () =>
     })
   })
 })
+
+describe('useDeliveryPromise — K-2 single updateSession per UPDATE_ZIPCODE dispatch', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    const sessionMod = jest.requireMock('vtex.session-client') as {
+      useRenderSession: jest.Mock
+    }
+
+    sessionMod.useRenderSession.mockImplementation(() => ({
+      session: { namespaces: { store: { channel: { value: '1' } } } },
+      loading: false,
+    }))
+    jest.spyOn(client, 'updateSession').mockResolvedValue(undefined)
+    jest
+      .spyOn(client, 'getAddress')
+      .mockResolvedValue({ city: 'City', geoCoordinates: [1, 2] } as never)
+    jest
+      .spyOn(client, 'getCatalogCount')
+      .mockResolvedValue({ total: 1 } as never)
+    jest.spyOn(client, 'updateOrderForm').mockResolvedValue(undefined as never)
+
+    const cookie = jest.requireMock('../utils/cookie') as {
+      getCountryCode: () => string
+      getFacetsData: (k: unknown) => unknown
+      getOrderFormId: () => unknown
+    }
+
+    jest.spyOn(cookie, 'getCountryCode').mockReturnValue('BR')
+    jest.spyOn(cookie, 'getFacetsData').mockReturnValue(undefined)
+    jest.spyOn(cookie, 'getOrderFormId').mockReturnValue('order-form-id')
+
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { ...window.location, reload: jest.fn() },
+    })
+  })
+
+  it('writes the session exactly once with the resolved pickup (FR-2, happy path)', async () => {
+    const activePickup = {
+      pickupPoint: { isActive: true, id: 'pp-1', friendlyName: 'Store 1' },
+    }
+
+    jest
+      .spyOn(client, 'getPickups')
+      .mockResolvedValue({ items: [activePickup] } as never)
+
+    // The segment already references this pickup id — resolvePickupFor-
+    // ShippingSession returns the matching pickup, so the (single) session
+    // write carries it.
+    const cookie = jest.requireMock('../utils/cookie') as {
+      getFacetsData: (k: unknown) => unknown
+    }
+
+    jest
+      .spyOn(cookie, 'getFacetsData')
+      .mockImplementation((k: unknown) =>
+        k === 'pickupPoint' ? 'pp-1' : undefined
+      )
+
+    const actions = [
+      {
+        type: 'UPDATE_ZIPCODE',
+        args: { zipcode: '12345-678', reload: false },
+      },
+    ]
+
+    const { getByTestId } = render(<ActionRunner actions={actions} />)
+
+    fireEvent.click(getByTestId('btn'))
+
+    await waitFor(() => {
+      expect(client.updateSession).toHaveBeenCalledTimes(1)
+    })
+
+    const [country, zip, coords, pickupArg] = (
+      client.updateSession as jest.Mock
+    ).mock.calls[0]
+
+    expect(country).toBe('BR')
+    expect(zip).toBe('12345-678')
+    expect(coords).toEqual([1, 2])
+    expect(pickupArg).toEqual(activePickup)
+  })
+
+  it('writes the session exactly once with pickup=undefined when no active pickups are returned', async () => {
+    jest.spyOn(client, 'getPickups').mockResolvedValue({ items: [] } as never)
+
+    const actions = [
+      {
+        type: 'UPDATE_ZIPCODE',
+        args: { zipcode: '12345-678', reload: false },
+      },
+    ]
+
+    const { getByTestId } = render(<ActionRunner actions={actions} />)
+
+    fireEvent.click(getByTestId('btn'))
+
+    await waitFor(() => {
+      expect(client.updateSession).toHaveBeenCalledTimes(1)
+    })
+
+    const [, , , pickupArg] = (client.updateSession as jest.Mock).mock.calls[0]
+
+    expect(pickupArg).toBeUndefined()
+  })
+
+  it('writes the session exactly once with pickup=undefined when getPickups rejects', async () => {
+    jest.spyOn(client, 'getPickups').mockRejectedValue(new Error('pickup 5xx'))
+
+    const actions = [
+      {
+        type: 'UPDATE_ZIPCODE',
+        args: { zipcode: '12345-678', reload: false },
+      },
+    ]
+
+    const { getByTestId } = render(<ActionRunner actions={actions} />)
+
+    fireEvent.click(getByTestId('btn'))
+
+    await waitFor(() => {
+      expect(client.updateSession).toHaveBeenCalledTimes(1)
+    })
+
+    const [, , , pickupArg] = (client.updateSession as jest.Mock).mock.calls[0]
+
+    expect(pickupArg).toBeUndefined()
+  })
+
+  it('writes the session exactly once with pickup=undefined when salesChannel is still loading (deferral path)', async () => {
+    const sessionMod = jest.requireMock('vtex.session-client') as {
+      useRenderSession: jest.Mock
+    }
+
+    sessionMod.useRenderSession.mockImplementation(() => ({
+      session: undefined,
+      loading: true,
+    }))
+
+    // getPickups should NOT be invoked during the dispatch — it is deferred.
+    const getPickupsSpy = jest
+      .spyOn(client, 'getPickups')
+      .mockResolvedValue({ items: [] } as never)
+
+    const actions = [
+      {
+        type: 'UPDATE_ZIPCODE',
+        args: { zipcode: '12345-678', reload: false },
+      },
+    ]
+
+    const { getByTestId } = render(<ActionRunner actions={actions} />)
+
+    fireEvent.click(getByTestId('btn'))
+
+    await waitFor(() => {
+      expect(client.updateSession).toHaveBeenCalledTimes(1)
+    })
+
+    const [, , , pickupArg] = (client.updateSession as jest.Mock).mock.calls[0]
+
+    expect(pickupArg).toBeUndefined()
+    expect(getPickupsSpy).not.toHaveBeenCalled()
+  })
+})
