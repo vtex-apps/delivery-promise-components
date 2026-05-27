@@ -25,7 +25,7 @@ import {
   persistPickupPreference,
   resolvePickupForShippingSession,
 } from '../pickupInPointPreference'
-import type { AvailabilityItem } from '../client'
+import type { AvailabilityItem, ResolvedAddress } from '../client'
 import type { CartItem, CartProduct } from '../components/UnavailableItemsModal'
 import type { OrderFormCartLine } from '../modules/pixelHelper'
 import { mapCartItemToPixel } from '../modules/pixelHelper'
@@ -324,17 +324,9 @@ export const useDeliveryPromise = () => {
 
   const submitZipcode = async (
     selectedZipcode: string,
+    resolvedAddress: ResolvedAddress,
     reload = true
   ): Promise<boolean> => {
-    if (!selectedZipcode) {
-      onError(
-        'POSTAL_CODE_NOT_FOUND',
-        intl.formatMessage(messages.shopperLocationPostalCodeInputPlaceholder)
-      )
-
-      return false
-    }
-
     if (!countryCode) {
       return false
     }
@@ -342,20 +334,7 @@ export const useDeliveryPromise = () => {
     setIsLoading(true)
 
     try {
-      const { geoCoordinates: coordinates, city: cityName } = await getAddress(
-        countryCode,
-        selectedZipcode,
-        account
-      )
-
-      if (coordinates.length === 0) {
-        onError(
-          'INVALID_POSTAL_CODE',
-          intl.formatMessage(messages.shopperLocationPostalCodeInputError)
-        )
-
-        return false
-      }
+      const { geoCoordinates: coordinates, city: cityName } = resolvedAddress
 
       const { total } = await getCatalogCount(selectedZipcode, coordinates)
 
@@ -543,27 +522,83 @@ export const useDeliveryPromise = () => {
           cartAvailability = 'deliveryorpickup',
         } = action.args
 
+        // Fail-fast input gates (same error semantics submitZipcode used to apply).
+        if (!zipcodeSelected) {
+          onError(
+            'POSTAL_CODE_NOT_FOUND',
+            intl.formatMessage(
+              messages.shopperLocationPostalCodeInputPlaceholder
+            )
+          )
+
+          return false
+        }
+
+        if (!countryCode) {
+          return false
+        }
+
+        setIsLoading(true)
+
+        // K-1: resolve the address ONCE; every downstream step reuses it.
+        // On failure, surface INVALID_POSTAL_CODE without attempting the
+        // BFF availability call or any further getAddress retry.
+        let resolvedAddress: ResolvedAddress
+
+        try {
+          resolvedAddress = await getAddress(
+            countryCode,
+            zipcodeSelected,
+            account
+          )
+        } catch {
+          onError(
+            'INVALID_POSTAL_CODE',
+            intl.formatMessage(messages.shopperLocationPostalCodeInputError)
+          )
+
+          return false
+        }
+
+        if (
+          !resolvedAddress.geoCoordinates ||
+          resolvedAddress.geoCoordinates.length === 0
+        ) {
+          onError(
+            'INVALID_POSTAL_CODE',
+            intl.formatMessage(messages.shopperLocationPostalCodeInputError)
+          )
+
+          return false
+        }
+
         const validateZipCartAvailability = (
           items: AvailabilityItem[]
         ): Promise<unknown> =>
           cartAvailability === 'delivery'
             ? validateProductAvailabilityByDelivery(
                 zipcodeSelected,
-                countryCode!,
+                countryCode,
                 items,
                 account,
-                salesChannel
+                salesChannel,
+                { address: resolvedAddress }
               )
             : validateProductAvailability(
                 zipcodeSelected,
-                countryCode!,
+                countryCode,
                 items,
                 account,
-                salesChannel
+                salesChannel,
+                { address: resolvedAddress }
               )
 
         const applyZipAndFacetCallback = async () => {
-          const applied = await submitZipcode(zipcodeSelected, reload)
+          const applied = await submitZipcode(
+            zipcodeSelected,
+            resolvedAddress,
+            reload
+          )
 
           if (applied && reload === false && onAppliedWithoutReload) {
             // Close unavailable-items UI before client navigation so the modal is not left

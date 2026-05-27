@@ -485,3 +485,122 @@ describe('useDeliveryPromise actions and behavior', () => {
     })
   })
 })
+
+describe('useDeliveryPromise — K-1 fail-fast on UPDATE_ZIPCODE', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    const sessionMod = jest.requireMock('vtex.session-client') as {
+      useRenderSession: jest.Mock
+    }
+
+    sessionMod.useRenderSession.mockImplementation(() => ({
+      session: { namespaces: { store: { channel: { value: '1' } } } },
+      loading: false,
+    }))
+    jest.spyOn(client, 'updateSession').mockResolvedValue(undefined)
+    jest.spyOn(client, 'getPickups').mockResolvedValue({ items: [] } as never)
+    jest
+      .spyOn(client, 'getCatalogCount')
+      .mockResolvedValue({ total: 1 } as never)
+    jest.spyOn(client, 'updateOrderForm').mockResolvedValue(undefined as never)
+    jest.spyOn(client, 'getCartProducts').mockResolvedValue([] as never)
+    jest
+      .spyOn(client, 'validateProductAvailability')
+      .mockResolvedValue({ unavailableItemIds: [] } as never)
+
+    const cookie = jest.requireMock('../utils/cookie') as {
+      getCountryCode: () => string
+      getFacetsData: (k: unknown) => unknown
+      getOrderFormId: () => unknown
+    }
+
+    jest.spyOn(cookie, 'getCountryCode').mockReturnValue('BR')
+    // Important: empty zip-code so the mount effect does NOT call getAddress.
+    // This isolates the assertion to the UPDATE_ZIPCODE dispatch only.
+    jest.spyOn(cookie, 'getFacetsData').mockReturnValue(undefined)
+    jest.spyOn(cookie, 'getOrderFormId').mockReturnValue(undefined)
+
+    const reloadMock = jest.fn()
+
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { ...window.location, reload: reloadMock },
+    })
+  })
+
+  it('calls getAddress exactly once on the happy path', async () => {
+    const getAddressSpy = jest
+      .spyOn(client, 'getAddress')
+      .mockResolvedValue({ city: 'City', geoCoordinates: [1, 2] } as never)
+
+    const actions = [
+      {
+        type: 'UPDATE_ZIPCODE',
+        args: { zipcode: '12345-678', reload: false },
+      },
+    ]
+
+    const { getByTestId } = render(<ActionRunner actions={actions} />)
+
+    fireEvent.click(getByTestId('btn'))
+
+    await waitFor(() => {
+      expect(getAddressSpy).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  it('fails fast on getAddress rejection without calling BFF availability', async () => {
+    jest
+      .spyOn(client, 'getAddress')
+      .mockRejectedValue(new Error('postal-code 4xx'))
+
+    const validateSpy = jest
+      .spyOn(client, 'validateProductAvailability')
+      .mockResolvedValue({ unavailableItemIds: [] } as never)
+
+    const actions = [
+      {
+        type: 'UPDATE_ZIPCODE',
+        args: { zipcode: '12345-678', reload: false },
+      },
+    ]
+
+    const { getByTestId } = render(<ActionRunner actions={actions} />)
+
+    fireEvent.click(getByTestId('btn'))
+
+    // Wait for the dispatch to settle — assert no BFF call followed.
+    await waitFor(() => {
+      expect(client.getAddress).toHaveBeenCalled()
+    })
+
+    expect(validateSpy).not.toHaveBeenCalled()
+  })
+
+  it('fails fast on empty geoCoordinates without calling BFF availability', async () => {
+    jest
+      .spyOn(client, 'getAddress')
+      .mockResolvedValue({ city: 'City', geoCoordinates: [] } as never)
+
+    const validateSpy = jest
+      .spyOn(client, 'validateProductAvailability')
+      .mockResolvedValue({ unavailableItemIds: [] } as never)
+
+    const actions = [
+      {
+        type: 'UPDATE_ZIPCODE',
+        args: { zipcode: '12345-678', reload: false },
+      },
+    ]
+
+    const { getByTestId } = render(<ActionRunner actions={actions} />)
+
+    fireEvent.click(getByTestId('btn'))
+
+    await waitFor(() => {
+      expect(client.getAddress).toHaveBeenCalled()
+    })
+
+    expect(validateSpy).not.toHaveBeenCalled()
+  })
+})

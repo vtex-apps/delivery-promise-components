@@ -7,6 +7,20 @@ export type AvailabilityItem = {
   productId: string
 }
 
+/**
+ * Pre-resolved Checkout postal-code response, threaded through the dispatch
+ * handler so a single `getAddress` call serves the whole `UPDATE_ZIPCODE` flow.
+ */
+export type ResolvedAddress = {
+  city?: string
+  geoCoordinates: number[]
+}
+
+/** Optional bag accepted by availability calls so callers can pass a pre-resolved address (K-1). */
+export type AvailabilityCallOptions = {
+  address?: ResolvedAddress
+}
+
 /** Address fields from Intelligent Search `pickup-point-availability` (may be partial). */
 export type PickupPointAvailabilityAddress = {
   neighborhood?: string
@@ -227,9 +241,11 @@ export const validateProductAvailability = async (
   countryCode: string,
   items: AvailabilityItem[],
   account: string,
-  salesChannel?: string
+  salesChannel?: string,
+  options?: AvailabilityCallOptions
 ) => {
-  const address = await getAddress(countryCode, zipCode, account)
+  const address =
+    options?.address ?? (await getAddress(countryCode, zipCode, account))
 
   const requestBody = {
     location: buildAvailabilityLocation(
@@ -261,9 +277,11 @@ export const validateProductAvailabilityByDelivery = async (
   countryCode: string,
   items: AvailabilityItem[],
   account: string,
-  salesChannel?: string
+  salesChannel?: string,
+  options?: AvailabilityCallOptions
 ) => {
-  const address = await getAddress(countryCode, zipCode, account)
+  const address =
+    options?.address ?? (await getAddress(countryCode, zipCode, account))
 
   const requestBody = {
     location: buildAvailabilityLocation(
@@ -296,9 +314,12 @@ export const validateProductAvailabilityByPickup = async (
   zipCode: string,
   countryCode: string,
   account: string,
-  salesChannel?: string
+  salesChannel?: string,
+  options?: AvailabilityCallOptions
 ) => {
-  await getAddress(countryCode, zipCode, account)
+  if (!options?.address) {
+    await getAddress(countryCode, zipCode, account)
+  }
 
   const requestBody = {
     items,
