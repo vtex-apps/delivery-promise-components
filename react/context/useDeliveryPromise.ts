@@ -260,6 +260,13 @@ export const useDeliveryPromise = () => {
 
       const orderLines = await getCartProducts(orderFormId)
 
+      // K-4: skip the BFF availability call entirely for empty carts.
+      if (orderLines.length === 0) {
+        setIsLoading(false)
+
+        return []
+      }
+
       const availabilityItems = orderFormItemsToAvailabilityItems(orderLines)
 
       const { unavailableItemIds } = await validationHandler(availabilityItems)
