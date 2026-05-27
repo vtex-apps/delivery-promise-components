@@ -692,3 +692,167 @@ describe('useDeliveryPromise — K-4 empty-cart short-circuit on UPDATE_ZIPCODE'
     })
   })
 })
+
+describe('useDeliveryPromise — K-3/K-5 parallel block in submitZipcode', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    const sessionMod = jest.requireMock('vtex.session-client') as {
+      useRenderSession: jest.Mock
+    }
+
+    sessionMod.useRenderSession.mockImplementation(() => ({
+      session: { namespaces: { store: { channel: { value: '1' } } } },
+      loading: false,
+    }))
+    jest.spyOn(client, 'updateSession').mockResolvedValue(undefined)
+    jest
+      .spyOn(client, 'getAddress')
+      .mockResolvedValue({ city: 'City', geoCoordinates: [1, 2] } as never)
+
+    const cookie = jest.requireMock('../utils/cookie') as {
+      getCountryCode: () => string
+      getFacetsData: (k: unknown) => unknown
+      getOrderFormId: () => unknown
+    }
+
+    jest.spyOn(cookie, 'getCountryCode').mockReturnValue('BR')
+    jest.spyOn(cookie, 'getFacetsData').mockReturnValue(undefined)
+    jest.spyOn(cookie, 'getOrderFormId').mockReturnValue('order-form-id')
+
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { ...window.location, reload: jest.fn() },
+    })
+  })
+
+  it('launches getCatalogCount, updateOrderForm and getPickups in parallel (FR-3)', async () => {
+    let resolveCatalogCount: (value: unknown) => void = () => undefined
+    const callOrder: string[] = []
+
+    jest.spyOn(client, 'getCatalogCount').mockImplementation((() => {
+      callOrder.push('getCatalogCount')
+
+      return new Promise((resolve) => {
+        resolveCatalogCount = resolve as (v: unknown) => void
+      })
+    }) as never)
+
+    jest.spyOn(client, 'updateOrderForm').mockImplementation((() => {
+      callOrder.push('updateOrderForm')
+
+      return Promise.resolve()
+    }) as never)
+
+    jest.spyOn(client, 'getPickups').mockImplementation((() => {
+      callOrder.push('getPickups')
+
+      return Promise.resolve({ items: [] })
+    }) as never)
+
+    const actions = [
+      {
+        type: 'UPDATE_ZIPCODE',
+        args: { zipcode: '12345-678', reload: false },
+      },
+    ]
+
+    const { getByTestId } = render(<ActionRunner actions={actions} />)
+
+    fireEvent.click(getByTestId('btn'))
+
+    // All three calls are launched even though getCatalogCount has not
+    // resolved yet — proves they are in a parallel block, not serial awaits.
+    await waitFor(() => {
+      expect(callOrder).toEqual(
+        expect.arrayContaining([
+          'getCatalogCount',
+          'updateOrderForm',
+          'getPickups',
+        ])
+      )
+    })
+
+    expect(client.updateSession).not.toHaveBeenCalled()
+
+    resolveCatalogCount({ total: 1 })
+
+    await waitFor(() => {
+      expect(client.updateSession).toHaveBeenCalled()
+    })
+  })
+
+  it('short-circuits via onError when getCatalogCount.total === 0 without writing the session', async () => {
+    jest
+      .spyOn(client, 'getCatalogCount')
+      .mockResolvedValue({ total: 0 } as never)
+    jest.spyOn(client, 'updateOrderForm').mockResolvedValue(undefined as never)
+    jest.spyOn(client, 'getPickups').mockResolvedValue({ items: [] } as never)
+
+    const actions = [
+      {
+        type: 'UPDATE_ZIPCODE',
+        args: { zipcode: '12345-678', reload: false },
+      },
+    ]
+
+    const { getByTestId } = render(<ActionRunner actions={actions} />)
+
+    fireEvent.click(getByTestId('btn'))
+
+    await waitFor(() => {
+      expect(client.getCatalogCount).toHaveBeenCalled()
+    })
+
+    // updateSession is the gated mutation — never written when catalog gate fires.
+    expect(client.updateSession).not.toHaveBeenCalled()
+  })
+
+  it('treats updateOrderForm rejection as best-effort (dispatch still completes)', async () => {
+    jest
+      .spyOn(client, 'getCatalogCount')
+      .mockResolvedValue({ total: 1 } as never)
+    jest
+      .spyOn(client, 'updateOrderForm')
+      .mockRejectedValue(new Error('checkout 5xx'))
+    jest.spyOn(client, 'getPickups').mockResolvedValue({ items: [] } as never)
+
+    const actions = [
+      {
+        type: 'UPDATE_ZIPCODE',
+        args: { zipcode: '12345-678', reload: false },
+      },
+    ]
+
+    const { getByTestId } = render(<ActionRunner actions={actions} />)
+
+    fireEvent.click(getByTestId('btn'))
+
+    // Dispatch reaches updateSession despite updateOrderForm failure.
+    await waitFor(() => {
+      expect(client.updateSession).toHaveBeenCalled()
+    })
+  })
+
+  it('treats getPickups rejection as empty pickups and keeps the dispatch flow going', async () => {
+    jest
+      .spyOn(client, 'getCatalogCount')
+      .mockResolvedValue({ total: 1 } as never)
+    jest.spyOn(client, 'updateOrderForm').mockResolvedValue(undefined as never)
+    jest.spyOn(client, 'getPickups').mockRejectedValue(new Error('pickup 5xx'))
+
+    const actions = [
+      {
+        type: 'UPDATE_ZIPCODE',
+        args: { zipcode: '12345-678', reload: false },
+      },
+    ]
+
+    const { getByTestId } = render(<ActionRunner actions={actions} />)
+
+    fireEvent.click(getByTestId('btn'))
+
+    await waitFor(() => {
+      expect(client.updateSession).toHaveBeenCalled()
+    })
+  })
+})
