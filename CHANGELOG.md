@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.3] - 2026-06-05
+
 ### Changed
 
 - **`UPDATE_ZIPCODE` dispatch:** the postal code is now resolved once at the dispatch entry point (single `getAddress` call) and the resolved address is threaded through the cart-availability check and `submitZipcode`. `getAddress` failures and empty `geoCoordinates` now fail fast as `INVALID_POSTAL_CODE` without invoking the BFF availability call.
