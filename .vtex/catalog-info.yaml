@@ -1,0 +1,10 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: delivery-promise-components
+  annotations:
+    github.com/project-slug: vtex-apps/delivery-promise-components
+spec:
+  type: other
+  lifecycle: unknown
+  owner: te-0016
