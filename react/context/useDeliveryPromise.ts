@@ -25,7 +25,7 @@ import {
   persistPickupPreference,
   resolvePickupForShippingSession,
 } from '../pickupInPointPreference'
-import type { AvailabilityItem } from '../client'
+import type { AvailabilityItem, ResolvedAddress } from '../client'
 import type { CartItem, CartProduct } from '../components/UnavailableItemsModal'
 import type { OrderFormCartLine } from '../modules/pixelHelper'
 import { mapCartItemToPixel } from '../modules/pixelHelper'
@@ -46,6 +46,21 @@ import {
   clearSuppressAutoGeolocation,
   setSuppressAutoGeolocation,
 } from '../modules/suppressAutoGeolocationSession'
+
+// Local `Promise.allSettled` shim — the repo's TS lib target is `es2017`,
+// which does not declare `Promise.allSettled`. The runtime supports it
+// (modern browsers / Node 12+), but we wrap each promise in `Promise.all`
+// to keep the type system happy without bumping the platform-managed
+// tsconfig.
+type SettledResult<T> =
+  | { status: 'fulfilled'; value: T }
+  | { status: 'rejected'; reason: unknown }
+
+const settle = <T>(promise: Promise<T>): Promise<SettledResult<T>> =>
+  promise.then(
+    (value) => ({ status: 'fulfilled' as const, value }),
+    (reason) => ({ status: 'rejected' as const, reason })
+  )
 
 export const useDeliveryPromise = () => {
   const [zipcode, setZipCode] = useState<string>()
@@ -119,6 +134,93 @@ export const useDeliveryPromise = () => {
     },
   })
 
+  // Shared pickup-state sync used by both applyPickupsResult (fetchPickups
+  // consumers) and the submitZipcode session-write block. Updates the
+  // pickup-related local state from a getPickups response and returns the
+  // pickup that the next session write should carry (and a flag indicating
+  // whether any active pickup was returned, so callers can preserve their
+  // own conditional updateSession semantics).
+  const syncPickupsState = useCallback(
+    (
+      responsePickups: { items?: Pickup[] } | null | undefined,
+      selectedZipcode: string,
+      shippingMethod?: ShippingMethod
+    ): { pickupForSession: Pickup | undefined; hasAnyPickup: boolean } => {
+      const pickupsFormatted =
+        responsePickups?.items?.filter(
+          (pickup: Pickup) => pickup.pickupPoint.isActive
+        ) ?? []
+
+      setPickups(pickupsFormatted)
+
+      if (pickupsFormatted.length === 0) {
+        setPickupSuggestion(undefined)
+        setSelectedPickup(undefined)
+
+        return { pickupForSession: undefined, hasAnyPickup: false }
+      }
+
+      const nearest = getNearestPickup(pickupsFormatted)
+
+      setPickupSuggestion(nearest)
+
+      const segmentPickupId = getFacetsData('pickupPoint')
+      const pickupForSession = resolvePickupForShippingSession(
+        pickupsFormatted,
+        selectedZipcode,
+        segmentPickupId,
+        shippingMethod
+      )
+
+      setSelectedPickup(pickupForSession)
+
+      return { pickupForSession, hasAnyPickup: true }
+    },
+    []
+  )
+
+  // Post-fetch processing for fetchPickups consumers. When the response
+  // carries no active pickups, the session write is skipped so callers
+  // (segment-restoration useEffect, pendingPickupsFetch effect) keep their
+  // "don't re-write an already-correct session" behavior.
+  const applyPickupsResult = useCallback(
+    async (
+      country: string,
+      selectedZipcode: string,
+      coordinates: number[],
+      responsePickups: { items?: Pickup[] } | null | undefined,
+      shippingMethod?: ShippingMethod,
+      keepLoading = false
+    ) => {
+      const { pickupForSession, hasAnyPickup } = syncPickupsState(
+        responsePickups,
+        selectedZipcode,
+        shippingMethod
+      )
+
+      if (!hasAnyPickup) {
+        if (!keepLoading) {
+          setIsLoading(false)
+        }
+
+        return
+      }
+
+      await updateSession(
+        country,
+        selectedZipcode,
+        coordinates,
+        pickupForSession,
+        shippingMethod
+      )
+
+      if (!keepLoading) {
+        setIsLoading(false)
+      }
+    },
+    [syncPickupsState]
+  )
+
   const fetchPickups = useCallback(
     async (
       country: string,
@@ -146,50 +248,16 @@ export const useDeliveryPromise = () => {
         salesChannel
       )
 
-      const pickupsFormatted = responsePickups?.items.filter(
-        (pickup: Pickup) => pickup.pickupPoint.isActive
-      )
-
-      setPickups(pickupsFormatted ?? [])
-
-      if (pickupsFormatted.length === 0) {
-        setPickupSuggestion(undefined)
-        setSelectedPickup(undefined)
-
-        if (!keepLoading) {
-          setIsLoading(false)
-        }
-
-        return
-      }
-
-      const nearest = getNearestPickup(pickupsFormatted)
-
-      setPickupSuggestion(nearest)
-
-      const segmentPickupId = getFacetsData('pickupPoint')
-      const pickupForSession = resolvePickupForShippingSession(
-        pickupsFormatted,
-        selectedZipcode,
-        segmentPickupId,
-        shippingMethod
-      )
-
-      setSelectedPickup(pickupForSession)
-
-      await updateSession(
+      await applyPickupsResult(
         country,
         selectedZipcode,
         coordinates,
-        pickupForSession,
-        shippingMethod
+        responsePickups,
+        shippingMethod,
+        keepLoading
       )
-
-      if (!keepLoading) {
-        setIsLoading(false)
-      }
     },
-    [account, salesChannel]
+    [account, salesChannel, applyPickupsResult]
   )
 
   useEffect(() => {
@@ -260,6 +328,13 @@ export const useDeliveryPromise = () => {
 
       const orderLines = await getCartProducts(orderFormId)
 
+      // Skip the BFF availability call entirely for empty carts.
+      if (orderLines.length === 0) {
+        setIsLoading(false)
+
+        return []
+      }
+
       const availabilityItems = orderFormItemsToAvailabilityItems(orderLines)
 
       const { unavailableItemIds } = await validationHandler(availabilityItems)
@@ -324,17 +399,9 @@ export const useDeliveryPromise = () => {
 
   const submitZipcode = async (
     selectedZipcode: string,
+    resolvedAddress: ResolvedAddress,
     reload = true
   ): Promise<boolean> => {
-    if (!selectedZipcode) {
-      onError(
-        'POSTAL_CODE_NOT_FOUND',
-        intl.formatMessage(messages.shopperLocationPostalCodeInputPlaceholder)
-      )
-
-      return false
-    }
-
     if (!countryCode) {
       return false
     }
@@ -342,22 +409,34 @@ export const useDeliveryPromise = () => {
     setIsLoading(true)
 
     try {
-      const { geoCoordinates: coordinates, city: cityName } = await getAddress(
-        countryCode,
-        selectedZipcode,
-        account
-      )
+      const { geoCoordinates: coordinates, city: cityName } = resolvedAddress
+      const orderFormId = getOrderFormId()
 
-      if (coordinates.length === 0) {
-        onError(
-          'INVALID_POSTAL_CODE',
-          intl.formatMessage(messages.shopperLocationPostalCodeInputError)
-        )
+      // Run the three independent calls in parallel. getCatalogCount stays
+      // on the critical path (UX gate) but no longer blocks updateOrderForm
+      // and getPickups behind it.
+      const catalogCountPromise = getCatalogCount(selectedZipcode, coordinates)
+      const updateOrderFormPromise = orderFormId
+        ? updateOrderForm(countryCode, selectedZipcode, orderFormId)
+        : Promise.resolve()
 
-        return false
+      const pickupsPromise = salesChannel
+        ? getPickups(countryCode, selectedZipcode, account, salesChannel)
+        : Promise.resolve(null)
+
+      const [catalogCountResult, updateOrderFormResult, pickupsResult] =
+        await Promise.all([
+          settle(catalogCountPromise),
+          settle(updateOrderFormPromise),
+          settle(pickupsPromise),
+        ])
+
+      // Catalog-count rejection keeps the existing INVALID_POSTAL_CODE path.
+      if (catalogCountResult.status === 'rejected') {
+        throw catalogCountResult.reason
       }
 
-      const { total } = await getCatalogCount(selectedZipcode, coordinates)
+      const { total } = catalogCountResult.value
 
       if (total === 0) {
         onError(
@@ -373,10 +452,12 @@ export const useDeliveryPromise = () => {
         return false
       }
 
-      const orderFormId = getOrderFormId()
-
-      if (orderFormId) {
-        await updateOrderForm(countryCode, selectedZipcode, orderFormId)
+      // updateOrderForm is best-effort: log and continue on failure.
+      if (updateOrderFormResult.status === 'rejected') {
+        console.error(
+          'delivery-promise: updateOrderForm failed during UPDATE_ZIPCODE',
+          updateOrderFormResult.reason
+        )
       }
 
       setCity(cityName)
@@ -386,14 +467,40 @@ export const useDeliveryPromise = () => {
       setDeliveryPromiseMethod(undefined)
       setSelectedPickup(undefined)
 
-      await updateSession(countryCode, selectedZipcode, coordinates, undefined)
+      // Single session write per dispatch. Pickup resolution happens before
+      // the write so the single write carries the resolved pickup (or
+      // undefined when there are no active pickups, when getPickups rejected,
+      // or when salesChannel is not yet loaded and pickup fetching is
+      // deferred).
+      let pickupForSession: Pickup | undefined
 
-      await fetchPickups(
+      if (!salesChannel) {
+        // Deferral path preserved: pendingPickupsFetch will run once the
+        // session loads. The session still gets the zipcode/coordinates
+        // immediately via the single write below.
+        setPendingPickupsFetch({
+          country: countryCode,
+          selectedZipcode,
+          coordinates,
+          shippingMethod: undefined,
+          keepLoading: true,
+        })
+      } else {
+        const pickupsValue =
+          pickupsResult.status === 'fulfilled' ? pickupsResult.value : null
+
+        pickupForSession = syncPickupsState(
+          pickupsValue,
+          selectedZipcode,
+          undefined
+        ).pickupForSession
+      }
+
+      await updateSession(
         countryCode,
         selectedZipcode,
         coordinates,
-        undefined,
-        true
+        pickupForSession
       )
     } catch {
       onError(
@@ -543,27 +650,82 @@ export const useDeliveryPromise = () => {
           cartAvailability = 'deliveryorpickup',
         } = action.args
 
+        if (!zipcodeSelected) {
+          onError(
+            'POSTAL_CODE_NOT_FOUND',
+            intl.formatMessage(
+              messages.shopperLocationPostalCodeInputPlaceholder
+            )
+          )
+
+          return false
+        }
+
+        if (!countryCode) {
+          return false
+        }
+
+        setIsLoading(true)
+
+        // Resolve the address ONCE; every downstream step reuses it.
+        // On failure, surface INVALID_POSTAL_CODE without attempting the
+        // BFF availability call or any further getAddress retry.
+        let resolvedAddress: ResolvedAddress
+
+        try {
+          resolvedAddress = await getAddress(
+            countryCode,
+            zipcodeSelected,
+            account
+          )
+        } catch {
+          onError(
+            'INVALID_POSTAL_CODE',
+            intl.formatMessage(messages.shopperLocationPostalCodeInputError)
+          )
+
+          return false
+        }
+
+        if (
+          !resolvedAddress.geoCoordinates ||
+          resolvedAddress.geoCoordinates.length === 0
+        ) {
+          onError(
+            'INVALID_POSTAL_CODE',
+            intl.formatMessage(messages.shopperLocationPostalCodeInputError)
+          )
+
+          return false
+        }
+
         const validateZipCartAvailability = (
           items: AvailabilityItem[]
         ): Promise<unknown> =>
           cartAvailability === 'delivery'
             ? validateProductAvailabilityByDelivery(
                 zipcodeSelected,
-                countryCode!,
+                countryCode,
                 items,
                 account,
-                salesChannel
+                salesChannel,
+                { address: resolvedAddress }
               )
             : validateProductAvailability(
                 zipcodeSelected,
-                countryCode!,
+                countryCode,
                 items,
                 account,
-                salesChannel
+                salesChannel,
+                { address: resolvedAddress }
               )
 
         const applyZipAndFacetCallback = async () => {
-          const applied = await submitZipcode(zipcodeSelected, reload)
+          const applied = await submitZipcode(
+            zipcodeSelected,
+            resolvedAddress,
+            reload
+          )
 
           if (applied && reload === false && onAppliedWithoutReload) {
             // Close unavailable-items UI before client navigation so the modal is not left

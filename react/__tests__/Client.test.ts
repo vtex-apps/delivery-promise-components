@@ -1,4 +1,10 @@
-import { getCatalogCount, getPickups } from '../client'
+import {
+  getCatalogCount,
+  getPickups,
+  validateProductAvailability,
+  validateProductAvailabilityByDelivery,
+  validateProductAvailabilityByPickup,
+} from '../client'
 import { DEFAULT_TRADE_POLICY } from '../constants'
 
 describe('client.getCatalogCount', () => {
@@ -150,5 +156,131 @@ describe('client.getPickups', () => {
     const result = await getPickups('BR', '01310-100', 'store', '1')
 
     expect(result).toEqual({ items: [] })
+  })
+})
+
+describe('client.validateProductAvailability — pre-resolved address', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it('skips getAddress when options.address is provided', async () => {
+    const mockFetch = jest.fn().mockResolvedValue({
+      json: () => Promise.resolve({ unavailableItemIds: [] }),
+    })
+
+    ;(global as any).fetch = mockFetch
+
+    await validateProductAvailability(
+      '01310-100',
+      'BRA',
+      [{ itemId: '1', productId: '10' }],
+      'store',
+      DEFAULT_TRADE_POLICY,
+      { address: { city: 'SP', geoCoordinates: [-46, -23] } }
+    )
+
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+
+    const [url, options] = mockFetch.mock.calls[0]
+
+    expect(url).toContain(
+      '/api/delivery-promises-bff/availability/deliveryorpickup'
+    )
+    const body = JSON.parse(options.body)
+
+    expect(body.location).toEqual({
+      zipCode: '01310-100',
+      country: 'BRA',
+      coordinate: { longitude: -46, latitude: -23 },
+    })
+  })
+
+  it('falls back to getAddress when options is omitted', async () => {
+    const mockFetch = jest.fn().mockImplementation((url: string) => {
+      if (url.includes('/api/checkout/pub/postal-code/')) {
+        return Promise.resolve({
+          json: () => Promise.resolve({ geoCoordinates: [-46, -23] }),
+        })
+      }
+
+      return Promise.resolve({
+        json: () => Promise.resolve({ unavailableItemIds: [] }),
+      })
+    })
+
+    ;(global as any).fetch = mockFetch
+
+    await validateProductAvailability(
+      '01310-100',
+      'BRA',
+      [{ itemId: '1', productId: '10' }],
+      'store',
+      DEFAULT_TRADE_POLICY
+    )
+
+    expect(mockFetch).toHaveBeenCalledTimes(2)
+
+    const [firstUrl] = mockFetch.mock.calls[0]
+
+    expect(firstUrl).toContain('/api/checkout/pub/postal-code/BRA/01310-100')
+  })
+})
+
+describe('client.validateProductAvailabilityByDelivery — pre-resolved address', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it('skips getAddress when options.address is provided', async () => {
+    const mockFetch = jest.fn().mockResolvedValue({
+      json: () => Promise.resolve({ unavailableItemIds: [] }),
+    })
+
+    ;(global as any).fetch = mockFetch
+
+    await validateProductAvailabilityByDelivery(
+      '01310-100',
+      'BRA',
+      [{ itemId: '1', productId: '10' }],
+      'store',
+      DEFAULT_TRADE_POLICY,
+      { address: { geoCoordinates: [-46, -23] } }
+    )
+
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+    const [url] = mockFetch.mock.calls[0]
+
+    expect(url).toContain('/api/delivery-promises-bff/availability/delivery')
+  })
+})
+
+describe('client.validateProductAvailabilityByPickup — pre-resolved address', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it('skips getAddress when options.address is provided', async () => {
+    const mockFetch = jest.fn().mockResolvedValue({
+      json: () => Promise.resolve({ unavailableItemIds: [] }),
+    })
+
+    ;(global as any).fetch = mockFetch
+
+    await validateProductAvailabilityByPickup(
+      'pickup-1',
+      [{ itemId: '1', productId: '10' }],
+      '01310-100',
+      'BRA',
+      'store',
+      DEFAULT_TRADE_POLICY,
+      { address: { geoCoordinates: [-46, -23] } }
+    )
+
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+    const [url] = mockFetch.mock.calls[0]
+
+    expect(url).toContain('/api/delivery-promises-bff/availability/pickupid')
+    expect(url).toContain('pickupId=pickup-1')
   })
 })

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **`UPDATE_ZIPCODE` dispatch:** the postal code is now resolved once at the dispatch entry point (single `getAddress` call) and the resolved address is threaded through the cart-availability check and `submitZipcode`. `getAddress` failures and empty `geoCoordinates` now fail fast as `INVALID_POSTAL_CODE` without invoking the BFF availability call.
+- **`submitZipcode`:** runs `getCatalogCount`, `updateOrderForm` and `getPickups` in parallel using `Promise.all`. `getCatalogCount` keeps its UX gate (zero results still surfaces `products-not-found-error`); `updateOrderForm` failures are best-effort (logged and continued); `getPickups` failures degrade gracefully to no active pickups. The two `POST /api/sessions` writes that previously happened during a zipcode submission are coalesced into a single write that already carries the resolved pickup (or `undefined` when there are no active pickups, when `getPickups` rejects, or when `salesChannel` is still loading and pickup fetching is deferred).
+- **`validateCartItems`:** skips the `delivery-promises-bff/availability` call entirely when the cart is empty, avoiding an unnecessary network round trip for the common header-flow scenario.
+
 ## [1.1.2] - 2026-05-26
 
 ### Fixed
