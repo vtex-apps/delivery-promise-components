@@ -1407,4 +1407,98 @@ describe('useDeliveryPromise — soft refresh (replaces location.reload)', () =>
       apolloMod.useApolloClient = originalUseApolloClient
     }
   })
+
+  // Without a reload, the fulfillment-method state that used to be re-derived
+  // from the segment on remount must now be updated optimistically.
+  function FulfillmentProbe({
+    actions,
+  }: {
+    actions: Array<{ type: string; args?: unknown }>
+  }) {
+    const { dispatch, state } = useDeliveryPromise()
+
+    return (
+      <div>
+        <span data-testid="method">
+          {state.deliveryPromiseMethod ?? 'none'}
+        </span>
+        <span data-testid="pickup">
+          {state.selectedPickup?.pickupPoint.id ?? 'none'}
+        </span>
+        <span data-testid="applied">{state.fulfillmentSelectionAppliedId}</span>
+        <button
+          data-testid="btn"
+          type="button"
+          onClick={async () => {
+            for (const action of actions) {
+              // eslint-disable-next-line no-await-in-loop
+              await dispatch(action as never)
+            }
+          }}
+        >
+          go
+        </button>
+      </div>
+    )
+  }
+
+  it('SELECT_DELIVERY_SHIPPING_OPTION sets deliveryPromiseMethod to delivery and clears the selected pickup', async () => {
+    const { getByTestId } = render(
+      <FulfillmentProbe
+        actions={[{ type: 'SELECT_DELIVERY_SHIPPING_OPTION' }]}
+      />
+    )
+
+    fireEvent.click(getByTestId('btn'))
+
+    await waitFor(() => {
+      expect(getByTestId('method').textContent).toBe('delivery')
+    })
+
+    expect(getByTestId('pickup').textContent).toBe('none')
+    expect(Number(getByTestId('applied').textContent)).toBeGreaterThan(0)
+  })
+
+  it('UPDATE_PICKUP sets deliveryPromiseMethod to pickup-in-point and stores the selected pickup', async () => {
+    const pickup = {
+      pickupPoint: { id: 'pk-1', friendlyName: 'Store 1', isActive: true },
+    }
+
+    const { getByTestId } = render(
+      <FulfillmentProbe
+        actions={[
+          { type: 'UPDATE_PICKUP', args: { pickup, canUnselect: true } },
+        ]}
+      />
+    )
+
+    fireEvent.click(getByTestId('btn'))
+
+    await waitFor(() => {
+      expect(getByTestId('method').textContent).toBe('pickup-in-point')
+    })
+
+    expect(getByTestId('pickup').textContent).toBe('pk-1')
+    expect(Number(getByTestId('applied').textContent)).toBeGreaterThan(0)
+  })
+
+  it('RESET_FULFILLMENT_METHOD clears deliveryPromiseMethod and the selected pickup', async () => {
+    const { getByTestId } = render(
+      <FulfillmentProbe
+        actions={[
+          { type: 'SELECT_DELIVERY_SHIPPING_OPTION' },
+          { type: 'RESET_FULFILLMENT_METHOD' },
+        ]}
+      />
+    )
+
+    fireEvent.click(getByTestId('btn'))
+
+    await waitFor(() => {
+      expect(getByTestId('method').textContent).toBe('none')
+    })
+
+    expect(getByTestId('pickup').textContent).toBe('none')
+    expect(Number(getByTestId('applied').textContent)).toBeGreaterThan(1)
+  })
 })
