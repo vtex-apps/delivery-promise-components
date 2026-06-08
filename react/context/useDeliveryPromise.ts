@@ -97,6 +97,9 @@ export const useDeliveryPromise = () => {
   const [shippingMethodModalRequestId, setShippingMethodModalRequestId] =
     useState(0)
 
+  const [fulfillmentSelectionAppliedId, setFulfillmentSelectionAppliedId] =
+    useState(0)
+
   const uiRegistryRef = useRef(uiRegistry)
 
   uiRegistryRef.current = uiRegistry
@@ -596,7 +599,11 @@ export const useDeliveryPromise = () => {
       pickupUpdated = undefined
     }
 
+    // Optimistically update the fulfillment state the reload used to re-derive
+    // from the segment on remount, and signal blocks to close the modal.
     setSelectedPickup(pickupUpdated)
+    setDeliveryPromiseMethod(shippingOption)
+    setFulfillmentSelectionAppliedId((n) => n + 1)
 
     if (
       shippingOption === 'pickup-in-point' &&
@@ -621,6 +628,12 @@ export const useDeliveryPromise = () => {
     if (!countryCode || !zipcode || !geoCoordinates) {
       return
     }
+
+    // Optimistically update the fulfillment state the reload used to re-derive
+    // from the segment on remount, and signal blocks to close the modal.
+    setDeliveryPromiseMethod('delivery')
+    setSelectedPickup(undefined)
+    setFulfillmentSelectionAppliedId((n) => n + 1)
 
     await updateSession(
       countryCode,
@@ -909,6 +922,12 @@ export const useDeliveryPromise = () => {
           return
         }
 
+        // Optimistically clear the fulfillment state the reload used to
+        // re-derive from the segment, and signal blocks to close the modal.
+        setSelectedPickup(undefined)
+        setDeliveryPromiseMethod(undefined)
+        setFulfillmentSelectionAppliedId((n) => n + 1)
+
         await updateSession(countryCode, zipcode, geoCoordinates, undefined)
 
         setIsLoading(true)
@@ -979,6 +998,7 @@ export const useDeliveryPromise = () => {
       unavailabilityMessage,
       uiRegistry,
       shippingMethodModalRequestId,
+      fulfillmentSelectionAppliedId,
     },
   }
 }

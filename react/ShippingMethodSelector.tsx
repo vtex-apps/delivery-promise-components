@@ -28,10 +28,12 @@ function ShippingMethodSelector({
     submitErrorMessage,
     areThereUnavailableCartItems,
     shippingMethodModalRequestId,
+    fulfillmentSelectionAppliedId,
   } = useDeliveryPromiseState()
 
   const dispatch = useDeliveryPromiseDispatch()
   const lastHandledShippingMethodModalRequestId = useRef(0)
+  const lastHandledFulfillmentSelectionAppliedId = useRef(0)
 
   useEffect(() => {
     dispatch({
@@ -70,6 +72,22 @@ function ShippingMethodSelector({
     selectedZipcode,
     shippingMethodModalRequestId,
   ])
+
+  // Close the modal once a fulfillment selection is applied. The old reload
+  // tore the modal down for free; with the soft refresh the tree stays alive.
+  useEffect(() => {
+    if (
+      fulfillmentSelectionAppliedId <=
+      lastHandledFulfillmentSelectionAppliedId.current
+    ) {
+      return
+    }
+
+    lastHandledFulfillmentSelectionAppliedId.current =
+      fulfillmentSelectionAppliedId
+
+    setIsShippingMethodModalOpen(false)
+  }, [fulfillmentSelectionAppliedId])
 
   const onSubmit = (zipcode: string, reload?: boolean) => {
     dispatch({
