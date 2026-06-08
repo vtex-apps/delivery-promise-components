@@ -30,6 +30,7 @@ import type { AvailabilityItem, ResolvedAddress } from '../client'
 import type { CartItem, CartProduct } from '../components/UnavailableItemsModal'
 import type { OrderFormCartLine } from '../modules/pixelHelper'
 import { mapCartItemToPixel } from '../modules/pixelHelper'
+import { refetchAllowlistedQueries } from '../modules/refetchAllowlistedQueries'
 import { getCountryCode, getFacetsData, getOrderFormId } from '../utils/cookie'
 import messages from '../messages'
 import type {
@@ -116,32 +117,38 @@ export const useDeliveryPromise = () => {
    * Refreshes the storefront after a session write. The session POST sets a
    * new `vtex_segment` cookie (which carries the delivery / pickup hashes) in
    * the response, so by the time we land here every cached observable query
-   * is one network round trip away from the new shopper context. We call
-   * `reFetchObservableQueries(true)` to pull those refreshed payloads into
-   * Apollo (productSearch, facets, suggestions, anything `@withSegment`),
-   * keeping the React tree alive and avoiding a hard `location.reload()`.
+   * is one network round trip away from the new shopper context. Rather than
+   * tearing the React tree down with a hard reload, we refetch *only* the
+   * allowlisted store-resources queries that vary by `@withSegment`
+   * (productSearch, facets, products, recommendations, sponsored), resetting
+   * `productSearchV3` to page 1.
    *
    * Falls back to `location.reload()` when Apollo is unavailable (e.g. the
-   * provider isn't mounted in tests / custom hosts) or the refetch throws —
-   * a hard reload is always a correct, if expensive, way to converge on the
+   * provider isn't mounted in tests / custom hosts), when the QueryManager
+   * internals are inaccessible, or when a targeted refetch throws — a hard
+   * reload is always a correct, if expensive, way to converge on the
    * post-session state.
    */
   const refreshStorefront = useCallback(async (): Promise<void> => {
-    if (
-      apolloClient &&
-      typeof apolloClient.reFetchObservableQueries === 'function'
-    ) {
-      try {
-        await apolloClient.reFetchObservableQueries(true)
-        setIsLoading(false)
+    if (!apolloClient) {
+      location.reload()
 
-        return
-      } catch {
-        // fall through to the hard reload below
-      }
+      return
     }
 
-    location.reload()
+    try {
+      const { failed } = await refetchAllowlistedQueries(apolloClient)
+
+      if (failed) {
+        location.reload()
+
+        return
+      }
+
+      setIsLoading(false)
+    } catch {
+      location.reload()
+    }
   }, [apolloClient])
 
   const orderItemsUpdateOptions = {
