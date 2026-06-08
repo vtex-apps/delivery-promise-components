@@ -33,13 +33,71 @@ jest.mock('vtex.session-client', () => ({
   })),
 }))
 
-// Prefix `mock` is required so jest.mock's hoisting allows access to this
-// binding from inside the module factory below.
+// Prefix `mock` is required so jest.mock's hoisting allows access to these
+// bindings from inside the module factory below.
 const mockReFetchObservableQueries = jest.fn().mockResolvedValue([])
+
+type MockObservableQuery = {
+  queryName?: string
+  variables?: Record<string, unknown>
+  refetch: jest.Mock
+}
+
+const mockMakeObservableQuery = (
+  queryName: string | undefined,
+  variables: Record<string, unknown> = {}
+): MockObservableQuery => ({
+  queryName,
+  variables,
+  refetch: jest.fn().mockResolvedValue({}),
+})
+
+// Default set of observable queries Apollo would have mounted on a PLP: the
+// allowlisted search queries (incl. a paginated productSearchV3 on page 3) plus
+// one unrelated query that must never be refetched by the soft refresh.
+const mockBuildObservableQueries = () =>
+  new Map<string, { observableQuery: MockObservableQuery | null }>([
+    ['q-facets', { observableQuery: mockMakeObservableQuery('facetsV2') }],
+    [
+      'q-search',
+      {
+        observableQuery: mockMakeObservableQuery('productSearchV3', {
+          query: 'shoes',
+          from: 24,
+          to: 47,
+          orderBy: 'OrderByScoreDESC',
+        }),
+      },
+    ],
+    ['q-products', { observableQuery: mockMakeObservableQuery('Products') }],
+    [
+      'q-sponsored',
+      { observableQuery: mockMakeObservableQuery('sponsoredProducts') },
+    ],
+    [
+      'q-unrelated',
+      { observableQuery: mockMakeObservableQuery('productPriceRange') },
+    ],
+  ])
+
+let mockObservableQueries = mockBuildObservableQueries()
+
+const getRefetch = (queryName: string): jest.Mock | undefined => {
+  let found: jest.Mock | undefined
+
+  mockObservableQueries.forEach(({ observableQuery }) => {
+    if (observableQuery?.queryName === queryName) {
+      found = observableQuery.refetch
+    }
+  })
+
+  return found
+}
 
 jest.mock('react-apollo', () => ({
   useApolloClient: () => ({
     reFetchObservableQueries: mockReFetchObservableQueries,
+    queryManager: { queries: mockObservableQueries },
   }),
 }))
 
@@ -133,6 +191,8 @@ describe('useDeliveryPromise actions and behavior', () => {
         key === 'zip-code' ? '12345-678' : undefined
       )
 
+    mockObservableQueries = mockBuildObservableQueries()
+
     const reloadMock = jest.fn()
 
     Object.defineProperty(window, 'location', {
@@ -225,7 +285,8 @@ describe('useDeliveryPromise actions and behavior', () => {
       expect(reloadMock).not.toHaveBeenCalled()
     })
 
-    expect(mockReFetchObservableQueries).not.toHaveBeenCalled()
+    expect(getRefetch('productSearchV3')).not.toHaveBeenCalled()
+    expect(getRefetch('facetsV2')).not.toHaveBeenCalled()
   })
 
   it('UPDATE_ZIPCODE with required shipping (optional setter) bumps shippingMethodModalRequestId', async () => {
@@ -337,16 +398,18 @@ describe('useDeliveryPromise actions and behavior', () => {
     fireEvent.click(getByTestId('btn'))
 
     await waitFor(() => {
-      expect(mockReFetchObservableQueries).toHaveBeenCalledWith(true)
+      expect(getRefetch('productSearchV3')).toHaveBeenCalled()
     })
 
+    expect(getRefetch('facetsV2')).toHaveBeenCalled()
+    expect(getRefetch('productPriceRange')).not.toHaveBeenCalled()
     expect(reloadMock).not.toHaveBeenCalled()
   })
 
-  it('UPDATE_ZIPCODE falls back to location.reload when Apollo refetch throws', async () => {
+  it('UPDATE_ZIPCODE falls back to location.reload when a targeted refetch throws', async () => {
     const reloadMock = window.location.reload as jest.Mock
 
-    mockReFetchObservableQueries.mockRejectedValueOnce(
+    getRefetch('productSearchV3')?.mockRejectedValueOnce(
       new Error('apollo offline')
     )
 
@@ -368,8 +431,6 @@ describe('useDeliveryPromise actions and behavior', () => {
     await waitFor(() => {
       expect(reloadMock).toHaveBeenCalled()
     })
-
-    expect(mockReFetchObservableQueries).toHaveBeenCalledWith(true)
   })
 
   it('REGISTER_*_BLOCK updates uiRegistry and UNREGISTER clears entries', async () => {
@@ -1123,6 +1184,8 @@ describe('useDeliveryPromise — soft refresh (replaces location.reload)', () =>
       )
     jest.spyOn(cookie, 'getOrderFormId').mockReturnValue('order-form-id')
 
+    mockObservableQueries = mockBuildObservableQueries()
+
     reloadMock = jest.fn()
     Object.defineProperty(window, 'location', {
       configurable: true,
@@ -1130,7 +1193,7 @@ describe('useDeliveryPromise — soft refresh (replaces location.reload)', () =>
     })
   })
 
-  it('UPDATE_ZIPCODE refetches Apollo observable queries instead of reloading', async () => {
+  it('UPDATE_ZIPCODE refetches only the allowlisted queries instead of reloading', async () => {
     const actions = [
       {
         type: 'UPDATE_ZIPCODE',
@@ -1143,10 +1206,36 @@ describe('useDeliveryPromise — soft refresh (replaces location.reload)', () =>
     fireEvent.click(getByTestId('btn'))
 
     await waitFor(() => {
-      expect(mockReFetchObservableQueries).toHaveBeenCalledWith(true)
+      expect(getRefetch('productSearchV3')).toHaveBeenCalled()
     })
 
+    expect(getRefetch('facetsV2')).toHaveBeenCalled()
+    expect(getRefetch('Products')).toHaveBeenCalled()
+    expect(getRefetch('sponsoredProducts')).toHaveBeenCalled()
+    expect(getRefetch('productPriceRange')).not.toHaveBeenCalled()
     expect(reloadMock).not.toHaveBeenCalled()
+  })
+
+  it('UPDATE_ZIPCODE resets productSearchV3 to page 1 (from: 0) preserving other variables', async () => {
+    const actions = [
+      {
+        type: 'UPDATE_ZIPCODE',
+        args: { zipcode: '12345-678', reload: true },
+      },
+    ]
+
+    const { getByTestId } = render(<ActionRunner actions={actions} />)
+
+    fireEvent.click(getByTestId('btn'))
+
+    await waitFor(() => {
+      expect(getRefetch('productSearchV3')).toHaveBeenCalledWith({
+        query: 'shoes',
+        from: 0,
+        to: 47,
+        orderBy: 'OrderByScoreDESC',
+      })
+    })
   })
 
   it('UPDATE_ZIPCODE with reload:false neither refetches nor reloads (caller owns navigation)', async () => {
@@ -1178,7 +1267,7 @@ describe('useDeliveryPromise — soft refresh (replaces location.reload)', () =>
       expect(onApplied).toHaveBeenCalledTimes(1)
     })
 
-    expect(mockReFetchObservableQueries).not.toHaveBeenCalled()
+    expect(getRefetch('productSearchV3')).not.toHaveBeenCalled()
     expect(reloadMock).not.toHaveBeenCalled()
   })
 
@@ -1197,7 +1286,7 @@ describe('useDeliveryPromise — soft refresh (replaces location.reload)', () =>
 
     await waitFor(() => {
       // UPDATE_ZIPCODE + SELECT_DELIVERY_SHIPPING_OPTION = 2 refetches.
-      expect(mockReFetchObservableQueries).toHaveBeenCalledTimes(2)
+      expect(getRefetch('productSearchV3')).toHaveBeenCalledTimes(2)
     })
 
     expect(reloadMock).not.toHaveBeenCalled()
@@ -1217,7 +1306,7 @@ describe('useDeliveryPromise — soft refresh (replaces location.reload)', () =>
     fireEvent.click(getByTestId('btn'))
 
     await waitFor(() => {
-      expect(mockReFetchObservableQueries).toHaveBeenCalledTimes(2)
+      expect(getRefetch('productSearchV3')).toHaveBeenCalledTimes(2)
     })
 
     expect(reloadMock).not.toHaveBeenCalled()
@@ -1231,14 +1320,16 @@ describe('useDeliveryPromise — soft refresh (replaces location.reload)', () =>
     fireEvent.click(getByTestId('btn'))
 
     await waitFor(() => {
-      expect(mockReFetchObservableQueries).toHaveBeenCalledWith(true)
+      expect(getRefetch('productSearchV3')).toHaveBeenCalled()
     })
 
     expect(reloadMock).not.toHaveBeenCalled()
   })
 
-  it('falls back to location.reload when Apollo refetch throws', async () => {
-    mockReFetchObservableQueries.mockRejectedValueOnce(new Error('apollo down'))
+  it('falls back to location.reload when a targeted refetch throws', async () => {
+    getRefetch('productSearchV3')?.mockRejectedValueOnce(
+      new Error('apollo down')
+    )
 
     const actions = [
       {
@@ -1254,8 +1345,36 @@ describe('useDeliveryPromise — soft refresh (replaces location.reload)', () =>
     await waitFor(() => {
       expect(reloadMock).toHaveBeenCalledTimes(1)
     })
+  })
 
-    expect(mockReFetchObservableQueries).toHaveBeenCalledTimes(1)
+  it('falls back to location.reload when the query manager internals are inaccessible', async () => {
+    const apolloMod = jest.requireMock('react-apollo') as {
+      useApolloClient: jest.Mock | (() => unknown)
+    }
+
+    const originalUseApolloClient = apolloMod.useApolloClient
+
+    // Apollo present, but the internal queries map is not reachable.
+    apolloMod.useApolloClient = () => ({ queryManager: {} })
+
+    try {
+      const actions = [
+        {
+          type: 'UPDATE_ZIPCODE',
+          args: { zipcode: '12345-678', reload: true },
+        },
+      ]
+
+      const { getByTestId } = render(<ActionRunner actions={actions} />)
+
+      fireEvent.click(getByTestId('btn'))
+
+      await waitFor(() => {
+        expect(reloadMock).toHaveBeenCalledTimes(1)
+      })
+    } finally {
+      apolloMod.useApolloClient = originalUseApolloClient
+    }
   })
 
   it('falls back to location.reload when no Apollo provider is mounted', async () => {
@@ -1283,7 +1402,7 @@ describe('useDeliveryPromise — soft refresh (replaces location.reload)', () =>
         expect(reloadMock).toHaveBeenCalledTimes(1)
       })
 
-      expect(mockReFetchObservableQueries).not.toHaveBeenCalled()
+      expect(getRefetch('productSearchV3')).not.toHaveBeenCalled()
     } finally {
       apolloMod.useApolloClient = originalUseApolloClient
     }
