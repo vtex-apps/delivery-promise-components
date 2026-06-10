@@ -1187,9 +1187,19 @@ describe('useDeliveryPromise — soft refresh (replaces location.reload)', () =>
     mockObservableQueries = mockBuildObservableQueries()
 
     reloadMock = jest.fn()
+    // Force a clean, page-less URL each test. A per-test override (e.g. the
+    // deep-page case) mutates window.location, and spreading it here would leak
+    // a stale `?page=N` into later tests, flipping them onto the reload path.
     Object.defineProperty(window, 'location', {
       configurable: true,
-      value: { ...window.location, reload: reloadMock },
+      value: {
+        ...window.location,
+        href: 'http://localhost/',
+        search: '',
+        pathname: '/',
+        hash: '',
+        reload: reloadMock,
+      },
     })
   })
 
@@ -1214,6 +1224,38 @@ describe('useDeliveryPromise — soft refresh (replaces location.reload)', () =>
     expect(getRefetch('sponsoredProducts')).toHaveBeenCalled()
     expect(getRefetch('productPriceRange')).not.toHaveBeenCalled()
     expect(reloadMock).not.toHaveBeenCalled()
+  })
+
+  it('UPDATE_ZIPCODE reloads to page 1 (resets pagination) when the shopper is on a deep page', async () => {
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: {
+        href: 'http://localhost/category?page=5',
+        search: '?page=5',
+        pathname: '/category',
+        hash: '',
+        reload: reloadMock,
+      },
+    })
+
+    const actions = [
+      {
+        type: 'UPDATE_ZIPCODE',
+        args: { zipcode: '12345-678', reload: true },
+      },
+    ]
+
+    const { getByTestId } = render(<ActionRunner actions={actions} />)
+
+    fireEvent.click(getByTestId('btn'))
+
+    await waitFor(() => {
+      expect(reloadMock).toHaveBeenCalledTimes(1)
+    })
+
+    // A hard reload re-initializes search-result's fetch-more pagination at
+    // page 1, so we must NOT also fire a (now redundant) soft refetch.
+    expect(getRefetch('productSearchV3')).not.toHaveBeenCalled()
   })
 
   it('UPDATE_ZIPCODE resets productSearchV3 to the first page (from: 0, to: page size - 1) preserving other variables', async () => {
