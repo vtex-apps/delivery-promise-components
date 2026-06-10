@@ -1216,7 +1216,7 @@ describe('useDeliveryPromise — soft refresh (replaces location.reload)', () =>
     expect(reloadMock).not.toHaveBeenCalled()
   })
 
-  it('UPDATE_ZIPCODE resets productSearchV3 to page 1 (from: 0) preserving other variables', async () => {
+  it('UPDATE_ZIPCODE resets productSearchV3 to the first page (from: 0, to: page size - 1) preserving other variables', async () => {
     const actions = [
       {
         type: 'UPDATE_ZIPCODE',
@@ -1228,11 +1228,13 @@ describe('useDeliveryPromise — soft refresh (replaces location.reload)', () =>
 
     fireEvent.click(getByTestId('btn'))
 
+    // Mock is on page 2 of size 24 (from: 24, to: 47). Page 1 keeps the page
+    // size: from = 0, to = (to - from) = 23. Other variables are preserved.
     await waitFor(() => {
       expect(getRefetch('productSearchV3')).toHaveBeenCalledWith({
         query: 'shoes',
         from: 0,
-        to: 47,
+        to: 23,
         orderBy: 'OrderByScoreDESC',
       })
     })
@@ -1425,6 +1427,9 @@ describe('useDeliveryPromise — soft refresh (replaces location.reload)', () =>
         <span data-testid="pickup">
           {state.selectedPickup?.pickupPoint.id ?? 'none'}
         </span>
+        <span data-testid="geo">
+          {state.geoCoordinates?.join(',') ?? 'none'}
+        </span>
         <span data-testid="applied">{state.fulfillmentSelectionAppliedId}</span>
         <button
           data-testid="btn"
@@ -1449,6 +1454,11 @@ describe('useDeliveryPromise — soft refresh (replaces location.reload)', () =>
       />
     )
 
+    // Wait for the segment-restoration effect to establish the location.
+    await waitFor(() => {
+      expect(getByTestId('geo').textContent).toBe('1,2')
+    })
+
     fireEvent.click(getByTestId('btn'))
 
     await waitFor(() => {
@@ -1472,6 +1482,10 @@ describe('useDeliveryPromise — soft refresh (replaces location.reload)', () =>
       />
     )
 
+    await waitFor(() => {
+      expect(getByTestId('geo').textContent).toBe('1,2')
+    })
+
     fireEvent.click(getByTestId('btn'))
 
     await waitFor(() => {
@@ -1492,13 +1506,97 @@ describe('useDeliveryPromise — soft refresh (replaces location.reload)', () =>
       />
     )
 
+    await waitFor(() => {
+      expect(getByTestId('geo').textContent).toBe('1,2')
+    })
+
     fireEvent.click(getByTestId('btn'))
 
+    // Method becomes 'delivery' then is cleared back to 'none' by the reset.
     await waitFor(() => {
       expect(getByTestId('method').textContent).toBe('none')
     })
 
     expect(getByTestId('pickup').textContent).toBe('none')
     expect(Number(getByTestId('applied').textContent)).toBeGreaterThan(1)
+  })
+
+  // A single visible loading cycle (true → false). The cart-availability check
+  // and the selection must not each own their own spinner (loading → idle →
+  // loading → idle).
+  const loadingRenders: boolean[] = []
+
+  function LoadingProbe({
+    actions,
+  }: {
+    actions: Array<{ type: string; args?: unknown }>
+  }) {
+    const { dispatch, state } = useDeliveryPromise()
+
+    loadingRenders.push(state.isLoading)
+
+    return (
+      <div>
+        <span data-testid="geo">
+          {state.geoCoordinates?.join(',') ?? 'none'}
+        </span>
+        <span data-testid="method">
+          {state.deliveryPromiseMethod ?? 'none'}
+        </span>
+        <span data-testid="loading">{String(state.isLoading)}</span>
+        <button
+          data-testid="btn"
+          type="button"
+          onClick={async () => {
+            for (const action of actions) {
+              // eslint-disable-next-line no-await-in-loop
+              await dispatch(action as never)
+            }
+          }}
+        >
+          go
+        </button>
+      </div>
+    )
+  }
+
+  it('selecting a pickup point toggles loading exactly once (no double spinner)', async () => {
+    const pickup = {
+      pickupPoint: { id: 'pk-1', friendlyName: 'Store 1', isActive: true },
+    }
+
+    const { getByTestId } = render(
+      <LoadingProbe
+        actions={[
+          { type: 'UPDATE_PICKUP', args: { pickup, canUnselect: true } },
+        ]}
+      />
+    )
+
+    await waitFor(() => {
+      expect(getByTestId('geo').textContent).toBe('1,2')
+    })
+    await waitFor(() => {
+      expect(getByTestId('loading').textContent).toBe('false')
+    })
+
+    // Only count loading transitions caused by the selection itself.
+    loadingRenders.length = 0
+
+    fireEvent.click(getByTestId('btn'))
+
+    await waitFor(() => {
+      expect(getByTestId('method').textContent).toBe('pickup-in-point')
+    })
+    await waitFor(() => {
+      expect(getByTestId('loading').textContent).toBe('false')
+    })
+
+    // Collapse consecutive duplicates; loading must turn on exactly once.
+    const transitions = loadingRenders.filter(
+      (value, index) => index === 0 || value !== loadingRenders[index - 1]
+    )
+
+    expect(transitions.filter(Boolean)).toHaveLength(1)
   })
 })
