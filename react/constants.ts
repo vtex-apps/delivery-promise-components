@@ -32,11 +32,25 @@ export const REFRESHABLE_QUERY_NAMES: readonly string[] = [
 
 /**
  * Per-query variable overrides applied on top of each query's existing
- * variables at refetch time. A location change invalidates the current
- * pagination position, so `productSearchV3` always resets to page 1.
+ * variables at refetch time. Each entry is a function of the query's current
+ * variables so the override can be computed from them.
+ *
+ * A location change invalidates the current pagination position, so
+ * `productSearchV3` resets to the first page. `search-result` derives the
+ * window as `from = (page - 1) * maxItemsPerPage` and `to = from + size - 1`,
+ * so page 1 is `from: 0, to: size - 1`. The page size is preserved from the
+ * current window (`to - from + 1`), giving `to: to - from`.
  */
 export const QUERY_VARIABLE_OVERRIDES: Partial<
-  Record<string, Record<string, unknown>>
+  Record<
+    string,
+    (variables: Record<string, unknown>) => Record<string, unknown>
+  >
 > = {
-  productSearchV3: { from: 0 },
+  productSearchV3: (variables) => {
+    const from = typeof variables.from === 'number' ? variables.from : 0
+    const to = typeof variables.to === 'number' ? variables.to : undefined
+
+    return to !== undefined ? { from: 0, to: to - from } : { from: 0 }
+  },
 }

@@ -47,7 +47,8 @@ describe('refetchAllowlistedQueries', () => {
     expect(result).toEqual({ attempted: 3, failed: false })
   })
 
-  it('resets productSearchV3 to page 1 (from: 0) preserving other variables', async () => {
+  it('resets productSearchV3 to the first page (from: 0, to: page size - 1) preserving other variables', async () => {
+    // Page 2 of size 24 (from: 24, to: 47) → page 1 keeps the size: from 0, to 23.
     const search = oq('productSearchV3', {
       query: 'shoes',
       from: 24,
@@ -60,9 +61,17 @@ describe('refetchAllowlistedQueries', () => {
     expect(search.refetch).toHaveBeenCalledWith({
       query: 'shoes',
       from: 0,
-      to: 47,
+      to: 23,
       orderBy: 'OrderByScoreDESC',
     })
+  })
+
+  it('resets productSearchV3 with only from when to is absent', async () => {
+    const search = oq('productSearchV3', { query: 'shoes', from: 24 })
+
+    await refetchAllowlistedQueries(clientWith([['b', search]]))
+
+    expect(search.refetch).toHaveBeenCalledWith({ query: 'shoes', from: 0 })
   })
 
   it('refetches non-paginated allowlisted queries without variable overrides', async () => {

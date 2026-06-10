@@ -28,8 +28,9 @@ export interface RefetchOutcome {
  * apollo-client 2.6 has no public subset-refetch API (`refetchQueries({ include })`
  * arrived in @apollo/client v3), so we enumerate the QueryManager's observable
  * queries and filter by operation name. Per-query overrides from
- * `QUERY_VARIABLE_OVERRIDES` are merged on top of each query's existing variables
- * (e.g. `productSearchV3` resets to `from: 0`).
+ * `QUERY_VARIABLE_OVERRIDES` are computed from and merged on top of each query's
+ * existing variables (e.g. `productSearchV3` resets to the first page —
+ * `from: 0` and `to: page size - 1`).
  *
  * When the internal `queryManager.queries` map is unreachable, `failed: true` is
  * returned so the caller can fall back to a hard reload. Each refetch is settled
@@ -59,9 +60,10 @@ export async function refetchAllowlistedQueries(
       return
     }
 
-    const override = QUERY_VARIABLE_OVERRIDES[queryName]
-    const variables = override
-      ? { ...(observableQuery.variables ?? {}), ...override }
+    const buildOverride = QUERY_VARIABLE_OVERRIDES[queryName]
+    const existingVariables = observableQuery.variables ?? {}
+    const variables = buildOverride
+      ? { ...existingVariables, ...buildOverride(existingVariables) }
       : undefined
 
     refetches.push(

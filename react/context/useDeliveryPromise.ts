@@ -31,6 +31,7 @@ import type { CartItem, CartProduct } from '../components/UnavailableItemsModal'
 import type { OrderFormCartLine } from '../modules/pixelHelper'
 import { mapCartItemToPixel } from '../modules/pixelHelper'
 import { refetchAllowlistedQueries } from '../modules/refetchAllowlistedQueries'
+import { removePageQueryParam } from '../modules/removePageQueryParam'
 import { getCountryCode, getFacetsData, getOrderFormId } from '../utils/cookie'
 import messages from '../messages'
 import type {
@@ -133,6 +134,10 @@ export const useDeliveryPromise = () => {
    * post-session state.
    */
   const refreshStorefront = useCallback(async (): Promise<void> => {
+    // A location change resets the PLP to the first page; drop the stale `page`
+    // query string so it survives neither the soft refresh nor a reload.
+    removePageQueryParam()
+
     if (!apolloClient) {
       location.reload()
 
@@ -372,10 +377,10 @@ export const useDeliveryPromise = () => {
 
       const orderLines = await getCartProducts(orderFormId)
 
-      // Skip the BFF availability call entirely for empty carts.
+      // Skip the BFF availability call entirely for empty carts. Keep loading
+      // on: the caller proceeds with the action and owns the loading lifecycle
+      // through the soft refresh (avoids a loading → idle → loading flicker).
       if (orderLines.length === 0) {
-        setIsLoading(false)
-
         return []
       }
 
@@ -396,11 +401,17 @@ export const useDeliveryPromise = () => {
 
       setUnavailableCartItems(unavailableItems)
 
-      setIsLoading(false)
+      // Only stop loading when surfacing the unavailable-items modal (so it is
+      // interactive). When everything is available the caller continues the
+      // action and owns the loading lifecycle until the soft refresh completes.
+      if (unavailableItems.length > 0) {
+        setIsLoading(false)
+      }
 
       return unavailableItems
     } catch {
-      setIsLoading(false)
+      // Degraded path: proceed with the action. Keep loading on so the caller's
+      // continuation owns a single loading cycle.
       setUnavailableCartItems([])
 
       return []
@@ -584,6 +595,8 @@ export const useDeliveryPromise = () => {
 
   const selectPickup = async (pickup: Pickup, canUnselect = true) => {
     if (!countryCode || !zipcode || !geoCoordinates) {
+      setIsLoading(false)
+
       return
     }
 
@@ -626,6 +639,8 @@ export const useDeliveryPromise = () => {
 
   const selectDeliveryShippingOption = async () => {
     if (!countryCode || !zipcode || !geoCoordinates) {
+      setIsLoading(false)
+
       return
     }
 
