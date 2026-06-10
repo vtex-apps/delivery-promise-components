@@ -136,9 +136,15 @@ export const useDeliveryPromise = () => {
   const refreshStorefront = useCallback(async (): Promise<void> => {
     // A location change resets the PLP to the first page; drop the stale `page`
     // query string so it survives neither the soft refresh nor a reload.
-    removePageQueryParam()
+    const previousPage = removePageQueryParam()
 
-    if (!apolloClient) {
+    // The fetch-more pagination counter lives in search-result's `useFetchMore`
+    // internal state, seeded at mount and only reset on query/map/orderBy/
+    // priceRange changes — a segment change touches none of those, so a soft
+    // refetch can't rewind it (the next "load more" would jump to page N+1).
+    // On a deep page we reload instead: it lands on the now page-less URL and
+    // re-initializes that counter at page 1. Page 1 keeps the soft refresh.
+    if (!apolloClient || previousPage >= 2) {
       location.reload()
 
       return
