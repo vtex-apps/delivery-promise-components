@@ -15,8 +15,16 @@ jest.mock('vtex.pixel-manager', () => ({
   usePixelEventCallback: () => {},
 }))
 
+// Prefix `mock` so jest.mock hoisting permits access from the factory below.
+const mockSetQuery = jest.fn()
+let mockRuntimeQuery: Record<string, string | undefined> = {}
+
 jest.mock('vtex.render-runtime', () => ({
-  useRuntime: () => ({ account: 'store' }),
+  useRuntime: () => ({
+    account: 'store',
+    setQuery: mockSetQuery,
+    query: mockRuntimeQuery,
+  }),
   useSSR: () => false,
 }))
 
@@ -169,15 +177,23 @@ describe('useDeliveryPromise actions and behavior', () => {
       .spyOn(client, 'validateProductAvailabilityByDelivery')
       .mockResolvedValue({ unavailableItemIds: [] } as never)
 
+    mockRuntimeQuery = {}
+
     const renderRuntime = jest.requireMock('vtex.render-runtime') as {
       useSSR: () => boolean
-      useRuntime: () => { account: string }
+      useRuntime: () => {
+        account: string
+        setQuery: jest.Mock
+        query: Record<string, string | undefined>
+      }
     }
 
     jest.spyOn(renderRuntime, 'useSSR').mockReturnValue(false)
-    jest
-      .spyOn(renderRuntime, 'useRuntime')
-      .mockReturnValue({ account: 'store' })
+    jest.spyOn(renderRuntime, 'useRuntime').mockImplementation(() => ({
+      account: 'store',
+      setQuery: mockSetQuery,
+      query: mockRuntimeQuery,
+    }))
 
     const cookie = jest.requireMock('../utils/cookie') as {
       getCountryCode: () => string
@@ -1187,19 +1203,9 @@ describe('useDeliveryPromise — soft refresh (replaces location.reload)', () =>
     mockObservableQueries = mockBuildObservableQueries()
 
     reloadMock = jest.fn()
-    // Force a clean, page-less URL each test. A per-test override (e.g. the
-    // deep-page case) mutates window.location, and spreading it here would leak
-    // a stale `?page=N` into later tests, flipping them onto the reload path.
     Object.defineProperty(window, 'location', {
       configurable: true,
-      value: {
-        ...window.location,
-        href: 'http://localhost/',
-        search: '',
-        pathname: '/',
-        hash: '',
-        reload: reloadMock,
-      },
+      value: { ...window.location, reload: reloadMock },
     })
   })
 
@@ -1226,38 +1232,6 @@ describe('useDeliveryPromise — soft refresh (replaces location.reload)', () =>
     expect(reloadMock).not.toHaveBeenCalled()
   })
 
-  it('UPDATE_ZIPCODE reloads to page 1 (resets pagination) when the shopper is on a deep page', async () => {
-    Object.defineProperty(window, 'location', {
-      configurable: true,
-      value: {
-        href: 'http://localhost/category?page=5',
-        search: '?page=5',
-        pathname: '/category',
-        hash: '',
-        reload: reloadMock,
-      },
-    })
-
-    const actions = [
-      {
-        type: 'UPDATE_ZIPCODE',
-        args: { zipcode: '12345-678', reload: true },
-      },
-    ]
-
-    const { getByTestId } = render(<ActionRunner actions={actions} />)
-
-    fireEvent.click(getByTestId('btn'))
-
-    await waitFor(() => {
-      expect(reloadMock).toHaveBeenCalledTimes(1)
-    })
-
-    // A hard reload re-initializes search-result's fetch-more pagination at
-    // page 1, so we must NOT also fire a (now redundant) soft refetch.
-    expect(getRefetch('productSearchV3')).not.toHaveBeenCalled()
-  })
-
   it('UPDATE_ZIPCODE resets productSearchV3 to the first page (from: 0, to: page size - 1) preserving other variables', async () => {
     const actions = [
       {
@@ -1280,6 +1254,54 @@ describe('useDeliveryPromise — soft refresh (replaces location.reload)', () =>
         orderBy: 'OrderByScoreDESC',
       })
     })
+  })
+
+  it('UPDATE_ZIPCODE resets the PLP page query param via render-runtime when past page 1', async () => {
+    // Shopper is on page 5 (URL ?page=5). search-result reads this through
+    // render-runtime, so the reset must go through setQuery (not history) to
+    // make useFetchMore snap "load more" back to page 2.
+    mockRuntimeQuery = { page: '5' }
+
+    const actions = [
+      {
+        type: 'UPDATE_ZIPCODE',
+        args: { zipcode: '12345-678', reload: true },
+      },
+    ]
+
+    const { getByTestId } = render(<ActionRunner actions={actions} />)
+
+    fireEvent.click(getByTestId('btn'))
+
+    await waitFor(() => {
+      expect(mockSetQuery).toHaveBeenCalledWith(
+        { page: undefined },
+        { replace: true }
+      )
+    })
+  })
+
+  it('UPDATE_ZIPCODE does not touch the page query param when already on page 1', async () => {
+    // No `page` param (page 1): the reset is a no-op so non-PLP / first-page
+    // URLs are left untouched.
+    mockRuntimeQuery = {}
+
+    const actions = [
+      {
+        type: 'UPDATE_ZIPCODE',
+        args: { zipcode: '12345-678', reload: true },
+      },
+    ]
+
+    const { getByTestId } = render(<ActionRunner actions={actions} />)
+
+    fireEvent.click(getByTestId('btn'))
+
+    await waitFor(() => {
+      expect(getRefetch('productSearchV3')).toHaveBeenCalled()
+    })
+
+    expect(mockSetQuery).not.toHaveBeenCalled()
   })
 
   it('UPDATE_ZIPCODE with reload:false neither refetches nor reloads (caller owns navigation)', async () => {
@@ -1561,6 +1583,194 @@ describe('useDeliveryPromise — soft refresh (replaces location.reload)', () =>
 
     expect(getByTestId('pickup').textContent).toBe('none')
     expect(Number(getByTestId('applied').textContent)).toBeGreaterThan(1)
+  })
+
+  // When the session write fails, the optimistic fulfillment state must roll
+  // back (the session was never written) and loading must stop — otherwise the
+  // UI claims a selection that does not exist and the spinner is stuck forever.
+  function RollbackProbe({
+    actions,
+  }: {
+    actions: Array<{ type: string; args?: unknown }>
+  }) {
+    const { dispatch, state } = useDeliveryPromise()
+
+    return (
+      <div>
+        <span data-testid="method">
+          {state.deliveryPromiseMethod ?? 'none'}
+        </span>
+        <span data-testid="pickup">
+          {state.selectedPickup?.pickupPoint.id ?? 'none'}
+        </span>
+        <span data-testid="geo">
+          {state.geoCoordinates?.join(',') ?? 'none'}
+        </span>
+        <span data-testid="loading">{String(state.isLoading)}</span>
+        {actions.map((action, index) => (
+          <button
+            // eslint-disable-next-line react/no-array-index-key
+            key={index}
+            data-testid={`btn-${index}`}
+            type="button"
+            onClick={() => dispatch(action as never)}
+          >
+            go
+          </button>
+        ))}
+      </div>
+    )
+  }
+
+  it('UPDATE_PICKUP rolls back the optimistic state and stops loading when the session write fails', async () => {
+    const pickup = {
+      pickupPoint: { id: 'pk-1', friendlyName: 'Store 1', isActive: true },
+    }
+
+    const { getByTestId } = render(
+      <RollbackProbe
+        actions={[
+          { type: 'SELECT_DELIVERY_SHIPPING_OPTION' },
+          { type: 'UPDATE_PICKUP', args: { pickup, canUnselect: true } },
+        ]}
+      />
+    )
+
+    await waitFor(() => {
+      expect(getByTestId('geo').textContent).toBe('1,2')
+    })
+
+    // Establish a successful prior selection (delivery).
+    fireEvent.click(getByTestId('btn-0'))
+
+    await waitFor(() => {
+      expect(getByTestId('method').textContent).toBe('delivery')
+    })
+    await waitFor(() => {
+      expect(getByTestId('loading').textContent).toBe('false')
+    })
+
+    jest
+      .spyOn(client, 'updateSession')
+      .mockRejectedValue(new Error('session write failed') as never)
+
+    fireEvent.click(getByTestId('btn-1'))
+
+    // The optimistic update applies first…
+    await waitFor(() => {
+      expect(getByTestId('pickup').textContent).toBe('pk-1')
+    })
+
+    // …then rolls back when the session write fails.
+    await waitFor(() => {
+      expect(getByTestId('method').textContent).toBe('delivery')
+    })
+    expect(getByTestId('pickup').textContent).toBe('none')
+
+    await waitFor(() => {
+      expect(getByTestId('loading').textContent).toBe('false')
+    })
+
+    expect(window.location.reload as jest.Mock).not.toHaveBeenCalled()
+  })
+
+  it('SELECT_DELIVERY_SHIPPING_OPTION rolls back the optimistic state and stops loading when the session write fails', async () => {
+    const pickup = {
+      pickupPoint: { id: 'pk-1', friendlyName: 'Store 1', isActive: true },
+    }
+
+    const { getByTestId } = render(
+      <RollbackProbe
+        actions={[
+          { type: 'UPDATE_PICKUP', args: { pickup, canUnselect: true } },
+          { type: 'SELECT_DELIVERY_SHIPPING_OPTION' },
+        ]}
+      />
+    )
+
+    await waitFor(() => {
+      expect(getByTestId('geo').textContent).toBe('1,2')
+    })
+
+    // Establish a successful prior selection (pickup).
+    fireEvent.click(getByTestId('btn-0'))
+
+    await waitFor(() => {
+      expect(getByTestId('method').textContent).toBe('pickup-in-point')
+    })
+    await waitFor(() => {
+      expect(getByTestId('loading').textContent).toBe('false')
+    })
+
+    jest
+      .spyOn(client, 'updateSession')
+      .mockRejectedValue(new Error('session write failed') as never)
+
+    fireEvent.click(getByTestId('btn-1'))
+
+    // The optimistic update applies first…
+    await waitFor(() => {
+      expect(getByTestId('method').textContent).toBe('delivery')
+    })
+
+    // …then rolls back when the session write fails.
+    await waitFor(() => {
+      expect(getByTestId('method').textContent).toBe('pickup-in-point')
+    })
+    expect(getByTestId('pickup').textContent).toBe('pk-1')
+
+    await waitFor(() => {
+      expect(getByTestId('loading').textContent).toBe('false')
+    })
+  })
+
+  it('RESET_FULFILLMENT_METHOD rolls back the optimistic state when the session write fails', async () => {
+    const pickup = {
+      pickupPoint: { id: 'pk-1', friendlyName: 'Store 1', isActive: true },
+    }
+
+    const { getByTestId } = render(
+      <RollbackProbe
+        actions={[
+          { type: 'UPDATE_PICKUP', args: { pickup, canUnselect: true } },
+          { type: 'RESET_FULFILLMENT_METHOD' },
+        ]}
+      />
+    )
+
+    await waitFor(() => {
+      expect(getByTestId('geo').textContent).toBe('1,2')
+    })
+
+    fireEvent.click(getByTestId('btn-0'))
+
+    await waitFor(() => {
+      expect(getByTestId('method').textContent).toBe('pickup-in-point')
+    })
+    await waitFor(() => {
+      expect(getByTestId('loading').textContent).toBe('false')
+    })
+
+    jest
+      .spyOn(client, 'updateSession')
+      .mockRejectedValue(new Error('session write failed') as never)
+
+    fireEvent.click(getByTestId('btn-1'))
+
+    // The optimistic clear applies first…
+    await waitFor(() => {
+      expect(getByTestId('method').textContent).toBe('none')
+    })
+
+    // …then is restored when the session write fails.
+    await waitFor(() => {
+      expect(getByTestId('method').textContent).toBe('pickup-in-point')
+    })
+    expect(getByTestId('pickup').textContent).toBe('pk-1')
+
+    await waitFor(() => {
+      expect(getByTestId('loading').textContent).toBe('false')
+    })
   })
 
   // A single visible loading cycle (true → false). The cart-availability check

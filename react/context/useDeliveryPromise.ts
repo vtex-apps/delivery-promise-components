@@ -31,7 +31,6 @@ import type { CartItem, CartProduct } from '../components/UnavailableItemsModal'
 import type { OrderFormCartLine } from '../modules/pixelHelper'
 import { mapCartItemToPixel } from '../modules/pixelHelper'
 import { refetchAllowlistedQueries } from '../modules/refetchAllowlistedQueries'
-import { removePageQueryParam } from '../modules/removePageQueryParam'
 import { getCountryCode, getFacetsData, getOrderFormId } from '../utils/cookie'
 import messages from '../messages'
 import type {
@@ -109,7 +108,7 @@ export const useDeliveryPromise = () => {
     (action: DeliveryPromiseActions) => Promise<boolean | undefined>
   >(async () => undefined)
 
-  const { account } = useRuntime()
+  const { account, query: runtimeQuery, setQuery } = useRuntime()
   const { session, loading: isSessionLoading } = useRenderSession()
   const isSSR = useSSR()
   const intl = useIntl()
@@ -134,17 +133,19 @@ export const useDeliveryPromise = () => {
    * post-session state.
    */
   const refreshStorefront = useCallback(async (): Promise<void> => {
-    // A location change resets the PLP to the first page; drop the stale `page`
-    // query string so it survives neither the soft refresh nor a reload.
-    const previousPage = removePageQueryParam()
+    // A location change resets the PLP to the first page. Drop the `page` query
+    // param *through render-runtime* (not history.replaceState): vtex.search-result
+    // reads `useRuntime().query.page` and resets its "load more" pagination reducer
+    // when it observes the param returning to page 1, so the next "load more" goes
+    // to page 2 instead of resuming from the stale page. Gate on page > 1 so non-PLP
+    // and already-first-page URLs are left untouched.
+    const currentPageParam = Number(runtimeQuery?.page)
 
-    // The fetch-more pagination counter lives in search-result's `useFetchMore`
-    // internal state, seeded at mount and only reset on query/map/orderBy/
-    // priceRange changes — a segment change touches none of those, so a soft
-    // refetch can't rewind it (the next "load more" would jump to page N+1).
-    // On a deep page we reload instead: it lands on the now page-less URL and
-    // re-initializes that counter at page 1. Page 1 keeps the soft refresh.
-    if (!apolloClient || previousPage >= 2) {
+    if (typeof setQuery === 'function' && currentPageParam > 1) {
+      setQuery({ page: undefined }, { replace: true })
+    }
+
+    if (!apolloClient) {
       location.reload()
 
       return
@@ -163,7 +164,7 @@ export const useDeliveryPromise = () => {
     } catch {
       location.reload()
     }
-  }, [apolloClient])
+  }, [apolloClient, runtimeQuery, setQuery])
 
   const orderItemsUpdateOptions = {
     allowedOutdatedData: ['paymentData'] as const,
@@ -618,26 +619,46 @@ export const useDeliveryPromise = () => {
       pickupUpdated = undefined
     }
 
+    const previousPickup = selectedPickup
+    const previousMethod = deliveryPromiseMethod
+
     // Optimistically update the fulfillment state the reload used to re-derive
     // from the segment on remount, and signal blocks to close the modal.
     setSelectedPickup(pickupUpdated)
     setDeliveryPromiseMethod(shippingOption)
     setFulfillmentSelectionAppliedId((n) => n + 1)
 
+    try {
+      await updateSession(
+        countryCode,
+        zipcode!,
+        geoCoordinates!,
+        pickupUpdated,
+        shippingOption
+      )
+    } catch (error) {
+      // The session was never written: roll the optimistic state back so the
+      // UI does not claim a selection that does not exist, and release the
+      // loading flag the cart-availability check left on.
+      setSelectedPickup(previousPickup)
+      setDeliveryPromiseMethod(previousMethod)
+      setIsLoading(false)
+      console.error(
+        'delivery-promise: updateSession failed during pickup selection',
+        error
+      )
+
+      return
+    }
+
+    // Persist only after the session write succeeds, so a failed write does
+    // not poison the PLP's stored pickup preference.
     if (
       shippingOption === 'pickup-in-point' &&
       pickupUpdated?.pickupPoint?.id
     ) {
       persistPickupPreference(pickupUpdated, zipcode!)
     }
-
-    await updateSession(
-      countryCode,
-      zipcode!,
-      geoCoordinates!,
-      pickupUpdated,
-      shippingOption
-    )
 
     setIsLoading(true)
     await refreshStorefront()
@@ -650,19 +671,34 @@ export const useDeliveryPromise = () => {
       return
     }
 
+    const previousPickup = selectedPickup
+    const previousMethod = deliveryPromiseMethod
+
     // Optimistically update the fulfillment state the reload used to re-derive
     // from the segment on remount, and signal blocks to close the modal.
     setDeliveryPromiseMethod('delivery')
     setSelectedPickup(undefined)
     setFulfillmentSelectionAppliedId((n) => n + 1)
 
-    await updateSession(
-      countryCode,
-      zipcode,
-      geoCoordinates,
-      undefined,
-      'delivery'
-    )
+    try {
+      await updateSession(
+        countryCode,
+        zipcode,
+        geoCoordinates,
+        undefined,
+        'delivery'
+      )
+    } catch (error) {
+      setDeliveryPromiseMethod(previousMethod)
+      setSelectedPickup(previousPickup)
+      setIsLoading(false)
+      console.error(
+        'delivery-promise: updateSession failed during delivery selection',
+        error
+      )
+
+      return
+    }
 
     setIsLoading(true)
     await refreshStorefront()
@@ -943,13 +979,28 @@ export const useDeliveryPromise = () => {
           return
         }
 
+        const previousPickup = selectedPickup
+        const previousMethod = deliveryPromiseMethod
+
         // Optimistically clear the fulfillment state the reload used to
         // re-derive from the segment, and signal blocks to close the modal.
         setSelectedPickup(undefined)
         setDeliveryPromiseMethod(undefined)
         setFulfillmentSelectionAppliedId((n) => n + 1)
 
-        await updateSession(countryCode, zipcode, geoCoordinates, undefined)
+        try {
+          await updateSession(countryCode, zipcode, geoCoordinates, undefined)
+        } catch (error) {
+          setSelectedPickup(previousPickup)
+          setDeliveryPromiseMethod(previousMethod)
+          setIsLoading(false)
+          console.error(
+            'delivery-promise: updateSession failed during fulfillment reset',
+            error
+          )
+
+          break
+        }
 
         setIsLoading(true)
         await refreshStorefront()
