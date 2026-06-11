@@ -113,7 +113,7 @@ Place the blocks where you need them (commonly under [header](https://developers
 
 #### `availability-badges`
 
-No content schema; add the block in product-summary templates as documented in `docs/AvailabilityBadges.md`.
+No content schema; reads `ProductSummaryContext` and `useDeliveryPromiseState` to display delivery promise badges in product summaries.
 
 ### Global UI
 

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Deprecated
+
+- **`docs/AvailabilityBadges.md`:** separate documentation file is deprecated in favor of inline documentation in `docs/README.md`. The file remains with a deprecation notice but is no longer referenced in navigation.
+
 ## [1.1.3] - 2026-06-05
 
 ### Changed
