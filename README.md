@@ -70,7 +70,6 @@ Use `vtex release patch stable` (or `minor`/`major`) via the standard VTEX IO re
 ## Documentation
 
 - **Block reference, props, CSS handles:** [`docs/README.md`](docs/README.md)
-- **Availability Badges:** [`docs/AvailabilityBadges.md`](docs/AvailabilityBadges.md)
 - **Domain glossary:** [`docs/glossary.md`](docs/glossary.md)
 - **Data model:** [`docs/data-model.md`](docs/data-model.md)
 - **VTEX IO developer docs:** https://developers.vtex.com/docs/guides/setting-up-delivery-promise-components

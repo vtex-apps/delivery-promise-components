@@ -1,5 +1,7 @@
 >📢 **Disclaimer** Don't fork this project. Use it, [contribute](https://github.com/vtex-apps/delivery-promise-components) to help us evolve it. 
 
+> ⚠️ **DEPRECATED:** This documentation is deprecated and will be removed in a future version. The `availability-badges` block is now documented in the main README.
+
 # Availability Badges
 
 
