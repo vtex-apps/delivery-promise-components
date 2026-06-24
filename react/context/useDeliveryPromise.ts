@@ -146,7 +146,7 @@ export const useDeliveryPromise = () => {
     }
 
     if (!apolloClient) {
-      location.reload()
+      window.location.reload()
 
       return
     }
@@ -155,14 +155,14 @@ export const useDeliveryPromise = () => {
       const { failed } = await refetchAllowlistedQueries(apolloClient)
 
       if (failed) {
-        location.reload()
+        window.location.reload()
 
         return
       }
 
       setIsLoading(false)
     } catch {
-      location.reload()
+      window.location.reload()
     }
   }, [apolloClient, runtimeQuery, setQuery])
 
