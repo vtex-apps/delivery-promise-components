@@ -102,21 +102,22 @@ const getRefetch = (queryName: string): jest.Mock | undefined => {
   return found
 }
 
-// Lets a test swap the Apollo client the hook receives without reassigning the
-// imported `useApolloClient` binding (which is unreliable across compilers that
-// bind named imports at import time rather than reading them live). `undefined`
-// means "use the default in-memory client built from mockObservableQueries".
-const mockNoApolloOverride = Symbol('no-apollo-override')
-let mockApolloClientOverride: unknown = mockNoApolloOverride
+// Builds the default in-memory Apollo client from the current observable
+// queries. Read at call time so a fresh map from beforeEach is always used.
+const mockDefaultApolloClient = () => ({
+  reFetchObservableQueries: mockReFetchObservableQueries,
+  queryManager: { queries: mockObservableQueries },
+})
+
+// The Apollo client the hook receives. Read through a `useApolloClient` spy
+// re-established in beforeEach (mirroring the render-runtime mock) so a test
+// can swap it by reassigning this binding — the spy reads it live on every
+// render, which the CI test runner honors (unlike a hoisted jest.mock factory
+// reading a binding mutated from a test body).
+let mockApolloClient: unknown
 
 jest.mock('react-apollo', () => ({
-  useApolloClient: () =>
-    mockApolloClientOverride === mockNoApolloOverride
-      ? {
-          reFetchObservableQueries: mockReFetchObservableQueries,
-          queryManager: { queries: mockObservableQueries },
-        }
-      : mockApolloClientOverride,
+  useApolloClient: () => mockDefaultApolloClient(),
 }))
 
 const mockIntl = {
@@ -1233,7 +1234,19 @@ describe('useDeliveryPromise — soft refresh (replaces location.reload)', () =>
     }))
 
     mockObservableQueries = mockBuildObservableQueries()
-    mockApolloClientOverride = mockNoApolloOverride
+
+    // Default the hook's Apollo client to the in-memory one and read it through
+    // a spy re-established every test, so per-test swaps (null / broken
+    // internals) are honored the same way the render-runtime query mock is.
+    mockApolloClient = mockDefaultApolloClient()
+
+    const apolloMod = jest.requireMock('react-apollo') as {
+      useApolloClient: jest.Mock
+    }
+
+    jest
+      .spyOn(apolloMod, 'useApolloClient')
+      .mockImplementation(() => mockApolloClient)
 
     reloadMock = jest.fn()
     Object.defineProperty(window, 'location', {
@@ -1426,7 +1439,25 @@ describe('useDeliveryPromise — soft refresh (replaces location.reload)', () =>
   })
 
   it('falls back to location.reload when a targeted refetch throws', async () => {
-    getRefetch('productSearchV3')?.mockRejectedValue(new Error('apollo down'))
+    // A client whose allowlisted query rejects on refetch. Built up-front and
+    // assigned to the live binding so the rejecting refetch is part of the
+    // value the hook reads, not a post-hoc mock mutation.
+    mockApolloClient = {
+      queryManager: {
+        queries: new Map([
+          [
+            'q-search',
+            {
+              observableQuery: {
+                queryName: 'productSearchV3',
+                variables: { query: 'shoes', from: 24, to: 47 },
+                refetch: jest.fn().mockRejectedValue(new Error('apollo down')),
+              },
+            },
+          ],
+        ]),
+      },
+    }
 
     const actions = [
       {
@@ -1446,7 +1477,7 @@ describe('useDeliveryPromise — soft refresh (replaces location.reload)', () =>
 
   it('falls back to location.reload when the query manager internals are inaccessible', async () => {
     // Apollo present, but the internal queries map is not reachable.
-    mockApolloClientOverride = { queryManager: {} }
+    mockApolloClient = { queryManager: {} }
 
     const actions = [
       {
@@ -1465,7 +1496,7 @@ describe('useDeliveryPromise — soft refresh (replaces location.reload)', () =>
   })
 
   it('falls back to location.reload when no Apollo provider is mounted', async () => {
-    mockApolloClientOverride = null
+    mockApolloClient = null
 
     const actions = [
       {
