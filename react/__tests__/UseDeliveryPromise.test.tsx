@@ -102,11 +102,21 @@ const getRefetch = (queryName: string): jest.Mock | undefined => {
   return found
 }
 
+// Lets a test swap the Apollo client the hook receives without reassigning the
+// imported `useApolloClient` binding (which is unreliable across compilers that
+// bind named imports at import time rather than reading them live). `undefined`
+// means "use the default in-memory client built from mockObservableQueries".
+const mockNoApolloOverride = Symbol('no-apollo-override')
+let mockApolloClientOverride: unknown = mockNoApolloOverride
+
 jest.mock('react-apollo', () => ({
-  useApolloClient: () => ({
-    reFetchObservableQueries: mockReFetchObservableQueries,
-    queryManager: { queries: mockObservableQueries },
-  }),
+  useApolloClient: () =>
+    mockApolloClientOverride === mockNoApolloOverride
+      ? {
+          reFetchObservableQueries: mockReFetchObservableQueries,
+          queryManager: { queries: mockObservableQueries },
+        }
+      : mockApolloClientOverride,
 }))
 
 const mockIntl = {
@@ -1200,7 +1210,30 @@ describe('useDeliveryPromise — soft refresh (replaces location.reload)', () =>
       )
     jest.spyOn(cookie, 'getOrderFormId').mockReturnValue('order-form-id')
 
+    // Reset the runtime query and re-establish the render-runtime spy on every
+    // test so a leftover `page` param from an earlier case cannot push
+    // `refreshStorefront` into the `setQuery` branch and skip the reload
+    // fallback (parity with the first describe block's beforeEach).
+    mockRuntimeQuery = {}
+
+    const renderRuntime = jest.requireMock('vtex.render-runtime') as {
+      useSSR: () => boolean
+      useRuntime: () => {
+        account: string
+        setQuery: jest.Mock
+        query: Record<string, string | undefined>
+      }
+    }
+
+    jest.spyOn(renderRuntime, 'useSSR').mockReturnValue(false)
+    jest.spyOn(renderRuntime, 'useRuntime').mockImplementation(() => ({
+      account: 'store',
+      setQuery: mockSetQuery,
+      query: mockRuntimeQuery,
+    }))
+
     mockObservableQueries = mockBuildObservableQueries()
+    mockApolloClientOverride = mockNoApolloOverride
 
     reloadMock = jest.fn()
     Object.defineProperty(window, 'location', {
@@ -1393,9 +1426,7 @@ describe('useDeliveryPromise — soft refresh (replaces location.reload)', () =>
   })
 
   it('falls back to location.reload when a targeted refetch throws', async () => {
-    getRefetch('productSearchV3')?.mockRejectedValueOnce(
-      new Error('apollo down')
-    )
+    getRefetch('productSearchV3')?.mockRejectedValue(new Error('apollo down'))
 
     const actions = [
       {
@@ -1414,64 +1445,44 @@ describe('useDeliveryPromise — soft refresh (replaces location.reload)', () =>
   })
 
   it('falls back to location.reload when the query manager internals are inaccessible', async () => {
-    const apolloMod = jest.requireMock('react-apollo') as {
-      useApolloClient: jest.Mock | (() => unknown)
-    }
-
-    const originalUseApolloClient = apolloMod.useApolloClient
-
     // Apollo present, but the internal queries map is not reachable.
-    apolloMod.useApolloClient = () => ({ queryManager: {} })
+    mockApolloClientOverride = { queryManager: {} }
 
-    try {
-      const actions = [
-        {
-          type: 'UPDATE_ZIPCODE',
-          args: { zipcode: '12345-678', reload: true },
-        },
-      ]
+    const actions = [
+      {
+        type: 'UPDATE_ZIPCODE',
+        args: { zipcode: '12345-678', reload: true },
+      },
+    ]
 
-      const { getByTestId } = render(<ActionRunner actions={actions} />)
+    const { getByTestId } = render(<ActionRunner actions={actions} />)
 
-      fireEvent.click(getByTestId('btn'))
+    fireEvent.click(getByTestId('btn'))
 
-      await waitFor(() => {
-        expect(reloadMock).toHaveBeenCalledTimes(1)
-      })
-    } finally {
-      apolloMod.useApolloClient = originalUseApolloClient
-    }
+    await waitFor(() => {
+      expect(reloadMock).toHaveBeenCalledTimes(1)
+    })
   })
 
   it('falls back to location.reload when no Apollo provider is mounted', async () => {
-    const apolloMod = jest.requireMock('react-apollo') as {
-      useApolloClient: jest.Mock | (() => unknown)
-    }
+    mockApolloClientOverride = null
 
-    const originalUseApolloClient = apolloMod.useApolloClient
+    const actions = [
+      {
+        type: 'UPDATE_ZIPCODE',
+        args: { zipcode: '12345-678', reload: true },
+      },
+    ]
 
-    apolloMod.useApolloClient = () => null
+    const { getByTestId } = render(<ActionRunner actions={actions} />)
 
-    try {
-      const actions = [
-        {
-          type: 'UPDATE_ZIPCODE',
-          args: { zipcode: '12345-678', reload: true },
-        },
-      ]
+    fireEvent.click(getByTestId('btn'))
 
-      const { getByTestId } = render(<ActionRunner actions={actions} />)
+    await waitFor(() => {
+      expect(reloadMock).toHaveBeenCalledTimes(1)
+    })
 
-      fireEvent.click(getByTestId('btn'))
-
-      await waitFor(() => {
-        expect(reloadMock).toHaveBeenCalledTimes(1)
-      })
-
-      expect(getRefetch('productSearchV3')).not.toHaveBeenCalled()
-    } finally {
-      apolloMod.useApolloClient = originalUseApolloClient
-    }
+    expect(getRefetch('productSearchV3')).not.toHaveBeenCalled()
   })
 
   // Without a reload, the fulfillment-method state that used to be re-derived
