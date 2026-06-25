@@ -148,6 +148,33 @@ function ActionRunner({
   )
 }
 
+// Mock `window.location.reload` once at the file level rather than per test.
+//
+// `Window.location` is a Web IDL `[Replaceable]` attribute, which jsdom honors
+// asymmetrically across Node versions: on Node 18+, repeated calls to
+// `Object.defineProperty(window, 'location', { value })` keep replacing the
+// property; on Node 16 (the version baked into `vtex/action-io-app-test`), only
+// the *first* call actually swaps the value — every subsequent call silently
+// fails. That asymmetry made the soft-refresh reload-fallback assertions pass
+// locally but fail in CI, because the per-test `reloadMock` was not actually
+// installed as `window.location.reload`.
+//
+// We sidestep the quirk by:
+//   1. Calling `Object.defineProperty(window, 'location', ...)` exactly once,
+//      which always works (the first redefinition is allowed everywhere) and
+//      replaces the original jsdom Location with a plain object whose `reload`
+//      is a writable data property.
+//   2. Keeping a single mock function (`reloadMock`) installed as that
+//      `reload` property. Tests assert against this stable reference, and
+//      `reloadMock.mockReset()` in each `beforeEach` resets call history
+//      without touching `window.location`.
+const reloadMock = jest.fn()
+
+Object.defineProperty(window, 'location', {
+  configurable: true,
+  value: { ...window.location, reload: reloadMock },
+})
+
 describe('useDeliveryPromise actions and behavior', () => {
   beforeEach(() => {
     jest.clearAllMocks()
@@ -220,12 +247,10 @@ describe('useDeliveryPromise actions and behavior', () => {
 
     mockObservableQueries = mockBuildObservableQueries()
 
-    const reloadMock = jest.fn()
-
-    Object.defineProperty(window, 'location', {
-      configurable: true,
-      value: { ...window.location, reload: reloadMock },
-    })
+    // `reloadMock` is installed as `window.location.reload` once at module
+    // scope; here we only reset its call history. See the module-scope comment
+    // above for the Web IDL / Node 16 rationale.
+    reloadMock.mockReset()
   })
 
   it.each([
@@ -292,7 +317,6 @@ describe('useDeliveryPromise actions and behavior', () => {
   })
 
   it('UPDATE_ZIPCODE does NOT refresh (soft or hard) when shipping method block is registered as required', async () => {
-    const reloadMock = window.location.reload as jest.Mock
     const actions = [
       {
         type: 'REGISTER_SHIPPING_METHOD_BLOCK',
@@ -408,7 +432,6 @@ describe('useDeliveryPromise actions and behavior', () => {
   })
 
   it('UPDATE_ZIPCODE soft-refreshes (no hard reload) when shipping method is registered as optional', async () => {
-    const reloadMock = window.location.reload as jest.Mock
     const actions = [
       {
         type: 'REGISTER_SHIPPING_METHOD_BLOCK',
@@ -434,8 +457,6 @@ describe('useDeliveryPromise actions and behavior', () => {
   })
 
   it('UPDATE_ZIPCODE falls back to location.reload when a targeted refetch throws', async () => {
-    const reloadMock = window.location.reload as jest.Mock
-
     getRefetch('productSearchV3')?.mockRejectedValueOnce(
       new Error('apollo offline')
     )
@@ -651,12 +672,10 @@ describe('useDeliveryPromise — fail-fast on UPDATE_ZIPCODE', () => {
     jest.spyOn(cookie, 'getFacetsData').mockReturnValue(undefined)
     jest.spyOn(cookie, 'getOrderFormId').mockReturnValue(undefined)
 
-    const reloadMock = jest.fn()
-
-    Object.defineProperty(window, 'location', {
-      configurable: true,
-      value: { ...window.location, reload: reloadMock },
-    })
+    // `reloadMock` is installed as `window.location.reload` once at module
+    // scope; here we only reset its call history. See the module-scope comment
+    // for the Web IDL / Node 16 rationale.
+    reloadMock.mockReset()
   })
 
   it('calls getAddress exactly once on the happy path', async () => {
@@ -767,10 +786,10 @@ describe('useDeliveryPromise — empty-cart short-circuit on UPDATE_ZIPCODE', ()
     jest.spyOn(cookie, 'getFacetsData').mockReturnValue(undefined)
     jest.spyOn(cookie, 'getOrderFormId').mockReturnValue('order-form-id')
 
-    Object.defineProperty(window, 'location', {
-      configurable: true,
-      value: { ...window.location, reload: jest.fn() },
-    })
+    // `reloadMock` is installed as `window.location.reload` once at module
+    // scope; here we only reset its call history. See the module-scope comment
+    // for the Web IDL / Node 16 rationale.
+    reloadMock.mockReset()
   })
 
   it('does NOT call BFF availability when the cart is empty', async () => {
@@ -850,10 +869,10 @@ describe('useDeliveryPromise — parallel block in submitZipcode', () => {
     jest.spyOn(cookie, 'getFacetsData').mockReturnValue(undefined)
     jest.spyOn(cookie, 'getOrderFormId').mockReturnValue('order-form-id')
 
-    Object.defineProperty(window, 'location', {
-      configurable: true,
-      value: { ...window.location, reload: jest.fn() },
-    })
+    // `reloadMock` is installed as `window.location.reload` once at module
+    // scope; here we only reset its call history. See the module-scope comment
+    // for the Web IDL / Node 16 rationale.
+    reloadMock.mockReset()
   })
 
   it('launches getCatalogCount, updateOrderForm and getPickups in parallel', async () => {
@@ -1018,10 +1037,10 @@ describe('useDeliveryPromise — single updateSession per UPDATE_ZIPCODE dispatc
     jest.spyOn(cookie, 'getFacetsData').mockReturnValue(undefined)
     jest.spyOn(cookie, 'getOrderFormId').mockReturnValue('order-form-id')
 
-    Object.defineProperty(window, 'location', {
-      configurable: true,
-      value: { ...window.location, reload: jest.fn() },
-    })
+    // `reloadMock` is installed as `window.location.reload` once at module
+    // scope; here we only reset its call history. See the module-scope comment
+    // for the Web IDL / Node 16 rationale.
+    reloadMock.mockReset()
   })
 
   it('writes the session exactly once with the resolved pickup (happy path)', async () => {
@@ -1155,8 +1174,6 @@ describe('useDeliveryPromise — single updateSession per UPDATE_ZIPCODE dispatc
 })
 
 describe('useDeliveryPromise — soft refresh (replaces location.reload)', () => {
-  let reloadMock: jest.Mock
-
   beforeEach(() => {
     jest.clearAllMocks()
 
@@ -1248,11 +1265,10 @@ describe('useDeliveryPromise — soft refresh (replaces location.reload)', () =>
       .spyOn(apolloMod, 'useApolloClient')
       .mockImplementation(() => mockApolloClient)
 
-    reloadMock = jest.fn()
-    Object.defineProperty(window, 'location', {
-      configurable: true,
-      value: { ...window.location, reload: reloadMock },
-    })
+    // `reloadMock` is installed as `window.location.reload` once at module
+    // scope; here we only reset its call history. See the module-scope comment
+    // for the Web IDL / Node 16 rationale.
+    reloadMock.mockReset()
   })
 
   it('UPDATE_ZIPCODE refetches only the allowlisted queries instead of reloading', async () => {
