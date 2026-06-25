@@ -1,8 +1,16 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { Input, IconClear } from 'vtex.styleguide'
 import { useCssHandles } from 'vtex.css-handles'
 
 import '../styles.css'
+import { getCountryCode } from '../utils/cookie'
+import type { PostalCodeFormat } from '../utils/postalCodeFormat'
+import {
+  applyMask,
+  getPostalCodeFormat,
+  sanitizeByMode,
+  unmask,
+} from '../utils/postalCodeFormat'
 
 const CSS_HANDLES = [
   'postalCodeInputClearButton',
@@ -18,6 +26,19 @@ interface Props {
   /** When false, Enter is not handled here (use a wrapping form onSubmit). Default true. */
   submitOnEnter?: boolean
   onClear?: () => void
+  /**
+   * Country override. When omitted, the active country is resolved from the
+   * VTEX segment token via `getCountryCode()`. Tolerant of alpha-2 (`BR`,
+   * `CA`) and alpha-3 (`BRA`, `CAN`) — see `normalizeCountry`.
+   */
+  country?: string
+  /**
+   * Per-country format override. When omitted, resolved from `country`
+   * (or the segment token) against the per-country registry, falling back
+   * to the permissive default (alphanumeric, no mask) for any country
+   * outside the masked top-10.
+   */
+  format?: PostalCodeFormat
 }
 
 const postalCodeInputClearButton = {
@@ -32,15 +53,40 @@ const PostalCodeInput = ({
   placeholder,
   submitOnEnter = true,
   onClear,
+  country,
+  format,
 }: Props) => {
   const handles = useCssHandles(CSS_HANDLES)
+
+  const resolvedFormat = useMemo<PostalCodeFormat>(() => {
+    if (format) return format
+
+    return getPostalCodeFormat(country ?? getCountryCode())
+  }, [format, country])
+
+  const { mode, mask } = resolvedFormat
+
+  const displayValue = mask ? applyMask(zipcode ?? '', mask) : zipcode ?? ''
+
+  const normalize = (raw: string): string => {
+    const sanitized = sanitizeByMode(raw, mode)
+
+    if (!mask) return sanitized
+
+    // Apply the mask, then strip literals so the value flowing out of the
+    // component (and into downstream consumers — session, cookie, Checkout,
+    // IS, BFF) stays in the compact form they expect today.
+    return unmask(applyMask(sanitized, mask), mask)
+  }
+
+  const effectivePlaceholder = placeholder ?? resolvedFormat.placeholder ?? mask
 
   return (
     <div className={`w-100 ${handles.postalCodeInputContainer}`}>
       <Input
         autFocus
         onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-          onChange(e.target.value.replace(/[^0-9]/g, ''))
+          onChange(normalize(e.target.value))
         }
         onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
           if (!submitOnEnter || e.key !== 'Enter') {
@@ -55,11 +101,11 @@ const PostalCodeInput = ({
               ? e.currentTarget.value
               : zipcode ?? ''
 
-          onSubmit(raw.replace(/[^0-9]/g, ''))
+          onSubmit(normalize(raw))
         }}
-        value={zipcode}
+        value={displayValue}
         errorMessage={errorMessage}
-        placeholder={placeholder}
+        placeholder={effectivePlaceholder}
         suffix={
           onClear ? (
             <button
