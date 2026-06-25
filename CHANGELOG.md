@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`PostalCodeInput` is now country-aware (per-country mask + input mode).** The component resolves a `{ mode, mask }` for the active country (segment `countryCode` via `getCountryCode()`, or a new optional `country` / `format` prop) and applies it on both `onChange` and Enter submit. Replaces the previous unconditional `[^0-9]` stripping that hard-blocked Canadian, Argentine, and other alphanumeric-postal-code markets at the location step.
 - **New module `react/utils/postalCodeFormat.ts`** owns the per-country format registry (`POSTAL_CODE_FORMATS`), the mask engine (`sanitizeByMode`, `applyMask`, `unmask`), `getPostalCodeFormat`, and `normalizeCountry` (tolerant of alpha-2 and alpha-3 inputs). The top-10 masked countries are **BR** (`00000-000` numeric), **MX**, **PE**, **US**, **ES**, **IT** (`00000` numeric), **CO** (`000000` numeric), **CL** (`0000000` numeric), **CA** (`A9A 9A9` alphanumeric), and **AR** (`A9999AAA` alphanumeric). Every other country (and any unresolved country) falls back to a permissive default (`{ mode: 'alphanumeric' }`, no mask), so no localized market is hard-blocked. Brazilian behavior — digits-only contract surface and `00000-000` formatting — is preserved.
 
+### Fixed
+
+- **`getCountryCode` is now SSR-safe.** `PostalCodeInput` resolves the country during render, which exposed that `getCountryCode` was browser-only (calls `atob` and assumed `window.__RUNTIME__` was fully populated). On the render-server vm2 sandbox `atob` is not in scope and a `ReferenceError` would crash the entire SSR with `ReferenceError: atob is not defined`. `getCountryCode` now falls back to `Buffer` when `atob` is missing, optional-chains `window.__RUNTIME__.segmentToken`, and returns `undefined` (instead of throwing) on any decoding/parsing failure. `PostalCodeInput` also catches resolution failures and falls back to the permissive default; the client re-resolves the real format after hydration.
+
 ## [1.3.1] - 2026-07-08
 
 ### Added
