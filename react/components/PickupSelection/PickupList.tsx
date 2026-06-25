@@ -6,7 +6,7 @@ import { useCssHandles } from 'vtex.css-handles'
 import messages from '../../messages'
 import PickupItem from './PickupItem'
 
-const CSS_HANDLES = ['updateButtonContainer', 'clearButtonContainer'] as const
+const CSS_HANDLES = ['updateButtonContainer'] as const
 
 interface Props {
   pickups: Pickup[]
@@ -72,35 +72,23 @@ const PickupList = ({
       </div>
       {(showUpdateButton || showClearButton) && (
         <div
-          style={{ bottom: '-30px' }}
-          className="sticky left-0 bottom-0 w-100 flex items-center"
+          style={{ bottom: '-30px', gap: '0.75rem' }}
+          className={`sticky left-0 bottom-0 w-100 flex items-center ${handle.updateButtonContainer}`}
         >
           {showClearButton && (
-            <div
-              className={`${showUpdateButton ? 'w-50 pr3' : 'w-100'} ${
-                handle.clearButtonContainer
-              }`}
-            >
-              <Button block variation="danger-tertiary" onClick={handleClear}>
-                {intl.formatMessage(messages.pickupPointListClearButtonLabel)}
-              </Button>
-            </div>
+            <Button block variation="secondary" onClick={handleClear}>
+              {intl.formatMessage(messages.pickupPointListClearButtonLabel)}
+            </Button>
           )}
           {showUpdateButton && (
-            <div
-              className={`${showClearButton ? 'w-50 pl3' : 'w-100'} ${
-                handle.updateButtonContainer
-              }`}
+            <Button
+              block
+              onClick={() => {
+                onSelectPickup(highlightedPickup as Pickup)
+              }}
             >
-              <Button
-                block
-                onClick={() => {
-                  onSelectPickup(highlightedPickup as Pickup)
-                }}
-              >
-                {intl.formatMessage(messages.pickupPointListUpdateButtonLabel)}
-              </Button>
-            </div>
+              {intl.formatMessage(messages.pickupPointListUpdateButtonLabel)}
+            </Button>
           )}
         </div>
       )}

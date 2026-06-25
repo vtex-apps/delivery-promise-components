@@ -38,7 +38,7 @@ function PickupPointSelector({ mode = 'default' }: Props) {
   const onSelectPickup = (pickup: Pickup) => {
     dispatch({
       type: 'UPDATE_PICKUP',
-      args: { pickup },
+      args: { pickup, canUnselect: true },
     })
   }
 
@@ -71,6 +71,7 @@ function PickupPointSelector({ mode = 'default' }: Props) {
           selectedPickup: pickup,
           selectedZipcode,
           isLoading,
+          canUnselect: true,
         }}
       />
     </>
