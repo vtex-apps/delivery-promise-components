@@ -1,5 +1,6 @@
 {
   "store/delivery-promise-components.pickupPointButton.placeholder": "Selecciona una tienda",
+  "store/delivery-promise-components.pickupPointList.clearButton.label": "Borrar",
   "store/delivery-promise-components.pickupPointList.updateButton.label": "Actualizar",
   "store/delivery-promise-components.pickupPointSelection.noPointsState.button.label": "Continuar con la entrega",
   "store/delivery-promise-components.pickupPointSelection.noPointsState.description": "No hay tiendas que atiendan el código postal {postalCode}",

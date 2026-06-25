@@ -22,6 +22,7 @@ const PickupModal = ({ isOpen, onClose, pickupProps }: Props) => {
     selectedPickup,
     selectedZipcode,
     isLoading,
+    canUnselect,
   } = pickupProps
 
   return (
@@ -40,6 +41,7 @@ const PickupModal = ({ isOpen, onClose, pickupProps }: Props) => {
         selectedPickup={selectedPickup}
         selectedZipcode={selectedZipcode}
         isLoading={isLoading}
+        canUnselect={canUnselect}
       />
     </Modal>
   )

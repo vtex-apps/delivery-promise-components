@@ -1,5 +1,6 @@
 {
   "store/delivery-promise-components.pickupPointButton.placeholder": "Escolha uma loja",
+  "store/delivery-promise-components.pickupPointList.clearButton.label": "Limpar",
   "store/delivery-promise-components.pickupPointList.updateButton.label": "Atualizar",
   "store/delivery-promise-components.pickupPointSelection.noPointsState.button.label": "Continuar com entrega",
   "store/delivery-promise-components.pickupPointSelection.noPointsState.description": "Não há lojas que atendam o CEP {postalCode}",

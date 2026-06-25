@@ -6,15 +6,21 @@ import { useCssHandles } from 'vtex.css-handles'
 import messages from '../../messages'
 import PickupItem from './PickupItem'
 
-const CSS_HANDLES = ['updateButtonContainer'] as const
+const CSS_HANDLES = ['updateButtonContainer', 'clearButtonContainer'] as const
 
 interface Props {
   pickups: Pickup[]
   selectedPickup?: Pickup
   onSelectPickup: (pickup: Pickup, shouldPersistFacet?: boolean) => void
+  canUnselect?: boolean
 }
 
-const PickupList = ({ pickups, selectedPickup, onSelectPickup }: Props) => {
+const PickupList = ({
+  pickups,
+  selectedPickup,
+  onSelectPickup,
+  canUnselect = false,
+}: Props) => {
   const handle = useCssHandles(CSS_HANDLES)
   const intl = useIntl()
   const [highlightedPickup, setHighlightedPickup] = useState<Pickup>()
@@ -26,18 +32,26 @@ const PickupList = ({ pickups, selectedPickup, onSelectPickup }: Props) => {
   }, [selectedPickup])
 
   const showUpdateButton =
-    selectedPickup &&
-    highlightedPickup &&
+    !!selectedPickup &&
+    !!highlightedPickup &&
     highlightedPickup.pickupPoint.id !== selectedPickup.pickupPoint.id
+
+  const showClearButton = canUnselect && !!selectedPickup
 
   const handleClickItem = (pickup: Pickup) => {
     setHighlightedPickup(pickup)
 
-    if (
-      !selectedPickup ||
-      selectedPickup.pickupPoint.id === pickup.pickupPoint.id
-    ) {
+    // Clicking the already-selected pickup is a no-op: the shopper only
+    // unselects through the explicit Clear button. The first selection (when
+    // nothing is selected yet) still applies immediately.
+    if (!selectedPickup) {
       onSelectPickup(pickup)
+    }
+  }
+
+  const handleClear = () => {
+    if (selectedPickup) {
+      onSelectPickup(selectedPickup)
     }
   }
 
@@ -56,19 +70,38 @@ const PickupList = ({ pickups, selectedPickup, onSelectPickup }: Props) => {
           />
         ))}
       </div>
-      {showUpdateButton && (
+      {(showUpdateButton || showClearButton) && (
         <div
           style={{ bottom: '-30px' }}
-          className={`sticky left-0 bottom-0 w-100 flex justify-center ${handle.updateButtonContainer}`}
+          className="sticky left-0 bottom-0 w-100 flex items-center"
         >
-          <Button
-            block
-            onClick={() => {
-              onSelectPickup(highlightedPickup as Pickup)
-            }}
-          >
-            {intl.formatMessage(messages.pickupPointListUpdateButtonLabel)}
-          </Button>
+          {showClearButton && (
+            <div
+              className={`${showUpdateButton ? 'w-50 pr3' : 'w-100'} ${
+                handle.clearButtonContainer
+              }`}
+            >
+              <Button block variation="danger-tertiary" onClick={handleClear}>
+                {intl.formatMessage(messages.pickupPointListClearButtonLabel)}
+              </Button>
+            </div>
+          )}
+          {showUpdateButton && (
+            <div
+              className={`${showClearButton ? 'w-50 pl3' : 'w-100'} ${
+                handle.updateButtonContainer
+              }`}
+            >
+              <Button
+                block
+                onClick={() => {
+                  onSelectPickup(highlightedPickup as Pickup)
+                }}
+              >
+                {intl.formatMessage(messages.pickupPointListUpdateButtonLabel)}
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </>

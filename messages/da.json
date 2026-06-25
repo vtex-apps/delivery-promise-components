@@ -1,5 +1,6 @@
 {
   "store/delivery-promise-components.pickupPointButton.placeholder": "Vælg en butik",
+  "store/delivery-promise-components.pickupPointList.clearButton.label": "Ryd",
   "store/delivery-promise-components.pickupPointList.updateButton.label": "Opdater",
   "store/delivery-promise-components.pickupPointSelection.noPointsState.button.label": "Continue with delivery",
   "store/delivery-promise-components.pickupPointSelection.noPointsState.description": "There are no stores available for the postal code {postalCode}",

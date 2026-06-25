@@ -35,6 +35,7 @@ const ShippingMethodModal = ({
     selectedPickup,
     selectedZipcode,
     isLoading,
+    canUnselect,
   } = pickupProps
 
   const [stage, setStage] = useState<Stages>('shippingSelection')
@@ -63,6 +64,7 @@ const ShippingMethodModal = ({
           selectedPickup={selectedPickup}
           selectedZipcode={selectedZipcode}
           onDeliverySelection={onDeliverySelection}
+          canUnselect={canUnselect}
         />
       ),
     },

@@ -156,6 +156,7 @@ function ShippingMethodSelector({
           selectedPickup: pickup,
           selectedZipcode,
           isLoading,
+          canUnselect: !required,
         }}
         nonDismissibleModal={required && !deliveryPromiseMethod}
       />
