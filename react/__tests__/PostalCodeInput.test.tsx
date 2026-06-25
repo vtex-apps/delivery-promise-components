@@ -134,6 +134,39 @@ describe('PostalCodeInput — Canada (US-1, alphanumeric masked)', () => {
   })
 })
 
+describe('PostalCodeInput — France (numeric, 5 digits)', () => {
+  it('keeps digits, strips letters, and submits a 5-digit code', () => {
+    const onChange = jest.fn()
+    const onSubmit = jest.fn()
+    const { container } = render(
+      <Harness country="FR" onChange={onChange} onSubmit={onSubmit} />
+    )
+
+    const input = getInput(container)
+
+    fireEvent.change(input, { target: { value: 'paris75001' } })
+
+    expect(input.value).toBe('75001')
+    expect(onChange).toHaveBeenLastCalledWith('75001')
+
+    fireEvent.keyDown(input, { key: 'Enter' })
+
+    expect(onSubmit).toHaveBeenCalledWith('75001')
+  })
+
+  it('accepts the alpha-3 `FRA` country resolution', () => {
+    const onChange = jest.fn()
+    const { container } = render(<Harness country="FRA" onChange={onChange} />)
+
+    const input = getInput(container)
+
+    fireEvent.change(input, { target: { value: '13001' } })
+
+    expect(input.value).toBe('13001')
+    expect(onChange).toHaveBeenLastCalledWith('13001')
+  })
+})
+
 describe('PostalCodeInput — Argentina (US-2, alphanumeric masked)', () => {
   it('uppercases and formats c1425dkg to C1425DKG', () => {
     const onChange = jest.fn()

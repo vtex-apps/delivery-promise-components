@@ -42,6 +42,7 @@ const ALPHA3_TO_ALPHA2: Record<string, string> = {
   CAN: 'CA',
   ESP: 'ES',
   ITA: 'IT',
+  FRA: 'FR',
 }
 
 const ALPHA2_RE = /^[A-Z]{2}$/
@@ -68,6 +69,7 @@ export const POSTAL_CODE_FORMATS: Record<CountryKey, PostalCodeFormat> = {
   CA: { mode: 'alphanumeric', mask: 'A9A 9A9' },
   ES: { mode: 'numeric', mask: '00000' },
   IT: { mode: 'numeric', mask: '00000' },
+  FR: { mode: 'numeric', mask: '00000' },
 }
 
 export const DEFAULT_FORMAT: PostalCodeFormat = { mode: 'alphanumeric' }
