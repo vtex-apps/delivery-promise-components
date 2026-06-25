@@ -8,8 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
-
-- **Pickup point list:** clicking the pickup point that is already selected no longer unselects it — it is now a no-op. Unselecting is done through an explicit **Clear** button that appears at the bottom of the list (beside the **Update** button when a different point is highlighted). The Clear button is shown wherever unselecting is permitted: the `pickup-point-selector` block always allows it (when a pickup is selected), and the non-`required` `shipping-method-selector`. It stays hidden in a `required` `shipping-method-selector` and the `AvailabilityBadges` pickup modal. The Clear button uses the `secondary` `Button` variation (light-blue background, blue label) to match the design, and adds the `pickupPointList.clearButton.label` message.
+- Pickup point selection now requires explicit Clear button instead of clicking the selected point to unselect.
 
 ## [1.2.0] - 2026-06-30
 
