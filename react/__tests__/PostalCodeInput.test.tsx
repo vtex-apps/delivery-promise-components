@@ -217,6 +217,24 @@ describe('PostalCodeInput — country resolution fallback (no `country` prop)', 
   })
 })
 
+describe('PostalCodeInput — SSR / country-resolution safety', () => {
+  it('renders with the permissive default when getCountryCode throws (SSR / vm2)', () => {
+    mockGetCountryCode.mockImplementation(() => {
+      throw new ReferenceError('atob is not defined')
+    })
+
+    const onChange = jest.fn()
+    const { container } = render(<Harness onChange={onChange} />)
+    const input = getInput(container)
+
+    fireEvent.change(input, { target: { value: 'k1a0b1' } })
+
+    // Permissive default: alphanumeric, no mask. Letters survive and are uppercased.
+    expect(input.value).toBe('K1A0B1')
+    expect(onChange).toHaveBeenLastCalledWith('K1A0B1')
+  })
+})
+
 describe('PostalCodeInput — Enter behavior (submitOnEnter flag)', () => {
   it('does not call onSubmit when submitOnEnter is false', () => {
     const onSubmit = jest.fn()

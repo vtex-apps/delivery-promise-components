@@ -6,6 +6,7 @@ import '../styles.css'
 import { getCountryCode } from '../utils/cookie'
 import type { PostalCodeFormat } from '../utils/postalCodeFormat'
 import {
+  DEFAULT_FORMAT,
   applyMask,
   getPostalCodeFormat,
   sanitizeByMode,
@@ -60,8 +61,19 @@ const PostalCodeInput = ({
 
   const resolvedFormat = useMemo<PostalCodeFormat>(() => {
     if (format) return format
+    if (country) return getPostalCodeFormat(country)
 
-    return getPostalCodeFormat(country ?? getCountryCode())
+    // Country resolution reads `window.__RUNTIME__.segmentToken` and base64
+    // decodes it; on the render-server SSR pass the decoder may be missing
+    // or the segment malformed. A throw here would crash the entire SSR.
+    // Fall back to the permissive default — the client re-renders with the
+    // real format after hydration (display value of an empty zipcode is
+    // identical across formats, so no hydration mismatch).
+    try {
+      return getPostalCodeFormat(getCountryCode())
+    } catch {
+      return DEFAULT_FORMAT
+    }
   }, [format, country])
 
   const { mode, mask } = resolvedFormat
