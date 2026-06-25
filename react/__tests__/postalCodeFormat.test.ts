@@ -26,6 +26,7 @@ describe('postalCodeFormat — normalizeCountry', () => {
     expect(normalizeCountry('CHL')).toBe('CL')
     expect(normalizeCountry('COL')).toBe('CO')
     expect(normalizeCountry('PER')).toBe('PE')
+    expect(normalizeCountry('FRA')).toBe('FR')
   })
 
   it('trims surrounding whitespace before normalizing', () => {
@@ -49,7 +50,7 @@ describe('postalCodeFormat — normalizeCountry', () => {
 })
 
 describe('postalCodeFormat — POSTAL_CODE_FORMATS registry', () => {
-  it('contains exactly the top-10 country entries', () => {
+  it('contains exactly the curated country entries', () => {
     const compare = (a: string, b: string) => a.localeCompare(b)
     const expected = [
       'AR',
@@ -58,6 +59,7 @@ describe('postalCodeFormat — POSTAL_CODE_FORMATS registry', () => {
       'CL',
       'CO',
       'ES',
+      'FR',
       'IT',
       'MX',
       'PE',
@@ -80,6 +82,7 @@ describe('postalCodeFormat — POSTAL_CODE_FORMATS registry', () => {
     ['CA', 'alphanumeric', 'A9A 9A9'],
     ['ES', 'numeric', '00000'],
     ['IT', 'numeric', '00000'],
+    ['FR', 'numeric', '00000'],
   ])('declares %s as { mode: %s, mask: %s }', (country, mode, mask) => {
     expect(POSTAL_CODE_FORMATS[country]).toEqual(
       expect.objectContaining({ mode, mask })
@@ -88,13 +91,15 @@ describe('postalCodeFormat — POSTAL_CODE_FORMATS registry', () => {
 })
 
 describe('postalCodeFormat — getPostalCodeFormat', () => {
-  it('returns the registry entry for a top-10 country', () => {
+  it('returns the registry entry for a curated country (alpha-2 or alpha-3, any case)', () => {
     expect(getPostalCodeFormat('BR')).toEqual(POSTAL_CODE_FORMATS.BR)
     expect(getPostalCodeFormat('CAN')).toEqual(POSTAL_CODE_FORMATS.CA)
     expect(getPostalCodeFormat('ar')).toEqual(POSTAL_CODE_FORMATS.AR)
+    expect(getPostalCodeFormat('FRA')).toEqual(POSTAL_CODE_FORMATS.FR)
+    expect(getPostalCodeFormat('fr')).toEqual(POSTAL_CODE_FORMATS.FR)
   })
 
-  it('returns the permissive default for a non-top-10 country', () => {
+  it('returns the permissive default for a non-curated country', () => {
     expect(getPostalCodeFormat('NL')).toBe(DEFAULT_FORMAT)
     expect(getPostalCodeFormat('DE')).toBe(DEFAULT_FORMAT)
     expect(getPostalCodeFormat('JP')).toBe(DEFAULT_FORMAT)
@@ -165,6 +170,14 @@ describe('postalCodeFormat — applyMask', () => {
   it('treats `9` and `0` as digit placeholders interchangeably', () => {
     expect(applyMask('12345', '99999')).toBe('12345')
     expect(applyMask('12345', '00000')).toBe('12345')
+  })
+
+  it('formats FR `00000` (5 digits, no separator)', () => {
+    expect(applyMask('75', '00000')).toBe('75')
+    expect(applyMask('75001', '00000')).toBe('75001')
+    // Letters typed in numeric mode get stripped by sanitizeByMode before
+    // reaching applyMask; raw letters here are rejected outright.
+    expect(applyMask('paris', '00000')).toBe('')
   })
 })
 
