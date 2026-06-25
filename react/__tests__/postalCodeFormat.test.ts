@@ -32,11 +32,16 @@ describe('postalCodeFormat — normalizeCountry', () => {
     expect(normalizeCountry(' br ')).toBe('BR')
   })
 
-  it('returns undefined for empty, falsy, or unrecognized input', () => {
+  it('passes any well-formed alpha-2 through (downstream resolves via the registry)', () => {
+    // ZZ is well-formed alpha-2 but not a registry key. normalizeCountry only
+    // checks shape; getPostalCodeFormat is responsible for the permissive default.
+    expect(normalizeCountry('ZZ')).toBe('ZZ')
+  })
+
+  it('returns undefined for empty, falsy, or malformed input', () => {
     expect(normalizeCountry('')).toBeUndefined()
     expect(normalizeCountry(undefined)).toBeUndefined()
     expect(normalizeCountry('XYZ')).toBeUndefined()
-    expect(normalizeCountry('ZZ')).toBeUndefined()
     expect(normalizeCountry('B1')).toBeUndefined()
     expect(normalizeCountry('123')).toBeUndefined()
     expect(normalizeCountry('Brazil')).toBeUndefined()
