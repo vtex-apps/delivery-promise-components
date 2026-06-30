@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-06-30
+
 ### Changed
 
 - Replace the full-page reload after zipcode / pickup / shipping-method session writes with a targeted soft refresh that refetches only the segment-dependent storefront queries (resetting search pagination to the first page through render-runtime), updates the fulfillment selection optimistically with rollback on a failed session write, closes the shipping-method modal, and falls back to `location.reload()` when Apollo is unavailable.
