@@ -36,6 +36,12 @@ export interface State {
   uiRegistry: DeliveryPromiseUiRegistry
   /** Increments when something requests the shipping-method modal to open (for sibling blocks). */
   shippingMethodModalRequestId: number
+  /**
+   * Increments when a fulfillment method selection (delivery / pickup / reset)
+   * has been applied to state. Storefront blocks use it to close the
+   * shipping-method modal now that there is no page reload to tear it down.
+   */
+  fulfillmentSelectionAppliedId: number
 }
 
 interface UpdateZipCode {
@@ -121,6 +127,7 @@ const DEFAULT_STATE: State = {
   unavailableCartItems: [],
   uiRegistry: {},
   shippingMethodModalRequestId: 0,
+  fulfillmentSelectionAppliedId: 0,
 }
 
 const DeliveryPromiseStateContext = createContext<State>(DEFAULT_STATE)

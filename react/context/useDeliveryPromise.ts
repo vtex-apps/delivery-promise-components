@@ -2,6 +2,7 @@
 import { useRuntime, useSSR } from 'vtex.render-runtime'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useIntl } from 'react-intl'
+import { useApolloClient } from 'react-apollo'
 import { useOrderItems } from 'vtex.order-items/OrderItems'
 import { usePixel, usePixelEventCallback } from 'vtex.pixel-manager'
 import { useRenderSession } from 'vtex.session-client'
@@ -29,6 +30,7 @@ import type { AvailabilityItem, ResolvedAddress } from '../client'
 import type { CartItem, CartProduct } from '../components/UnavailableItemsModal'
 import type { OrderFormCartLine } from '../modules/pixelHelper'
 import { mapCartItemToPixel } from '../modules/pixelHelper'
+import { refetchAllowlistedQueries } from '../modules/refetchAllowlistedQueries'
 import { getCountryCode, getFacetsData, getOrderFormId } from '../utils/cookie'
 import messages from '../messages'
 import type {
@@ -95,6 +97,9 @@ export const useDeliveryPromise = () => {
   const [shippingMethodModalRequestId, setShippingMethodModalRequestId] =
     useState(0)
 
+  const [fulfillmentSelectionAppliedId, setFulfillmentSelectionAppliedId] =
+    useState(0)
+
   const uiRegistryRef = useRef(uiRegistry)
 
   uiRegistryRef.current = uiRegistry
@@ -103,12 +108,63 @@ export const useDeliveryPromise = () => {
     (action: DeliveryPromiseActions) => Promise<boolean | undefined>
   >(async () => undefined)
 
-  const { account } = useRuntime()
+  const { account, query: runtimeQuery, setQuery } = useRuntime()
   const { session, loading: isSessionLoading } = useRenderSession()
   const isSSR = useSSR()
   const intl = useIntl()
   const { addItems, removeItem } = useOrderItems()
   const { push } = usePixel()
+  const apolloClient = useApolloClient()
+
+  /**
+   * Refreshes the storefront after a session write. The session POST sets a
+   * new `vtex_segment` cookie (which carries the delivery / pickup hashes) in
+   * the response, so by the time we land here every cached observable query
+   * is one network round trip away from the new shopper context. Rather than
+   * tearing the React tree down with a hard reload, we refetch *only* the
+   * allowlisted store-resources queries that vary by `@withSegment`
+   * (productSearch, facets, products, recommendations, sponsored), resetting
+   * `productSearchV3` to page 1.
+   *
+   * Falls back to `location.reload()` when Apollo is unavailable (e.g. the
+   * provider isn't mounted in tests / custom hosts), when the QueryManager
+   * internals are inaccessible, or when a targeted refetch throws — a hard
+   * reload is always a correct, if expensive, way to converge on the
+   * post-session state.
+   */
+  const refreshStorefront = useCallback(async (): Promise<void> => {
+    // A location change resets the PLP to the first page. Drop the `page` query
+    // param *through render-runtime* (not history.replaceState): vtex.search-result
+    // reads `useRuntime().query.page` and resets its "load more" pagination reducer
+    // when it observes the param returning to page 1, so the next "load more" goes
+    // to page 2 instead of resuming from the stale page. Gate on page > 1 so non-PLP
+    // and already-first-page URLs are left untouched.
+    const currentPageParam = Number(runtimeQuery?.page)
+
+    if (typeof setQuery === 'function' && currentPageParam > 1) {
+      setQuery({ page: undefined }, { replace: true })
+    }
+
+    if (!apolloClient) {
+      window.location.reload()
+
+      return
+    }
+
+    try {
+      const { failed } = await refetchAllowlistedQueries(apolloClient)
+
+      if (failed) {
+        window.location.reload()
+
+        return
+      }
+
+      setIsLoading(false)
+    } catch {
+      window.location.reload()
+    }
+  }, [apolloClient, runtimeQuery, setQuery])
 
   const orderItemsUpdateOptions = {
     allowedOutdatedData: ['paymentData'] as const,
@@ -328,10 +384,10 @@ export const useDeliveryPromise = () => {
 
       const orderLines = await getCartProducts(orderFormId)
 
-      // Skip the BFF availability call entirely for empty carts.
+      // Skip the BFF availability call entirely for empty carts. Keep loading
+      // on: the caller proceeds with the action and owns the loading lifecycle
+      // through the soft refresh (avoids a loading → idle → loading flicker).
       if (orderLines.length === 0) {
-        setIsLoading(false)
-
         return []
       }
 
@@ -352,11 +408,17 @@ export const useDeliveryPromise = () => {
 
       setUnavailableCartItems(unavailableItems)
 
-      setIsLoading(false)
+      // Only stop loading when surfacing the unavailable-items modal (so it is
+      // interactive). When everything is available the caller continues the
+      // action and owns the loading lifecycle until the soft refresh completes.
+      if (unavailableItems.length > 0) {
+        setIsLoading(false)
+      }
 
       return unavailableItems
     } catch {
-      setIsLoading(false)
+      // Degraded path: proceed with the action. Keep loading on so the caller's
+      // continuation owns a single loading cycle.
       setUnavailableCartItems([])
 
       return []
@@ -532,7 +594,7 @@ export const useDeliveryPromise = () => {
 
     if (effectiveReload) {
       setIsLoading(true)
-      location.reload()
+      await refreshStorefront()
     }
 
     return true
@@ -540,6 +602,8 @@ export const useDeliveryPromise = () => {
 
   const selectPickup = async (pickup: Pickup, canUnselect = true) => {
     if (!countryCode || !zipcode || !geoCoordinates) {
+      setIsLoading(false)
+
       return
     }
 
@@ -555,8 +619,40 @@ export const useDeliveryPromise = () => {
       pickupUpdated = undefined
     }
 
-    setSelectedPickup(pickupUpdated)
+    const previousPickup = selectedPickup
+    const previousMethod = deliveryPromiseMethod
 
+    // Optimistically update the fulfillment state the reload used to re-derive
+    // from the segment on remount, and signal blocks to close the modal.
+    setSelectedPickup(pickupUpdated)
+    setDeliveryPromiseMethod(shippingOption)
+    setFulfillmentSelectionAppliedId((n) => n + 1)
+
+    try {
+      await updateSession(
+        countryCode,
+        zipcode!,
+        geoCoordinates!,
+        pickupUpdated,
+        shippingOption
+      )
+    } catch (error) {
+      // The session was never written: roll the optimistic state back so the
+      // UI does not claim a selection that does not exist, and release the
+      // loading flag the cart-availability check left on.
+      setSelectedPickup(previousPickup)
+      setDeliveryPromiseMethod(previousMethod)
+      setIsLoading(false)
+      console.error(
+        'delivery-promise: updateSession failed during pickup selection',
+        error
+      )
+
+      return
+    }
+
+    // Persist only after the session write succeeds, so a failed write does
+    // not poison the PLP's stored pickup preference.
     if (
       shippingOption === 'pickup-in-point' &&
       pickupUpdated?.pickupPoint?.id
@@ -564,33 +660,48 @@ export const useDeliveryPromise = () => {
       persistPickupPreference(pickupUpdated, zipcode!)
     }
 
-    await updateSession(
-      countryCode,
-      zipcode!,
-      geoCoordinates!,
-      pickupUpdated,
-      shippingOption
-    )
-
     setIsLoading(true)
-    location.reload()
+    await refreshStorefront()
   }
 
   const selectDeliveryShippingOption = async () => {
     if (!countryCode || !zipcode || !geoCoordinates) {
+      setIsLoading(false)
+
       return
     }
 
-    await updateSession(
-      countryCode,
-      zipcode,
-      geoCoordinates,
-      undefined,
-      'delivery'
-    )
+    const previousPickup = selectedPickup
+    const previousMethod = deliveryPromiseMethod
+
+    // Optimistically update the fulfillment state the reload used to re-derive
+    // from the segment on remount, and signal blocks to close the modal.
+    setDeliveryPromiseMethod('delivery')
+    setSelectedPickup(undefined)
+    setFulfillmentSelectionAppliedId((n) => n + 1)
+
+    try {
+      await updateSession(
+        countryCode,
+        zipcode,
+        geoCoordinates,
+        undefined,
+        'delivery'
+      )
+    } catch (error) {
+      setDeliveryPromiseMethod(previousMethod)
+      setSelectedPickup(previousPickup)
+      setIsLoading(false)
+      console.error(
+        'delivery-promise: updateSession failed during delivery selection',
+        error
+      )
+
+      return
+    }
 
     setIsLoading(true)
-    location.reload()
+    await refreshStorefront()
   }
 
   useEffect(() => {
@@ -868,10 +979,31 @@ export const useDeliveryPromise = () => {
           return
         }
 
-        await updateSession(countryCode, zipcode, geoCoordinates, undefined)
+        const previousPickup = selectedPickup
+        const previousMethod = deliveryPromiseMethod
+
+        // Optimistically clear the fulfillment state the reload used to
+        // re-derive from the segment, and signal blocks to close the modal.
+        setSelectedPickup(undefined)
+        setDeliveryPromiseMethod(undefined)
+        setFulfillmentSelectionAppliedId((n) => n + 1)
+
+        try {
+          await updateSession(countryCode, zipcode, geoCoordinates, undefined)
+        } catch (error) {
+          setSelectedPickup(previousPickup)
+          setDeliveryPromiseMethod(previousMethod)
+          setIsLoading(false)
+          console.error(
+            'delivery-promise: updateSession failed during fulfillment reset',
+            error
+          )
+
+          break
+        }
 
         setIsLoading(true)
-        location.reload()
+        await refreshStorefront()
 
         break
       }
@@ -901,7 +1033,7 @@ export const useDeliveryPromise = () => {
         setUnavailabilityMessage(undefined)
         setActionInterruptedByCartValidation(undefined)
 
-        location.reload()
+        await refreshStorefront()
 
         break
       }
@@ -938,6 +1070,7 @@ export const useDeliveryPromise = () => {
       unavailabilityMessage,
       uiRegistry,
       shippingMethodModalRequestId,
+      fulfillmentSelectionAppliedId,
     },
   }
 }

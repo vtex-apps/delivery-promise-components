@@ -16,11 +16,14 @@ jest.mock('../components/ShippingMethodModal/ShippingMethodSelector', () => ({
   default: () => <div data-testid="shipping-method-control" />,
 }))
 
-let lastShippingMethodModalProps: { nonDismissibleModal?: boolean } = {}
+let lastShippingMethodModalProps: {
+  nonDismissibleModal?: boolean
+  isOpen?: boolean
+} = {}
 
 jest.mock('../components/ShippingMethodModal', () => ({
   __esModule: true,
-  default: (props: { nonDismissibleModal?: boolean }) => {
+  default: (props: { nonDismissibleModal?: boolean; isOpen?: boolean }) => {
     lastShippingMethodModalProps = props
 
     return <div data-testid="shipping-method-modal" />
@@ -39,6 +42,7 @@ const baseState = {
   submitErrorMessage: undefined,
   areThereUnavailableCartItems: false,
   shippingMethodModalRequestId: 0,
+  fulfillmentSelectionAppliedId: 0,
 }
 
 describe('ShippingMethodSelector', () => {
@@ -90,5 +94,29 @@ describe('ShippingMethodSelector', () => {
     const { container } = render(<ShippingMethodSelector required />)
 
     expect(container.firstChild).toBeNull()
+  })
+
+  it('closes the shipping-method modal when a fulfillment selection is applied', () => {
+    // A modal-open request opens the modal (mirrors a sibling block / click).
+    mockUseDeliveryPromiseState.mockReturnValue({
+      ...baseState,
+      shippingMethodModalRequestId: 1,
+    })
+
+    const { rerender } = render(<ShippingMethodSelector />)
+
+    expect(lastShippingMethodModalProps.isOpen).toBe(true)
+
+    // A selection is applied (delivery/pickup) → the modal must close even
+    // though there is no page reload to tear it down.
+    mockUseDeliveryPromiseState.mockReturnValue({
+      ...baseState,
+      shippingMethodModalRequestId: 1,
+      fulfillmentSelectionAppliedId: 1,
+    })
+
+    rerender(<ShippingMethodSelector />)
+
+    expect(lastShippingMethodModalProps.isOpen).toBe(false)
   })
 })
