@@ -1,4 +1,7 @@
 import React from 'react'
+import { useCssHandles } from 'vtex.css-handles'
+
+const CSS_HANDLES = ['unavailableItemsModalProductItem'] as const
 
 interface Props {
   imageUrl: string
@@ -6,8 +9,12 @@ interface Props {
 }
 
 const ProductItem = ({ imageUrl, productName }: Props) => {
+  const handles = useCssHandles(CSS_HANDLES)
+
   return (
-    <div className="flex flex-row pa5 bg-base t-body c-on-base br3 b--muted-4 ba mb5">
+    <div
+      className={`flex flex-row pa5 bg-base t-body c-on-base br3 b--muted-4 ba mb5 ${handles.unavailableItemsModalProductItem}`}
+    >
       <img
         className="br2"
         style={{ width: '64px', height: '64px' }}
