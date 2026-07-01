@@ -6,12 +6,17 @@ import { useCssHandles } from 'vtex.css-handles'
 import messages from '../../messages'
 import PickupItem from './PickupItem'
 
-const CSS_HANDLES = ['updateButtonContainer'] as const
+const CSS_HANDLES = [
+  'updateButtonContainer',
+  'clearButton',
+  'updateButton',
+] as const
 
 interface Props {
   pickups: Pickup[]
   selectedPickup?: Pickup
   onSelectPickup: (pickup: Pickup, shouldPersistFacet?: boolean) => void
+  onClearPickup?: () => void
   canUnselect?: boolean
 }
 
@@ -19,6 +24,7 @@ const PickupList = ({
   pickups,
   selectedPickup,
   onSelectPickup,
+  onClearPickup,
   canUnselect = false,
 }: Props) => {
   const handle = useCssHandles(CSS_HANDLES)
@@ -50,9 +56,21 @@ const PickupList = ({
   }
 
   const handleClear = () => {
-    if (selectedPickup) {
-      onSelectPickup(selectedPickup)
+    if (!selectedPickup) {
+      return
     }
+
+    // Prefer the dedicated clear path (RESET_FULFILLMENT_METHOD) which skips the
+    // BFF availability gate — clearing only broadens availability, so there is
+    // nothing to validate. Fall back to re-selecting the current pickup (which
+    // toggles it off) when no clear handler is provided.
+    if (onClearPickup) {
+      onClearPickup()
+
+      return
+    }
+
+    onSelectPickup(selectedPickup)
   }
 
   return (
@@ -76,19 +94,23 @@ const PickupList = ({
           className={`sticky left-0 bottom-0 w-100 flex items-center ${handle.updateButtonContainer}`}
         >
           {showClearButton && (
-            <Button block variation="secondary" onClick={handleClear}>
-              {intl.formatMessage(messages.pickupPointListClearButtonLabel)}
-            </Button>
+            <div className={`w-100 ${handle.clearButton}`}>
+              <Button block variation="secondary" onClick={handleClear}>
+                {intl.formatMessage(messages.pickupPointListClearButtonLabel)}
+              </Button>
+            </div>
           )}
           {showUpdateButton && (
-            <Button
-              block
-              onClick={() => {
-                onSelectPickup(highlightedPickup as Pickup)
-              }}
-            >
-              {intl.formatMessage(messages.pickupPointListUpdateButtonLabel)}
-            </Button>
+            <div className={`w-100 ${handle.updateButton}`}>
+              <Button
+                block
+                onClick={() => {
+                  onSelectPickup(highlightedPickup as Pickup)
+                }}
+              >
+                {intl.formatMessage(messages.pickupPointListUpdateButtonLabel)}
+              </Button>
+            </div>
           )}
         </div>
       )}

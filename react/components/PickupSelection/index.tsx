@@ -13,6 +13,7 @@ interface Props {
   pickups: Pickup[]
   selectedPickup?: Pickup
   onSelectPickup: (pickup: Pickup, shouldPersistFacet?: boolean) => void
+  onClearPickup?: () => void
   onDeliverySelection?: () => void
   isLoading: boolean
   canUnselect?: boolean
@@ -25,6 +26,7 @@ const PickupSelection = ({
   pickups,
   selectedPickup,
   onSelectPickup,
+  onClearPickup,
   onDeliverySelection,
   isLoading,
   canUnselect = false,
@@ -67,6 +69,7 @@ const PickupSelection = ({
         <PickupList
           pickups={pickups}
           onSelectPickup={onSelectPickup}
+          onClearPickup={onClearPickup}
           selectedPickup={selectedPickup}
           canUnselect={canUnselect}
         />

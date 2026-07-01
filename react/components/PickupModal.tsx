@@ -16,6 +16,7 @@ const PickupModal = ({ isOpen, onClose, pickupProps }: Props) => {
 
   const {
     onSelectPickup,
+    onClearPickup,
     onSubmit,
     pickups,
     inputErrorMessage,
@@ -35,6 +36,7 @@ const PickupModal = ({ isOpen, onClose, pickupProps }: Props) => {
     >
       <PickupSelection
         onSelectPickup={onSelectPickup}
+        onClearPickup={onClearPickup}
         onSubmit={onSubmit}
         pickups={pickups}
         inputErrorMessage={inputErrorMessage}

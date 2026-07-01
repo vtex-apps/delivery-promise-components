@@ -29,6 +29,7 @@ const ShippingMethodModal = ({
   const intl = useIntl()
   const {
     onSelectPickup,
+    onClearPickup,
     onSubmit,
     pickups,
     inputErrorMessage,
@@ -58,6 +59,7 @@ const ShippingMethodModal = ({
         <PickupSelection
           isLoading={isLoading}
           onSelectPickup={onSelectPickup}
+          onClearPickup={onClearPickup}
           onSubmit={onSubmit}
           pickups={pickups}
           inputErrorMessage={inputErrorMessage}

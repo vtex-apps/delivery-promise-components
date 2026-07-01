@@ -7,8 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `clearButton` and `updateButton` CSS handles on the pickup point list so merchants can style the Clear and Update buttons independently (previously only the shared `updateButtonContainer` was available).
+
 ### Changed
 - Pickup point selection now requires explicit Clear button instead of clicking the selected point to unselect.
+- Clearing a selected pickup point now dispatches `RESET_FULFILLMENT_METHOD` (via a new `onClearPickup` handler) instead of re-dispatching `UPDATE_PICKUP`. This skips the delivery-promises BFF availability check on clear — clearing only broadens availability, so there is nothing to validate — resulting in a faster clear path with the same session cleanup.
 
 ## [1.2.0] - 2026-06-30
 

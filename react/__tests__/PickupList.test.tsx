@@ -102,7 +102,7 @@ describe('PickupList', () => {
     expect(queryByText('Clear')).toBeNull()
   })
 
-  it('unselects the current pickup when Clear is clicked', () => {
+  it('falls back to re-selecting the current pickup when Clear is clicked without onClearPickup', () => {
     const onSelectPickup = jest.fn()
 
     const { getByText } = render(
@@ -118,6 +118,26 @@ describe('PickupList', () => {
 
     expect(onSelectPickup).toHaveBeenCalledTimes(1)
     expect(onSelectPickup).toHaveBeenCalledWith(pickupA)
+  })
+
+  it('prefers onClearPickup over onSelectPickup when Clear is clicked', () => {
+    const onSelectPickup = jest.fn()
+    const onClearPickup = jest.fn()
+
+    const { getByText } = render(
+      <PickupList
+        pickups={[pickupA, pickupB]}
+        selectedPickup={pickupA}
+        onSelectPickup={onSelectPickup}
+        onClearPickup={onClearPickup}
+        canUnselect
+      />
+    )
+
+    fireEvent.click(getByText('Clear'))
+
+    expect(onClearPickup).toHaveBeenCalledTimes(1)
+    expect(onSelectPickup).not.toHaveBeenCalled()
   })
 
   it('shows Update and Clear together when a different pickup is highlighted', () => {

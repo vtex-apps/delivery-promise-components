@@ -42,6 +42,12 @@ function PickupPointSelector({ mode = 'default' }: Props) {
     })
   }
 
+  const onClearPickup = () => {
+    dispatch({
+      type: 'RESET_FULFILLMENT_METHOD',
+    })
+  }
+
   const pickup =
     deliveryPromiseMethod === 'pickup-in-point' ? selectedPickup : undefined
 
@@ -65,6 +71,7 @@ function PickupPointSelector({ mode = 'default' }: Props) {
         onClose={() => setIsPickupModalOpen(false)}
         pickupProps={{
           onSelectPickup,
+          onClearPickup,
           onSubmit: (value) => onSubmit(value, false),
           pickups,
           inputErrorMessage: submitErrorMessage?.message,
