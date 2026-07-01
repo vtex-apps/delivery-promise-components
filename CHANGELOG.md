@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Pickup point selection now requires explicit Clear button instead of clicking the selected point to unselect.
 - Clearing a selected pickup point now dispatches `RESET_FULFILLMENT_METHOD` (via a new `onClearPickup` handler) instead of re-dispatching `UPDATE_PICKUP`. This skips the delivery-promises BFF availability check on clear — clearing only broadens availability, so there is nothing to validate — resulting in a faster clear path with the same session cleanup.
+- Added bottom padding to the pickup point list when the floating action bar is visible so the last item scrolls fully clear of the Clear / Update buttons.
+
+### Fixed
+- `pickup-point-selector` modal now closes automatically after a pickup is selected or cleared. Previously only `shipping-method-selector` closed itself when the soft-refresh feature landed; the standalone pickup-point-selector was missing the same wiring, leaving the modal open until the shopper dismissed it manually.
 
 ## [1.2.0] - 2026-06-30
 

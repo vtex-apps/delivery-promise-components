@@ -75,7 +75,11 @@ const PickupList = ({
 
   return (
     <>
-      <div className="m-100 flex flex-column justify-center">
+      <div
+        className={`m-100 flex flex-column justify-center${
+          showUpdateButton || showClearButton ? ' pb8' : ''
+        }`}
+      >
         {pickups.map((currentPickup) => (
           <PickupItem
             key={currentPickup.pickupPoint.id}

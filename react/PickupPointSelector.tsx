@@ -1,5 +1,5 @@
 /* eslint-disable no-restricted-globals */
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useIntl } from 'react-intl'
 
 import { useDeliveryPromiseState, useDeliveryPromiseDispatch } from './context'
@@ -24,9 +24,28 @@ function PickupPointSelector({ mode = 'default' }: Props) {
     deliveryPromiseMethod,
     submitErrorMessage,
     areThereUnavailableCartItems,
+    fulfillmentSelectionAppliedId,
   } = useDeliveryPromiseState()
 
   const dispatch = useDeliveryPromiseDispatch()
+  const lastHandledFulfillmentSelectionAppliedId = useRef(0)
+
+  // Close the modal once a fulfillment selection is applied (new pickup, or
+  // pickup cleared via RESET_FULFILLMENT_METHOD). The old reload tore the modal
+  // down for free; with the soft refresh the tree stays alive.
+  useEffect(() => {
+    if (
+      fulfillmentSelectionAppliedId <=
+      lastHandledFulfillmentSelectionAppliedId.current
+    ) {
+      return
+    }
+
+    lastHandledFulfillmentSelectionAppliedId.current =
+      fulfillmentSelectionAppliedId
+
+    setIsPickupModalOpen(false)
+  }, [fulfillmentSelectionAppliedId])
 
   const onSubmit = (zipcode: string, reload?: boolean) => {
     dispatch({
