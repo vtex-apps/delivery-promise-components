@@ -1,11 +1,20 @@
 /* eslint-disable no-restricted-globals */
 import React, { useEffect, useState } from 'react'
 import { Button } from 'vtex.styleguide'
+import { useCssHandles } from 'vtex.css-handles'
 import { useIntl } from 'react-intl'
 
 import Modal from '../Modal'
 import ProductItem from './ProductItem'
 import messages from '../../messages'
+
+const CSS_HANDLES = [
+  'unavailableItemsModalContainer',
+  'unavailableItemsModalMessage',
+  'unavailableItemsModalList',
+  'unavailableItemsModalRemoveButtonContainer',
+  'unavailableItemsModalRetryButtonContainer',
+] as const
 
 export type CartProduct = { id: string; name: string; imageUrl: string }
 
@@ -32,6 +41,7 @@ const UnavailableItemsModal = ({
   unavailabilityMessage,
 }: Props) => {
   const intl = useIntl()
+  const handles = useCssHandles(CSS_HANDLES)
 
   const [isLoading, setIsLoading] = useState(false)
 
@@ -62,9 +72,15 @@ const UnavailableItemsModal = ({
       nonDismissible
       overlayZIndex={100000}
     >
-      <div className="flex-auto flex flex-column justify-between mt0">
-        <p className="mid-gray ma0">{unavailabilityMessage}</p>
-        <div className="mv7 overflow-auto">
+      <div
+        className={`flex-auto flex flex-column justify-between mt0 ${handles.unavailableItemsModalContainer}`}
+      >
+        <p className={`mid-gray ma0 ${handles.unavailableItemsModalMessage}`}>
+          {unavailabilityMessage}
+        </p>
+        <div
+          className={`mv7 overflow-auto ${handles.unavailableItemsModalList}`}
+        >
           {unavailableCartItems.map(({ product }) => (
             <ProductItem
               key={product.id}
@@ -74,22 +90,31 @@ const UnavailableItemsModal = ({
           ))}
         </div>
         <div style={{ gap: '.75rem' }} className="flex flex-column">
-          <Button
-            className="mb3"
-            isLoading={isLoading}
-            onClick={handleRemoveItemsClick}
+          <div
+            className={`mb3 ${handles.unavailableItemsModalRemoveButtonContainer}`}
           >
-            {intl.formatMessage(
-              messages.unavailableItemsModalRemoveButtonLabel
-            )}
-          </Button>
-          <Button
-            isLoading={isLoading}
-            variation="secondary"
-            onClick={onTryAgain}
-          >
-            {intl.formatMessage(messages.unavailableItemsModalRetryButtonLabel)}
-          </Button>
+            <Button
+              block
+              isLoading={isLoading}
+              onClick={handleRemoveItemsClick}
+            >
+              {intl.formatMessage(
+                messages.unavailableItemsModalRemoveButtonLabel
+              )}
+            </Button>
+          </div>
+          <div className={handles.unavailableItemsModalRetryButtonContainer}>
+            <Button
+              block
+              isLoading={isLoading}
+              variation="secondary"
+              onClick={onTryAgain}
+            >
+              {intl.formatMessage(
+                messages.unavailableItemsModalRetryButtonLabel
+              )}
+            </Button>
+          </div>
         </div>
       </div>
     </Modal>

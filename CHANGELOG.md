@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- CSS handles for `UnavailableItemsModal`, `AddLocation`, and `ProductItem` components to enable theme customization.
+
 ### Changed
 
 - Postal code input now supports alphanumeric formats for international markets (Canada, Argentina) with country-specific masks for BR, MX, AR, CL, CO, PE, US, CA, ES, IT, and FR.

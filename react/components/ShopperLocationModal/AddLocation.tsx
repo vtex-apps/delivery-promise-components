@@ -1,11 +1,18 @@
 import React from 'react'
 import { Button } from 'vtex.styleguide'
+import { useCssHandles } from 'vtex.css-handles'
 import { useIntl } from 'react-intl'
 
 import PostalCodeInput from '../PostalCodeInput'
 import messages from '../../messages'
 import PostalCodeHelpLink from '../PostalCodeHelpLink'
 import ShopperLocationDetectorButton from '../ShopperLocationDetectorButton'
+
+const CSS_HANDLES = [
+  'shopperLocationModalContainer',
+  'shopperLocationModalDescription',
+  'shopperLocationModalSubmitButtonContainer',
+] as const
 
 interface AddLocationProps {
   onSubmit: (zipcode: string) => void
@@ -25,10 +32,13 @@ const AddLocation = ({
   showLocationDetectorButton,
 }: AddLocationProps) => {
   const intl = useIntl()
+  const handles = useCssHandles(CSS_HANDLES)
 
   return (
-    <div className="flex-auto flex flex-column justify-between mt0">
-      <p className="mid-gray ma0">
+    <div
+      className={`flex-auto flex flex-column justify-between mt0 ${handles.shopperLocationModalContainer}`}
+    >
+      <p className={`mid-gray ma0 ${handles.shopperLocationModalDescription}`}>
         {intl.formatMessage(messages.shopperLocationModalDescription)}
       </p>
 
@@ -47,9 +57,11 @@ const AddLocation = ({
         </div>
       </div>
 
-      <Button isLoading={isLoading} onClick={() => onSubmit(zipcode)}>
-        {intl.formatMessage(messages.shopperLocationPopoverSubmitButtonLabel)}
-      </Button>
+      <div className={handles.shopperLocationModalSubmitButtonContainer}>
+        <Button block isLoading={isLoading} onClick={() => onSubmit(zipcode)}>
+          {intl.formatMessage(messages.shopperLocationPopoverSubmitButtonLabel)}
+        </Button>
+      </div>
       {showLocationDetectorButton && <ShopperLocationDetectorButton />}
     </div>
   )
