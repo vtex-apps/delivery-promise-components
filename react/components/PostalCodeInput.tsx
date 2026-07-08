@@ -1,12 +1,12 @@
 import React, { useMemo } from 'react'
 import { Input, IconClear } from 'vtex.styleguide'
 import { useCssHandles } from 'vtex.css-handles'
+import { useRuntime } from 'vtex.render-runtime'
 
 import '../styles.css'
-import { getCountryCode } from '../utils/cookie'
+import { getCountryCodeFromToken } from '../utils/cookie'
 import type { PostalCodeFormat } from '../utils/postalCodeFormat'
 import {
-  DEFAULT_FORMAT,
   applyMask,
   getPostalCodeFormat,
   sanitizeByMode,
@@ -29,8 +29,8 @@ interface Props {
   onClear?: () => void
   /**
    * Country override. When omitted, the active country is resolved from the
-   * VTEX segment token via `getCountryCode()`. Tolerant of alpha-2 (`BR`,
-   * `CA`) and alpha-3 (`BRA`, `CAN`) — see `normalizeCountry`.
+   * VTEX segment token exposed by `useRuntime().segmentToken`. Tolerant of
+   * alpha-2 (`BR`, `CA`) and alpha-3 (`BRA`, `CAN`) — see `normalizeCountry`.
    */
   country?: string
   /**
@@ -58,23 +58,22 @@ const PostalCodeInput = ({
   format,
 }: Props) => {
   const handles = useCssHandles(CSS_HANDLES)
+  const { segmentToken } = useRuntime()
 
   const resolvedFormat = useMemo<PostalCodeFormat>(() => {
     if (format) return format
     if (country) return getPostalCodeFormat(country)
 
-    // Country resolution reads `window.__RUNTIME__.segmentToken` and base64
-    // decodes it; on the render-server SSR pass the decoder may be missing
-    // or the segment malformed. A throw here would crash the entire SSR.
-    // Fall back to the permissive default — the client re-renders with the
-    // real format after hydration (display value of an empty zipcode is
-    // identical across formats, so no hydration mismatch).
-    try {
-      return getPostalCodeFormat(getCountryCode())
-    } catch {
-      return DEFAULT_FORMAT
-    }
-  }, [format, country])
+    // Country is resolved from the VTEX segment token sourced via
+    // render-runtime, so the value stays inside React's render cycle and the
+    // memo recomputes whenever the runtime provides a new token — no reading
+    // of the `window.__RUNTIME__` global. `getCountryCodeFromToken` tolerates
+    // an absent/malformed token (incl. the SSR/vm2 case where no base64
+    // decoder exists) by returning `undefined`, and `getPostalCodeFormat`
+    // then falls back to the permissive default. The display value of an empty
+    // zipcode is identical across formats, so there's no hydration mismatch.
+    return getPostalCodeFormat(getCountryCodeFromToken(segmentToken))
+  }, [format, country, segmentToken])
 
   const { mode, mask } = resolvedFormat
 

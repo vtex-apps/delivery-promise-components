@@ -3,10 +3,10 @@ import { render, fireEvent } from '@vtex/test-tools/react'
 
 import PostalCodeInput from '../components/PostalCodeInput'
 
-const mockGetCountryCode = jest.fn<string | undefined, []>()
+const mockGetCountryFromToken = jest.fn<string | undefined, []>()
 
 jest.mock('../utils/cookie', () => ({
-  getCountryCode: () => mockGetCountryCode(),
+  getCountryCodeFromToken: () => mockGetCountryFromToken(),
 }))
 
 interface HarnessProps {
@@ -49,8 +49,8 @@ const getInput = (container: HTMLElement): HTMLInputElement => {
 }
 
 beforeEach(() => {
-  mockGetCountryCode.mockReset()
-  mockGetCountryCode.mockReturnValue(undefined)
+  mockGetCountryFromToken.mockReset()
+  mockGetCountryFromToken.mockReturnValue(undefined)
 })
 
 describe('PostalCodeInput — Brazil (US-3, current behavior preserved)', () => {
@@ -209,7 +209,7 @@ describe('PostalCodeInput — permissive default (US-5)', () => {
   })
 
   it('unresolved country: same permissive default', () => {
-    mockGetCountryCode.mockReturnValue(undefined)
+    mockGetCountryFromToken.mockReturnValue(undefined)
     const onChange = jest.fn()
     const { container } = render(<Harness onChange={onChange} />)
     const input = getInput(container)
@@ -222,8 +222,8 @@ describe('PostalCodeInput — permissive default (US-5)', () => {
 })
 
 describe('PostalCodeInput — country resolution fallback (no `country` prop)', () => {
-  it('uses getCountryCode() when the country prop is omitted', () => {
-    mockGetCountryCode.mockReturnValue('CAN')
+  it('uses the segment-token country when the country prop is omitted', () => {
+    mockGetCountryFromToken.mockReturnValue('CAN')
 
     const onChange = jest.fn()
     const { container } = render(<Harness onChange={onChange} />)
@@ -235,8 +235,8 @@ describe('PostalCodeInput — country resolution fallback (no `country` prop)', 
     expect(onChange).toHaveBeenLastCalledWith('K1A0B1')
   })
 
-  it('explicit `country` prop overrides getCountryCode()', () => {
-    mockGetCountryCode.mockReturnValue('BR')
+  it('explicit `country` prop overrides the segment-token country', () => {
+    mockGetCountryFromToken.mockReturnValue('BR')
 
     const onChange = jest.fn()
     const { container } = render(<Harness country="CA" onChange={onChange} />)
@@ -251,10 +251,10 @@ describe('PostalCodeInput — country resolution fallback (no `country` prop)', 
 })
 
 describe('PostalCodeInput — SSR / country-resolution safety', () => {
-  it('renders with the permissive default when getCountryCode throws (SSR / vm2)', () => {
-    mockGetCountryCode.mockImplementation(() => {
-      throw new ReferenceError('atob is not defined')
-    })
+  it('renders with the permissive default when the token cannot be resolved (SSR / vm2)', () => {
+    // On SSR/vm2 (missing decoder) or a malformed token, getCountryCodeFromToken
+    // swallows the failure and returns undefined instead of throwing.
+    mockGetCountryFromToken.mockReturnValue(undefined)
 
     const onChange = jest.fn()
     const { container } = render(<Harness onChange={onChange} />)
