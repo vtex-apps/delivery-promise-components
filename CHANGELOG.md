@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- CSS handles for `UnavailableItemsModal`, `AddLocation`, and `ProductItem` components to enable theme customization.
+
 ## [1.3.0] - 2026-07-08
 
 ### Added
