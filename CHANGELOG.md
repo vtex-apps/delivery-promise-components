@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-07-08
+
 ### Added
 - `clearButton` and `updateButton` CSS handles on the pickup point list so merchants can style the Clear and Update buttons independently (previously only the shared `updateButtonContainer` was available).
 
