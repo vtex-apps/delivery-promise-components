@@ -103,6 +103,12 @@ function ShippingMethodSelector({
     })
   }
 
+  const onClearPickup = () => {
+    dispatch({
+      type: 'RESET_FULFILLMENT_METHOD',
+    })
+  }
+
   const onShippingMethodDeliveryToggle = () => {
     if (deliveryPromiseMethod === 'delivery') {
       if (required) {
@@ -150,12 +156,14 @@ function ShippingMethodSelector({
         }}
         pickupProps={{
           onSelectPickup,
+          onClearPickup,
           onSubmit: (value) => onSubmit(value, false),
           pickups,
           inputErrorMessage: submitErrorMessage?.message,
           selectedPickup: pickup,
           selectedZipcode,
           isLoading,
+          canUnselect: !required,
         }}
         nonDismissibleModal={required && !deliveryPromiseMethod}
       />

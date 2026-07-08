@@ -1,5 +1,6 @@
 {
   "store/delivery-promise-components.pickupPointButton.placeholder": "Shop auswählen",
+  "store/delivery-promise-components.pickupPointList.clearButton.label": "Löschen",
   "store/delivery-promise-components.pickupPointList.updateButton.label": "Update",
   "store/delivery-promise-components.pickupPointSelection.noPointsState.button.label": "Continue with delivery",
   "store/delivery-promise-components.pickupPointSelection.noPointsState.description": "There are no stores available for the postal code {postalCode}",

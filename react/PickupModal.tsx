@@ -45,6 +45,7 @@ const PickupModalWithContext = ({ isOpen, onClose }: Props) => {
         selectedPickup,
         selectedZipcode,
         isLoading,
+        canUnselect: false,
       }}
     />
   )

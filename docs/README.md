@@ -168,6 +168,9 @@ In order to apply CSS customizations in this and other blocks, follow the instru
 | `unavailableItemsModalProductItem`           |
 | `unavailableItemsModalRemoveButtonContainer` |
 | `unavailableItemsModalRetryButtonContainer`  |
+| `updateButtonContainer`                      |
+| `clearButton`                                |
+| `updateButton`                               |
 
 <!-- DOCS-IGNORE:start -->
 
