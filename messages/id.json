@@ -1,5 +1,6 @@
 {
   "store/delivery-promise-components.pickupPointButton.placeholder": "Pilih toko",
+  "store/delivery-promise-components.pickupPointList.clearButton.label": "Hapus",
   "store/delivery-promise-components.pickupPointList.updateButton.label": "Perbarui",
   "store/delivery-promise-components.pickupPointSelection.noPointsState.button.label": "Continue with delivery",
   "store/delivery-promise-components.pickupPointSelection.noPointsState.description": "There are no stores available for the postal code {postalCode}",

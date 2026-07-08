@@ -21,6 +21,10 @@ const messages = defineMessages({
     id: 'store/delivery-promise-components.pickupPointList.updateButton.label',
     defaultMessage: '',
   },
+  pickupPointListClearButtonLabel: {
+    id: 'store/delivery-promise-components.pickupPointList.clearButton.label',
+    defaultMessage: '',
+  },
   shopperLocationPopoverButtonLabel: {
     id: 'store/delivery-promise-components.shopperLocationPopover.button.label',
     defaultMessage: '',

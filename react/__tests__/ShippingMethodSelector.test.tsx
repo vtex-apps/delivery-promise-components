@@ -19,11 +19,16 @@ jest.mock('../components/ShippingMethodModal/ShippingMethodSelector', () => ({
 let lastShippingMethodModalProps: {
   nonDismissibleModal?: boolean
   isOpen?: boolean
+  pickupProps?: { canUnselect?: boolean }
 } = {}
 
 jest.mock('../components/ShippingMethodModal', () => ({
   __esModule: true,
-  default: (props: { nonDismissibleModal?: boolean; isOpen?: boolean }) => {
+  default: (props: {
+    nonDismissibleModal?: boolean
+    isOpen?: boolean
+    pickupProps?: { canUnselect?: boolean }
+  }) => {
     lastShippingMethodModalProps = props
 
     return <div data-testid="shipping-method-modal" />
@@ -83,6 +88,18 @@ describe('ShippingMethodSelector', () => {
     render(<ShippingMethodSelector required={false} />)
 
     expect(lastShippingMethodModalProps.nonDismissibleModal).toBe(false)
+  })
+
+  it('allows unselecting (canUnselect true) when not required', () => {
+    render(<ShippingMethodSelector required={false} />)
+
+    expect(lastShippingMethodModalProps.pickupProps?.canUnselect).toBe(true)
+  })
+
+  it('forbids unselecting (canUnselect false) when required', () => {
+    render(<ShippingMethodSelector required />)
+
+    expect(lastShippingMethodModalProps.pickupProps?.canUnselect).toBe(false)
   })
 
   it('renders nothing without zipcode', () => {

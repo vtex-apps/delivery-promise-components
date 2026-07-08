@@ -29,12 +29,14 @@ const ShippingMethodModal = ({
   const intl = useIntl()
   const {
     onSelectPickup,
+    onClearPickup,
     onSubmit,
     pickups,
     inputErrorMessage,
     selectedPickup,
     selectedZipcode,
     isLoading,
+    canUnselect,
   } = pickupProps
 
   const [stage, setStage] = useState<Stages>('shippingSelection')
@@ -57,12 +59,14 @@ const ShippingMethodModal = ({
         <PickupSelection
           isLoading={isLoading}
           onSelectPickup={onSelectPickup}
+          onClearPickup={onClearPickup}
           onSubmit={onSubmit}
           pickups={pickups}
           inputErrorMessage={inputErrorMessage}
           selectedPickup={selectedPickup}
           selectedZipcode={selectedZipcode}
           onDeliverySelection={onDeliverySelection}
+          canUnselect={canUnselect}
         />
       ),
     },

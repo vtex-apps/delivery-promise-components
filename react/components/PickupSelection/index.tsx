@@ -13,8 +13,10 @@ interface Props {
   pickups: Pickup[]
   selectedPickup?: Pickup
   onSelectPickup: (pickup: Pickup, shouldPersistFacet?: boolean) => void
+  onClearPickup?: () => void
   onDeliverySelection?: () => void
   isLoading: boolean
+  canUnselect?: boolean
 }
 
 const PickupSelection = ({
@@ -24,8 +26,10 @@ const PickupSelection = ({
   pickups,
   selectedPickup,
   onSelectPickup,
+  onClearPickup,
   onDeliverySelection,
   isLoading,
+  canUnselect = false,
 }: Props) => {
   const [zipcode, setZipcode] = useState<string>('')
   const intl = useIntl()
@@ -65,7 +69,9 @@ const PickupSelection = ({
         <PickupList
           pickups={pickups}
           onSelectPickup={onSelectPickup}
+          onClearPickup={onClearPickup}
           selectedPickup={selectedPickup}
+          canUnselect={canUnselect}
         />
       )}
     </div>
