@@ -17,6 +17,7 @@
   "store/delivery-promise-components.shippingMethodSelector.filterByShipping.label": "Filter by shipping",
   "store/delivery-promise-components.shippingMethodSelector.filteringByDelivery.label": "Filtering by delivery",
   "store/delivery-promise-components.shopperLocation.postalCodeInput.error": "The entered postal code is not within our coverage area",
+  "store/delivery-promise-components.shopperLocation.postalCodeInput.invalid": "Enter a valid postal code",
   "store/delivery-promise-components.shopperLocation.postalCodeInput.placeholder": "Enter your postal code",
   "store/delivery-promise-components.shopperLocationButton.placeholder": "Enter a location",
   "store/delivery-promise-components.shopperLocationDetectorButton.errorDescription": "Unable to detect location",

@@ -3,6 +3,8 @@ import {
   POSTAL_CODE_FORMATS,
   applyMask,
   getPostalCodeFormat,
+  getRequiredLength,
+  isPostalCodeComplete,
   normalizeCountry,
   sanitizeByMode,
   unmask,
@@ -114,6 +116,55 @@ describe('postalCodeFormat — getPostalCodeFormat', () => {
   it('uses an alphanumeric, mask-less default', () => {
     expect(DEFAULT_FORMAT).toEqual({ mode: 'alphanumeric' })
     expect(DEFAULT_FORMAT.mask).toBeUndefined()
+  })
+})
+
+describe('postalCodeFormat — getRequiredLength', () => {
+  it.each([
+    ['BR', 8],
+    ['MX', 5],
+    ['AR', 8],
+    ['CL', 7],
+    ['CO', 6],
+    ['PE', 5],
+    ['US', 5],
+    ['CA', 6],
+    ['ES', 5],
+    ['IT', 5],
+    ['FR', 5],
+  ])(
+    'counts %s mask placeholders as %d (literals excluded)',
+    (country, len) => {
+      expect(getRequiredLength(POSTAL_CODE_FORMATS[country])).toBe(len)
+    }
+  )
+
+  it('returns 0 for mask-less formats (no length to enforce)', () => {
+    expect(getRequiredLength(DEFAULT_FORMAT)).toBe(0)
+    expect(getRequiredLength({ mode: 'numeric' })).toBe(0)
+  })
+})
+
+describe('postalCodeFormat — isPostalCodeComplete', () => {
+  it('accepts a fully typed code (compact or masked input)', () => {
+    expect(isPostalCodeComplete('01310100', POSTAL_CODE_FORMATS.BR)).toBe(true)
+    expect(isPostalCodeComplete('01310-100', POSTAL_CODE_FORMATS.BR)).toBe(true)
+    expect(isPostalCodeComplete('K1A0B1', POSTAL_CODE_FORMATS.CA)).toBe(true)
+    expect(isPostalCodeComplete('K1A 0B1', POSTAL_CODE_FORMATS.CA)).toBe(true)
+    expect(isPostalCodeComplete('75001', POSTAL_CODE_FORMATS.FR)).toBe(true)
+  })
+
+  it('rejects a partial code for a masked country', () => {
+    expect(isPostalCodeComplete('01', POSTAL_CODE_FORMATS.BR)).toBe(false)
+    expect(isPostalCodeComplete('K', POSTAL_CODE_FORMATS.CA)).toBe(false)
+    expect(isPostalCodeComplete('7', POSTAL_CODE_FORMATS.FR)).toBe(false)
+    expect(isPostalCodeComplete('', POSTAL_CODE_FORMATS.BR)).toBe(false)
+  })
+
+  it('never blocks a mask-less format (markets outside the top-10)', () => {
+    expect(isPostalCodeComplete('', DEFAULT_FORMAT)).toBe(true)
+    expect(isPostalCodeComplete('1', DEFAULT_FORMAT)).toBe(true)
+    expect(isPostalCodeComplete('1234AB', getPostalCodeFormat('NL'))).toBe(true)
   })
 })
 

@@ -753,6 +753,32 @@ describe('useDeliveryPromise — fail-fast on UPDATE_ZIPCODE', () => {
 
     expect(validateSpy).not.toHaveBeenCalled()
   })
+
+  it('rejects an incomplete postal code before any getAddress round-trip', async () => {
+    // BR mask (00000-000) requires 8 digits; "01" is partial.
+    const getAddressSpy = jest
+      .spyOn(client, 'getAddress')
+      .mockResolvedValue({ city: 'City', geoCoordinates: [1, 2] } as never)
+
+    const actions = [
+      {
+        type: 'UPDATE_ZIPCODE',
+        args: { zipcode: '01', reload: false },
+      },
+    ]
+
+    const { getByTestId } = render(<ActionRunner actions={actions} />)
+
+    fireEvent.click(getByTestId('btn'))
+
+    // Give the async dispatch a chance to run; the guard is synchronous and
+    // must short-circuit before getAddress is ever reached.
+    await waitFor(() => {
+      expect(getByTestId('btn')).toBeInTheDocument()
+    })
+
+    expect(getAddressSpy).not.toHaveBeenCalled()
+  })
 })
 
 describe('useDeliveryPromise — empty-cart short-circuit on UPDATE_ZIPCODE', () => {

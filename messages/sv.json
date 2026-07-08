@@ -17,6 +17,7 @@
   "store/delivery-promise-components.shippingMethodSelector.filterByShipping.label": "Filtrera efter leverans",
   "store/delivery-promise-components.shippingMethodSelector.filteringByDelivery.label": "Filtrerar efter leverans",
   "store/delivery-promise-components.shopperLocation.postalCodeInput.error": "Det angivna postnumret är inte inom vårt täckningsområde",
+  "store/delivery-promise-components.shopperLocation.postalCodeInput.invalid": "Ange ett giltigt postnummer",
   "store/delivery-promise-components.shopperLocation.postalCodeInput.placeholder": "Ange ditt postnummer",
   "store/delivery-promise-components.shopperLocationButton.placeholder": "Ange en plats",
   "store/delivery-promise-components.shopperLocationDetectorButton.errorDescription": "Unable to detect location",

@@ -17,6 +17,7 @@
   "store/delivery-promise-components.shippingMethodSelector.filterByShipping.label": "Szűrés szállítás szerint",
   "store/delivery-promise-components.shippingMethodSelector.filteringByDelivery.label": "Szűrés: házhozszállítás",
   "store/delivery-promise-components.shopperLocation.postalCodeInput.error": "A megadott irányítószám nem tartozik a lefedettségi területünkhöz",
+  "store/delivery-promise-components.shopperLocation.postalCodeInput.invalid": "Adjon meg egy érvényes irányítószámot",
   "store/delivery-promise-components.shopperLocation.postalCodeInput.placeholder": "Adja meg az irányítószámát",
   "store/delivery-promise-components.shopperLocationButton.placeholder": "Adjon megy egy helyet",
   "store/delivery-promise-components.shopperLocationDetectorButton.errorDescription": "Unable to detect location",

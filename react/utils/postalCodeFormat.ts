@@ -91,6 +91,46 @@ const TOKEN_MATCHERS: Record<string, RegExp> = {
 const isMaskPlaceholder = (token: string): boolean =>
   Object.prototype.hasOwnProperty.call(TOKEN_MATCHERS, token)
 
+/**
+ * The number of characters a format requires — i.e. the count of mask
+ * placeholder tokens (`9`/`0`/`A`/`*`). Literals (spaces, dashes) don't count.
+ * Mask-less formats (the permissive default and any country outside the
+ * curated top-10) return `0`, meaning "no fixed length to enforce".
+ */
+export function getRequiredLength(format: PostalCodeFormat): number {
+  const { mask } = format
+
+  if (!mask) return 0
+
+  let count = 0
+
+  for (let i = 0; i < mask.length; i++) {
+    if (isMaskPlaceholder(mask[i])) count += 1
+  }
+
+  return count
+}
+
+/**
+ * Whether a compact (unmasked) postal code satisfies its format's required
+ * length. Always `true` for mask-less formats, so markets outside the curated
+ * registry are never blocked from submitting. The comparison strips any
+ * non-alphanumeric character first, so it's agnostic to whether the caller
+ * passes the masked or the compact value.
+ */
+export function isPostalCodeComplete(
+  value: string,
+  format: PostalCodeFormat
+): boolean {
+  const required = getRequiredLength(format)
+
+  if (required === 0) return true
+
+  const compact = (value ?? '').replace(/[^A-Za-z0-9]/g, '')
+
+  return compact.length >= required
+}
+
 const tokenMatches = (char: string, token: string): boolean => {
   const matcher = TOKEN_MATCHERS[token]
 

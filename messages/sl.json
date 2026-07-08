@@ -17,6 +17,7 @@
   "store/delivery-promise-components.shippingMethodSelector.filterByShipping.label": "Filtriraj po dostavi",
   "store/delivery-promise-components.shippingMethodSelector.filteringByDelivery.label": "Filtriranje po dostavi",
   "store/delivery-promise-components.shopperLocation.postalCodeInput.error": "Vnesena poštna številka ni na našem območju pokrivanja",
+  "store/delivery-promise-components.shopperLocation.postalCodeInput.invalid": "Vnesite veljavno poštno številko",
   "store/delivery-promise-components.shopperLocation.postalCodeInput.placeholder": "Vnesite svojo poštno številko",
   "store/delivery-promise-components.shopperLocationButton.placeholder": "Vpišite lokacijo",
   "store/delivery-promise-components.shopperLocationDetectorButton.errorDescription": "Unable to detect location",

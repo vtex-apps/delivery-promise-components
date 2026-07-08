@@ -17,6 +17,7 @@
   "store/delivery-promise-components.shippingMethodSelector.filterByShipping.label": "Suodata toimituksen mukaan",
   "store/delivery-promise-components.shippingMethodSelector.filteringByDelivery.label": "Suodatetaan toimituksen mukaan",
   "store/delivery-promise-components.shopperLocation.postalCodeInput.error": "Annettu postinumero ei kuulu kattavuusalueellemme",
+  "store/delivery-promise-components.shopperLocation.postalCodeInput.invalid": "Anna kelvollinen postinumero",
   "store/delivery-promise-components.shopperLocation.postalCodeInput.placeholder": "Anna postinumerosi",
   "store/delivery-promise-components.shopperLocationButton.placeholder": "Lisää sijainti",
   "store/delivery-promise-components.shopperLocationDetectorButton.errorDescription": "Unable to detect location",

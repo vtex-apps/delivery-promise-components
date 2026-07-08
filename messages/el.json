@@ -17,6 +17,7 @@
   "store/delivery-promise-components.shippingMethodSelector.filterByShipping.label": "Φίλτρο κατά αποστολή",
   "store/delivery-promise-components.shippingMethodSelector.filteringByDelivery.label": "Φιλτράρισμα κατά παράδοση",
   "store/delivery-promise-components.shopperLocation.postalCodeInput.error": "Ο ταχυδρομικός κώδικας που καταχωρήσατε δεν βρίσκεται εντός της περιοχής κάλυψής μας",
+  "store/delivery-promise-components.shopperLocation.postalCodeInput.invalid": "Εισαγάγετε έγκυρο ταχυδρομικό κώδικα",
   "store/delivery-promise-components.shopperLocation.postalCodeInput.placeholder": "Εισαγάγετε τον ταχυδρομικό σας κώδικα",
   "store/delivery-promise-components.shopperLocationButton.placeholder": "Εισαγάγετε τοποθεσία",
   "store/delivery-promise-components.shopperLocationDetectorButton.errorDescription": "Unable to detect location",
