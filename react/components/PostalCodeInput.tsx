@@ -94,7 +94,6 @@ const PostalCodeInput = ({
   return (
     <div className={`w-100 ${handles.postalCodeInputContainer}`}>
       <Input
-        autFocus
         onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
           onChange(normalize(e.target.value))
         }
