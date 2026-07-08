@@ -1,13 +1,10 @@
 import React, { useState } from 'react'
 import { render, fireEvent } from '@vtex/test-tools/react'
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore — test-only helper exported by the manual render-runtime mock
+import { setMockCountry } from 'vtex.render-runtime'
 
 import PostalCodeInput from '../components/PostalCodeInput'
-
-const mockGetCountryFromToken = jest.fn<string | undefined, []>()
-
-jest.mock('../utils/cookie', () => ({
-  getCountryCodeFromToken: () => mockGetCountryFromToken(),
-}))
 
 interface HarnessProps {
   country?: string
@@ -49,8 +46,7 @@ const getInput = (container: HTMLElement): HTMLInputElement => {
 }
 
 beforeEach(() => {
-  mockGetCountryFromToken.mockReset()
-  mockGetCountryFromToken.mockReturnValue(undefined)
+  setMockCountry(undefined)
 })
 
 describe('PostalCodeInput — Brazil (US-3, current behavior preserved)', () => {
@@ -209,7 +205,7 @@ describe('PostalCodeInput — permissive default (US-5)', () => {
   })
 
   it('unresolved country: same permissive default', () => {
-    mockGetCountryFromToken.mockReturnValue(undefined)
+    setMockCountry(undefined)
     const onChange = jest.fn()
     const { container } = render(<Harness onChange={onChange} />)
     const input = getInput(container)
@@ -222,8 +218,8 @@ describe('PostalCodeInput — permissive default (US-5)', () => {
 })
 
 describe('PostalCodeInput — country resolution fallback (no `country` prop)', () => {
-  it('uses the segment-token country when the country prop is omitted', () => {
-    mockGetCountryFromToken.mockReturnValue('CAN')
+  it('uses the culture country when the country prop is omitted', () => {
+    setMockCountry('CAN')
 
     const onChange = jest.fn()
     const { container } = render(<Harness onChange={onChange} />)
@@ -235,8 +231,8 @@ describe('PostalCodeInput — country resolution fallback (no `country` prop)', 
     expect(onChange).toHaveBeenLastCalledWith('K1A0B1')
   })
 
-  it('explicit `country` prop overrides the segment-token country', () => {
-    mockGetCountryFromToken.mockReturnValue('BR')
+  it('explicit `country` prop overrides the culture country', () => {
+    setMockCountry('BR')
 
     const onChange = jest.fn()
     const { container } = render(<Harness country="CA" onChange={onChange} />)
@@ -251,10 +247,10 @@ describe('PostalCodeInput — country resolution fallback (no `country` prop)', 
 })
 
 describe('PostalCodeInput — SSR / country-resolution safety', () => {
-  it('renders with the permissive default when the token cannot be resolved (SSR / vm2)', () => {
-    // On SSR/vm2 (missing decoder) or a malformed token, getCountryCodeFromToken
-    // swallows the failure and returns undefined instead of throwing.
-    mockGetCountryFromToken.mockReturnValue(undefined)
+  it('renders with the permissive default when culture country is absent (SSR)', () => {
+    // On SSR (or an account without a resolved culture) culture.country may be
+    // undefined; getPostalCodeFormat then yields the permissive default.
+    setMockCountry(undefined)
 
     const onChange = jest.fn()
     const { container } = render(<Harness onChange={onChange} />)

@@ -4,7 +4,6 @@ import { useCssHandles } from 'vtex.css-handles'
 import { useRuntime } from 'vtex.render-runtime'
 
 import '../styles.css'
-import { getCountryCodeFromToken } from '../utils/cookie'
 import type { PostalCodeFormat } from '../utils/postalCodeFormat'
 import {
   applyMask,
@@ -28,14 +27,15 @@ interface Props {
   submitOnEnter?: boolean
   onClear?: () => void
   /**
-   * Country override. When omitted, the active country is resolved from the
-   * VTEX segment token exposed by `useRuntime().segmentToken`. Tolerant of
-   * alpha-2 (`BR`, `CA`) and alpha-3 (`BRA`, `CAN`) — see `normalizeCountry`.
+   * Country override. When omitted, the active country falls back to the
+   * storefront culture/binding country from `useRuntime().culture.country`.
+   * Tolerant of alpha-2 (`BR`, `CA`) and alpha-3 (`BRA`, `CAN`) — see
+   * `normalizeCountry`.
    */
   country?: string
   /**
    * Per-country format override. When omitted, resolved from `country`
-   * (or the segment token) against the per-country registry, falling back
+   * (or the culture country) against the per-country registry, falling back
    * to the permissive default (alphanumeric, no mask) for any country
    * outside the masked top-10.
    */
@@ -58,22 +58,21 @@ const PostalCodeInput = ({
   format,
 }: Props) => {
   const handles = useCssHandles(CSS_HANDLES)
-  const { segmentToken } = useRuntime()
+  const { culture } = useRuntime()
 
   const resolvedFormat = useMemo<PostalCodeFormat>(() => {
     if (format) return format
     if (country) return getPostalCodeFormat(country)
 
-    // Country is resolved from the VTEX segment token sourced via
-    // render-runtime, so the value stays inside React's render cycle and the
-    // memo recomputes whenever the runtime provides a new token — no reading
-    // of the `window.__RUNTIME__` global. `getCountryCodeFromToken` tolerates
-    // an absent/malformed token (incl. the SSR/vm2 case where no base64
-    // decoder exists) by returning `undefined`, and `getPostalCodeFormat`
-    // then falls back to the permissive default. The display value of an empty
-    // zipcode is identical across formats, so there's no hydration mismatch.
-    return getPostalCodeFormat(getCountryCodeFromToken(segmentToken))
-  }, [format, country, segmentToken])
+    // Country falls back to the storefront culture/binding country exposed by
+    // render-runtime (`useRuntime().culture.country`). Unlike the segment
+    // token, this field is actually surfaced by the hook, so it stays inside
+    // React's render cycle (reactive, SSR-safe) without touching the
+    // `window.__RUNTIME__` global. `getPostalCodeFormat` falls back to the
+    // permissive default for an absent/uncurated country, so markets outside
+    // the masked top-10 are never blocked.
+    return getPostalCodeFormat(culture?.country)
+  }, [format, country, culture?.country])
 
   const { mode, mask } = resolvedFormat
 
