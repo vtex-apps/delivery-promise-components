@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-07-14
+
 ### Changed
 
 - Postal code input now supports alphanumeric formats for international markets (Canada, Argentina) with country-specific masks for BR, MX, AR, CL, CO, PE, US, CA, ES, IT, and FR.
