@@ -17,6 +17,7 @@
   "store/delivery-promise-components.shippingMethodSelector.filterByShipping.label": "Filtrează după livrare",
   "store/delivery-promise-components.shippingMethodSelector.filteringByDelivery.label": "Filtrare după livrare",
   "store/delivery-promise-components.shopperLocation.postalCodeInput.error": "Codul poștal introdus nu se află în zona noastră de acoperire",
+  "store/delivery-promise-components.shopperLocation.postalCodeInput.invalid": "Introduceți un cod poștal valid",
   "store/delivery-promise-components.shopperLocation.postalCodeInput.placeholder": "Introdu codul poștal",
   "store/delivery-promise-components.shopperLocationButton.placeholder": "Introdu o locație",
   "store/delivery-promise-components.shopperLocationDetectorButton.errorDescription": "Unable to detect location",

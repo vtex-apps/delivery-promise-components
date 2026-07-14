@@ -17,6 +17,7 @@
   "store/delivery-promise-components.shippingMethodSelector.filterByShipping.label": "Nach Versand filtern",
   "store/delivery-promise-components.shippingMethodSelector.filteringByDelivery.label": "Nach Lieferung filtern",
   "store/delivery-promise-components.shopperLocation.postalCodeInput.error": "Die eingegebene Postleitzahl ist nicht in unserem Abdeckungsbereich",
+  "store/delivery-promise-components.shopperLocation.postalCodeInput.invalid": "Geben Sie eine gültige Postleitzahl ein",
   "store/delivery-promise-components.shopperLocation.postalCodeInput.placeholder": "Geben Sie Ihre Postleitzahl ein",
   "store/delivery-promise-components.shopperLocationButton.placeholder": "Standort eingeben",
   "store/delivery-promise-components.shopperLocationDetectorButton.errorDescription": "Standort konnte nicht erkannt werden",

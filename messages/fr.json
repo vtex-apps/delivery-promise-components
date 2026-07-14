@@ -17,6 +17,7 @@
   "store/delivery-promise-components.shippingMethodSelector.filterByShipping.label": "Filtrer par livraison",
   "store/delivery-promise-components.shippingMethodSelector.filteringByDelivery.label": "Filtrage par livraison",
   "store/delivery-promise-components.shopperLocation.postalCodeInput.error": "Le code postal saisi ne se trouve pas dans notre zone de couverture",
+  "store/delivery-promise-components.shopperLocation.postalCodeInput.invalid": "Saisissez un code postal valide",
   "store/delivery-promise-components.shopperLocation.postalCodeInput.placeholder": "Entrez votre code postal",
   "store/delivery-promise-components.shopperLocationButton.placeholder": "Entrez un lieu",
   "store/delivery-promise-components.shopperLocationDetectorButton.errorDescription": "Impossible de détecter la position",

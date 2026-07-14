@@ -17,6 +17,7 @@
   "store/delivery-promise-components.shippingMethodSelector.filterByShipping.label": "配送で絞り込む",
   "store/delivery-promise-components.shippingMethodSelector.filteringByDelivery.label": "配送で絞り込み中",
   "store/delivery-promise-components.shopperLocation.postalCodeInput.error": "入力された郵便番号は、当社のサービス提供地域外です。",
+  "store/delivery-promise-components.shopperLocation.postalCodeInput.invalid": "有効な郵便番号を入力してください",
   "store/delivery-promise-components.shopperLocation.postalCodeInput.placeholder": "郵便番号を入力してください",
   "store/delivery-promise-components.shopperLocationButton.placeholder": "場所を入力してください",
   "store/delivery-promise-components.shopperLocationDetectorButton.errorDescription": "Unable to detect location",

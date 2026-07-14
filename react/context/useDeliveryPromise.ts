@@ -32,6 +32,10 @@ import type { OrderFormCartLine } from '../modules/pixelHelper'
 import { mapCartItemToPixel } from '../modules/pixelHelper'
 import { refetchAllowlistedQueries } from '../modules/refetchAllowlistedQueries'
 import { getCountryCode, getFacetsData, getOrderFormId } from '../utils/cookie'
+import {
+  getPostalCodeFormat,
+  isPostalCodeComplete,
+} from '../utils/postalCodeFormat'
 import messages from '../messages'
 import type {
   ShippingMethod,
@@ -773,6 +777,25 @@ export const useDeliveryPromise = () => {
         }
 
         if (!countryCode) {
+          return false
+        }
+
+        // Reject a partially typed postal code before spending a getAddress /
+        // BFF round-trip. For masked countries the expected length is derived
+        // from the mask; mask-less markets are never blocked. This is the
+        // single choke point for every submit path (Enter, popover form,
+        // submit button), so the guard doesn't need to live in the input.
+        if (
+          !isPostalCodeComplete(
+            zipcodeSelected,
+            getPostalCodeFormat(countryCode)
+          )
+        ) {
+          onError(
+            'INVALID_POSTAL_CODE',
+            intl.formatMessage(messages.shopperLocationPostalCodeInputInvalid)
+          )
+
           return false
         }
 

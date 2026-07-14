@@ -17,6 +17,7 @@
   "store/delivery-promise-components.shippingMethodSelector.filterByShipping.label": "Filter menurut pengiriman",
   "store/delivery-promise-components.shippingMethodSelector.filteringByDelivery.label": "Memfilter menurut pengiriman",
   "store/delivery-promise-components.shopperLocation.postalCodeInput.error": "Kode pos yang dimasukkan tidak masuk area jangkauan kami",
+  "store/delivery-promise-components.shopperLocation.postalCodeInput.invalid": "Masukkan kode pos yang valid",
   "store/delivery-promise-components.shopperLocation.postalCodeInput.placeholder": "Masukkan kode pos Anda",
   "store/delivery-promise-components.shopperLocationButton.placeholder": "Masukkan lokasi",
   "store/delivery-promise-components.shopperLocationDetectorButton.errorDescription": "Unable to detect location",

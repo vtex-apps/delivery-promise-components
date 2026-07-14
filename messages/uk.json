@@ -17,6 +17,7 @@
   "store/delivery-promise-components.shippingMethodSelector.filterByShipping.label": "Фільтр за доставкою",
   "store/delivery-promise-components.shippingMethodSelector.filteringByDelivery.label": "Фільтрація за доставкою",
   "store/delivery-promise-components.shopperLocation.postalCodeInput.error": "Введений поштовий індекс — поза нашою зоною обслуговування",
+  "store/delivery-promise-components.shopperLocation.postalCodeInput.invalid": "Введіть дійсний поштовий індекс",
   "store/delivery-promise-components.shopperLocation.postalCodeInput.placeholder": "Введіть поштовий індекс",
   "store/delivery-promise-components.shopperLocationButton.placeholder": "Введіть адресу",
   "store/delivery-promise-components.shopperLocationDetectorButton.errorDescription": "Unable to detect location",

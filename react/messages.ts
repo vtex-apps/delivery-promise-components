@@ -17,6 +17,10 @@ const messages = defineMessages({
     id: 'store/delivery-promise-components.shopperLocation.postalCodeInput.error',
     defaultMessage: '',
   },
+  shopperLocationPostalCodeInputInvalid: {
+    id: 'store/delivery-promise-components.shopperLocation.postalCodeInput.invalid',
+    defaultMessage: '',
+  },
   pickupPointListUpdateButtonLabel: {
     id: 'store/delivery-promise-components.pickupPointList.updateButton.label',
     defaultMessage: '',

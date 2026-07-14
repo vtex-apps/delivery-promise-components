@@ -17,6 +17,7 @@
   "store/delivery-promise-components.shippingMethodSelector.filterByShipping.label": "배송 기준 필터",
   "store/delivery-promise-components.shippingMethodSelector.filteringByDelivery.label": "배송 기준으로 필터링 중",
   "store/delivery-promise-components.shopperLocation.postalCodeInput.error": "입력한 우편번호가 당사의 서비스 지역 내에 있지 않습니다",
+  "store/delivery-promise-components.shopperLocation.postalCodeInput.invalid": "유효한 우편번호를 입력하세요",
   "store/delivery-promise-components.shopperLocation.postalCodeInput.placeholder": "우편번호 입력",
   "store/delivery-promise-components.shopperLocationButton.placeholder": "위치 입력",
   "store/delivery-promise-components.shopperLocationDetectorButton.errorDescription": "Unable to detect location",

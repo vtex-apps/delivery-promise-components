@@ -57,16 +57,46 @@ export function getFacetsData(facetsDataTarget: string) {
   return data
 }
 
-export function getCountryCode() {
-  const segment = (window as any)?.__RUNTIME__.segmentToken
+// Decode a base64-encoded VTEX segment token in both browser (`atob`) and
+// Node/SSR (`Buffer`) environments. The render-server runs callers inside a
+// vm2 sandbox that does not expose `atob`, so a Buffer fallback is required
+// any time `getCountryCode` is invoked during server-side rendering.
+function decodeBase64(input: string): string {
+  if (typeof atob === 'function') {
+    return atob(input)
+  }
 
+  // eslint-disable-next-line no-undef
+  if (typeof Buffer !== 'undefined') {
+    // eslint-disable-next-line no-undef
+    return Buffer.from(input, 'base64').toString('binary')
+  }
+
+  throw new Error('No base64 decoder available')
+}
+
+// Decode the shopper country out of a base64 VTEX segment token. Accepts the
+// token as an argument so callers inside React can source it from
+// render-runtime (`useRuntime().segmentToken`) instead of reading the
+// `window.__RUNTIME__` global — keeping the value inside React's render cycle.
+// Never throws: an absent/malformed token (or a missing base64 decoder on
+// SSR) yields `undefined`.
+export function getCountryCodeFromToken(segment?: string) {
   if (!segment) {
     return
   }
 
-  const { countryCode } = JSON.parse(atob(segment))
+  try {
+    const { countryCode } = JSON.parse(decodeBase64(segment))
 
-  return countryCode
+    return countryCode
+  } catch {
+    return undefined
+  }
+}
+
+export function getCountryCode() {
+  return getCountryCodeFromToken((window as any)?.__RUNTIME__?.segmentToken)
 }
 
 export function getOrderFormId() {

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Postal code input now supports alphanumeric formats for international markets (Canada, Argentina) with country-specific masks for BR, MX, AR, CL, CO, PE, US, CA, ES, IT, and FR.
+
+### Fixed
+
+- Fixed SSR crash in `getCountryCode` when `atob` is unavailable in the render-server environment.
+
 ## [1.3.1] - 2026-07-08
 
 ### Added

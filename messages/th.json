@@ -17,6 +17,7 @@
   "store/delivery-promise-components.shippingMethodSelector.filterByShipping.label": "กรองตามการจัดส่ง",
   "store/delivery-promise-components.shippingMethodSelector.filteringByDelivery.label": "กำลังกรองตามการจัดส่ง",
   "store/delivery-promise-components.shopperLocation.postalCodeInput.error": "รหัสไปรษณีย์ที่ให้ไม่อยู่ในพื้นที่ดูแลของเรา",
+  "store/delivery-promise-components.shopperLocation.postalCodeInput.invalid": "กรอกรหัสไปรษณีย์ที่ถูกต้อง",
   "store/delivery-promise-components.shopperLocation.postalCodeInput.placeholder": "ใส่รหัสไปรษณีย์ของคุณ",
   "store/delivery-promise-components.shopperLocationButton.placeholder": "ใส่ตำแหน่งที่ตั้ง",
   "store/delivery-promise-components.shopperLocationDetectorButton.errorDescription": "Unable to detect location",

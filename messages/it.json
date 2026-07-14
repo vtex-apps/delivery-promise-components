@@ -17,6 +17,7 @@
   "store/delivery-promise-components.shippingMethodSelector.filterByShipping.label": "Filtra per spedizione",
   "store/delivery-promise-components.shippingMethodSelector.filteringByDelivery.label": "Filtro per consegna",
   "store/delivery-promise-components.shopperLocation.postalCodeInput.error": "Il codice di avviamento postale inserito non rientra nella nostra zona di copertura",
+  "store/delivery-promise-components.shopperLocation.postalCodeInput.invalid": "Inserisci un codice postale valido",
   "store/delivery-promise-components.shopperLocation.postalCodeInput.placeholder": "Inserisci il tuo codice di avviamento postale",
   "store/delivery-promise-components.shopperLocationButton.placeholder": "Inserisci una posizione",
   "store/delivery-promise-components.shopperLocationDetectorButton.errorDescription": "Impossibile rilevare la posizione",

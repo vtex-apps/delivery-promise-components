@@ -17,6 +17,7 @@
   "store/delivery-promise-components.shippingMethodSelector.filterByShipping.label": "Filtrovat podle doručení",
   "store/delivery-promise-components.shippingMethodSelector.filteringByDelivery.label": "Filtrování podle doručení",
   "store/delivery-promise-components.shopperLocation.postalCodeInput.error": "Zadané poštovní směrovací číslo se nenachází v naší oblasti pokrytí",
+  "store/delivery-promise-components.shopperLocation.postalCodeInput.invalid": "Zadejte platné PSČ",
   "store/delivery-promise-components.shopperLocation.postalCodeInput.placeholder": "Zadejte své poštovní směrovací číslo",
   "store/delivery-promise-components.shopperLocationButton.placeholder": "Zadejte polohu",
   "store/delivery-promise-components.shopperLocationDetectorButton.errorDescription": "Unable to detect location",

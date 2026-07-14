@@ -17,6 +17,7 @@
   "store/delivery-promise-components.shippingMethodSelector.filterByShipping.label": "Филтър по доставка",
   "store/delivery-promise-components.shippingMethodSelector.filteringByDelivery.label": "Филтриране по доставка",
   "store/delivery-promise-components.shopperLocation.postalCodeInput.error": "Въведеният пощенски код не е в района на нашето покритие",
+  "store/delivery-promise-components.shopperLocation.postalCodeInput.invalid": "Въведете валиден пощенски код",
   "store/delivery-promise-components.shopperLocation.postalCodeInput.placeholder": "Въвеждане на пощенския ви код",
   "store/delivery-promise-components.shopperLocationButton.placeholder": "Въвеждане на местоположение",
   "store/delivery-promise-components.shopperLocationDetectorButton.errorDescription": "Unable to detect location",

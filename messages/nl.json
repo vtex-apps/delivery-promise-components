@@ -17,6 +17,7 @@
   "store/delivery-promise-components.shippingMethodSelector.filterByShipping.label": "Filter op verzending",
   "store/delivery-promise-components.shippingMethodSelector.filteringByDelivery.label": "Filteren op bezorging",
   "store/delivery-promise-components.shopperLocation.postalCodeInput.error": "De ingevoerde postcode valt niet binnen ons gebied",
+  "store/delivery-promise-components.shopperLocation.postalCodeInput.invalid": "Voer een geldige postcode in",
   "store/delivery-promise-components.shopperLocation.postalCodeInput.placeholder": "Voer uw postcode in",
   "store/delivery-promise-components.shopperLocationButton.placeholder": "Voer een locatie in",
   "store/delivery-promise-components.shopperLocationDetectorButton.errorDescription": "Unable to detect location",
