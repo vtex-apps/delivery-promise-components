@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `pickup-point-selector` now registers itself into the `DeliveryPromiseContext` `uiRegistry` (`pickupPoint` entry) on mount and unregisters on unmount, matching `shopper-location-setter` and `shipping-method-selector`. This lets consumers (e.g. `vtex.search-result`) detect that a delivery-promise block is present.
+
 ## [1.4.0] - 2026-07-14
 
 ### Changed
