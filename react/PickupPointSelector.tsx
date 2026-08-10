@@ -30,6 +30,17 @@ function PickupPointSelector({ mode = 'default' }: Props) {
   const dispatch = useDeliveryPromiseDispatch()
   const lastHandledFulfillmentSelectionAppliedId = useRef(0)
 
+  useEffect(() => {
+    dispatch({
+      type: 'REGISTER_PICKUP_POINT_BLOCK',
+      args: { required: false },
+    })
+
+    return () => {
+      dispatch({ type: 'UNREGISTER_PICKUP_POINT_BLOCK' })
+    }
+  }, [dispatch])
+
   // Close the modal once a fulfillment selection is applied (new pickup, or
   // pickup cleared via RESET_FULFILLMENT_METHOD). The old reload tore the modal
   // down for free; with the soft refresh the tree stays alive.

@@ -752,6 +752,25 @@ export const useDeliveryPromise = () => {
 
         return
 
+      case 'REGISTER_PICKUP_POINT_BLOCK':
+        setUiRegistry((prev) => ({
+          ...prev,
+          pickupPoint: { required: action.args.required },
+        }))
+
+        return
+
+      case 'UNREGISTER_PICKUP_POINT_BLOCK':
+        setUiRegistry((prev) => {
+          const next = { ...prev }
+
+          delete next.pickupPoint
+
+          return next
+        })
+
+        return
+
       case 'REQUEST_OPEN_SHIPPING_METHOD_MODAL':
         setShippingMethodModalRequestId((n) => n + 1)
 

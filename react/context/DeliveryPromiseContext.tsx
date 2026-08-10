@@ -15,6 +15,7 @@ export type ZipCodeError = {
 export type DeliveryPromiseUiRegistry = {
   shopperLocation?: { required: boolean }
   shippingMethod?: { required: boolean }
+  pickupPoint?: { required: boolean }
 }
 
 export interface State {
@@ -98,6 +99,15 @@ interface UnregisterShippingMethodBlock {
   type: 'UNREGISTER_SHIPPING_METHOD_BLOCK'
 }
 
+interface RegisterPickupPointBlock {
+  type: 'REGISTER_PICKUP_POINT_BLOCK'
+  args: { required: boolean }
+}
+
+interface UnregisterPickupPointBlock {
+  type: 'UNREGISTER_PICKUP_POINT_BLOCK'
+}
+
 interface RequestOpenShippingMethodModal {
   type: 'REQUEST_OPEN_SHIPPING_METHOD_MODAL'
 }
@@ -117,6 +127,8 @@ export type DeliveryPromiseActions =
   | UnregisterShopperLocationBlock
   | RegisterShippingMethodBlock
   | UnregisterShippingMethodBlock
+  | RegisterPickupPointBlock
+  | UnregisterPickupPointBlock
   | RequestOpenShippingMethodModal
   | ClearZipCode
 

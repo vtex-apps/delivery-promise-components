@@ -556,6 +556,66 @@ describe('useDeliveryPromise actions and behavior', () => {
     })
   })
 
+  it('REGISTER_PICKUP_POINT_BLOCK sets uiRegistry.pickupPoint and UNREGISTER removes it without touching other entries', async () => {
+    function PickupRegistryProbe() {
+      const { dispatch, state } = useDeliveryPromise()
+
+      return (
+        <div>
+          <span data-testid="registry">{JSON.stringify(state.uiRegistry)}</span>
+          <button
+            data-testid="reg-shopper-and-pickup"
+            type="button"
+            onClick={async () => {
+              await dispatch({
+                type: 'REGISTER_SHOPPER_LOCATION_BLOCK',
+                args: { required: false },
+              } as never)
+              await dispatch({
+                type: 'REGISTER_PICKUP_POINT_BLOCK',
+                args: { required: false },
+              } as never)
+            }}
+          >
+            reg
+          </button>
+          <button
+            data-testid="unreg-pickup"
+            type="button"
+            onClick={() =>
+              dispatch({ type: 'UNREGISTER_PICKUP_POINT_BLOCK' } as never)
+            }
+          >
+            unreg pickup
+          </button>
+        </div>
+      )
+    }
+
+    const { getByTestId } = render(<PickupRegistryProbe />)
+
+    expect(getByTestId('registry').textContent).toBe('{}')
+
+    fireEvent.click(getByTestId('reg-shopper-and-pickup'))
+
+    await waitFor(() => {
+      expect(getByTestId('registry').textContent).toBe(
+        JSON.stringify({
+          shopperLocation: { required: false },
+          pickupPoint: { required: false },
+        })
+      )
+    })
+
+    fireEvent.click(getByTestId('unreg-pickup'))
+
+    await waitFor(() => {
+      expect(getByTestId('registry').textContent).toBe(
+        JSON.stringify({ shopperLocation: { required: false } })
+      )
+    })
+  })
+
   it('REQUEST_OPEN_SHIPPING_METHOD_MODAL increments shippingMethodModalRequestId', async () => {
     function RequestOpenProbe() {
       const { dispatch, state } = useDeliveryPromise()
