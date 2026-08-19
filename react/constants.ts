@@ -10,6 +10,7 @@ export const SHIPPING_INFO_COOKIE = 'shipping_info'
 export const PRODUCTS_NOT_FOUND_ERROR_CODE = 'products-not-found-error'
 export const SHOPPER_LOCATION_MODAL_PIXEL_EVENT_ID =
   'item-added-to-cart-shipping-modal'
+export const USER_AGENT = 'vtex.delivery-promise-components@1.x'
 
 /**
  * GraphQL operation names (`ObservableQuery.queryName`) refetched after a

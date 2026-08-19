@@ -55,7 +55,7 @@ All HTTP traffic lives in `react/client.ts`, plus one Nominatim call in
 
 ### Intelligent Search
 - `GET /api/intelligent-search/v0/pickup-point-availability/trade-policy/{salesChannel}?zip-code=...&an=...&country=...` — `getPickups`. Called with `credentials: 'omit'`.
-- `GET /api/io/_v/api/intelligent-search/catalog_count?zip-code=...&coordinates=...` — `getCatalogCount`. If `total === 0` the postal code is rejected (`PRODUCTS_NOT_FOUND_ERROR_CODE`).
+- `GET /api/intelligent-search/v1/catalog-count?zip-code=...&coordinates=...` — `getCatalogCount` (header `x-vtex-user-agent: vtex.delivery-promise-components@1.x`, `credentials: 'omit'`). If `total === 0` the postal code is rejected (`PRODUCTS_NOT_FOUND_ERROR_CODE`).
 
 ### Delivery Promise BFF (`vtex.delivery-promises-bff`)
 All return `{ unavailableItemIds }`. Optional `?sc={salesChannel}` is appended when defined.

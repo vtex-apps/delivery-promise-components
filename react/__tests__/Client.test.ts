@@ -5,14 +5,14 @@ import {
   validateProductAvailabilityByDelivery,
   validateProductAvailabilityByPickup,
 } from '../client'
-import { DEFAULT_TRADE_POLICY } from '../constants'
+import { DEFAULT_TRADE_POLICY, USER_AGENT } from '../constants'
 
 describe('client.getCatalogCount', () => {
   beforeEach(() => {
     jest.clearAllMocks()
   })
 
-  it('uses GET without Content-Type and credentials: "omit"', async () => {
+  it('calls intsch v1 catalog-count with identity header and without cookies', async () => {
     const mockFetch = jest
       .fn()
       .mockResolvedValue({ json: () => Promise.resolve({}) })
@@ -22,14 +22,21 @@ describe('client.getCatalogCount', () => {
     await getCatalogCount('12345-678', [0, 0])
 
     expect(mockFetch).toHaveBeenCalledTimes(1)
-    // eslint-disable-next-line prefer-destructuring
-    const [, options] = mockFetch.mock.calls[0]
 
+    const [url, options] = mockFetch.mock.calls[0]
+
+    expect(url).toBe(
+      '/api/intelligent-search/v1/catalog-count?zip-code=12345-678&coordinates=0,0'
+    )
     expect(options).toMatchObject({
       method: 'GET',
       credentials: 'omit',
+      headers: {
+        'x-vtex-user-agent': USER_AGENT,
+      },
     })
-    expect(options.headers).toBeUndefined()
+    expect(options.headers).not.toHaveProperty('Content-Type')
+    expect(options.headers).not.toHaveProperty('Cookie')
   })
 })
 
