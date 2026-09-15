@@ -26,7 +26,7 @@ describe('client.getCatalogCount', () => {
     const [url, options] = mockFetch.mock.calls[0]
 
     expect(url).toBe(
-      '/api/intelligent-search/v1/catalog-count?zip-code=12345-678&coordinates=0,0'
+      '/api/intelligent-search/v1/catalog-count?zip-code=12345-678&coordinates=0,0&dpPreview=true'
     )
     expect(options).toMatchObject({
       method: 'GET',
@@ -139,6 +139,23 @@ describe('client.getPickups', () => {
       number: '',
       state: '',
     })
+  })
+
+  it('sends the forced dpPreview flag on the pickup-point-availability URL', async () => {
+    const mockFetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ pickupPointDistances: [] }),
+    })
+
+    ;(global as any).fetch = mockFetch
+
+    await getPickups('BR', '01310-100', 'store', '2')
+
+    const [url] = mockFetch.mock.calls[0]
+
+    expect(url).toBe(
+      '/api/intelligent-search/v0/pickup-point-availability/trade-policy/2?zip-code=01310-100&an=store&country=BR&dpPreview=true'
+    )
   })
 
   it('returns empty items when the API responds with non-OK status', async () => {

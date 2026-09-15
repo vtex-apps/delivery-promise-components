@@ -1,4 +1,8 @@
-import { SHIPPING_INFO_COOKIE, USER_AGENT } from './constants'
+import {
+  DP_PREVIEW_QUERY_PARAM,
+  SHIPPING_INFO_COOKIE,
+  USER_AGENT,
+} from './constants'
 import { setCookie } from './utils/cookie'
 
 /** Matches delivery-promises-bff availability body (`itemId` = SKU, `productId` = catalog product). */
@@ -162,7 +166,7 @@ export const getPickups = (
       salesChannel
     )}?zip-code=${encodeURIComponent(zipCode)}&an=${encodeURIComponent(
       account
-    )}&country=${encodeURIComponent(countryCode)}`,
+    )}&country=${encodeURIComponent(countryCode)}&${DP_PREVIEW_QUERY_PARAM}`,
     { method: 'GET', credentials: 'omit' }
   )
     .then((res) => {
@@ -206,7 +210,7 @@ export const getCatalogCount = (zipCode: string, geoCoordinates: number[]) =>
   fetch(
     `/api/intelligent-search/v1/catalog-count?zip-code=${zipCode}&coordinates=${geoCoordinates.join(
       ','
-    )}`,
+    )}&${DP_PREVIEW_QUERY_PARAM}`,
     {
       method: 'GET',
       headers: {

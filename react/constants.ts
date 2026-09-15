@@ -13,6 +13,18 @@ export const SHOPPER_LOCATION_MODAL_PIXEL_EVENT_ID =
 export const USER_AGENT = 'vtex.delivery-promise-components@1.x'
 
 /**
+ * TEST-ONLY / `hkignore`: forces the Delivery Promise preview flag on every
+ * Intelligent Search REST call made by this app, mirroring the `dpPreview`
+ * query param that `vtex.search-resolver` sends when the account has the
+ * `enableDeliveryPromisePreview` app setting enabled.
+ *
+ * This branch hardcodes the flag on purpose — there is no per-account gate
+ * here. Do NOT merge into a release version; the production fix must read the
+ * account setting instead of pinning it to `true`.
+ */
+export const DP_PREVIEW_QUERY_PARAM = 'dpPreview=true'
+
+/**
  * GraphQL operation names (`ObservableQuery.queryName`) refetched after a
  * delivery-promise session write. Each maps to a `vtex.store-resources` export:
  *   facetsV2               ← vtex.store-resources/QueryFacetsV2               (search-result SearchQuery.js)
