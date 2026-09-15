@@ -296,3 +296,27 @@ describe('PostalCodeInput — Enter behavior (submitOnEnter flag)', () => {
     expect(onSubmit).not.toHaveBeenCalled()
   })
 })
+
+describe('PostalCodeInput — Colombia (DANE)', () => {
+  it('keeps a 5-digit DANE code intact instead of demanding a 6th digit', () => {
+    const onChange = jest.fn()
+    const { container } = render(<Harness country="CO" onChange={onChange} />)
+    const input = getInput(container)
+
+    fireEvent.change(input, { target: { value: '11001' } })
+
+    expect(input.value).toBe('11001')
+    expect(onChange).toHaveBeenLastCalledWith('11001')
+  })
+
+  it('caps typing at 5 digits and strips letters (alpha-3 country resolves)', () => {
+    const onChange = jest.fn()
+    const { container } = render(<Harness country="COL" onChange={onChange} />)
+    const input = getInput(container)
+
+    fireEvent.change(input, { target: { value: 'bog110019' } })
+
+    expect(input.value).toBe('11001')
+    expect(onChange).toHaveBeenLastCalledWith('11001')
+  })
+})
