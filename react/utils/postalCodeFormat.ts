@@ -63,7 +63,10 @@ export const POSTAL_CODE_FORMATS: Record<CountryKey, PostalCodeFormat> = {
   MX: { mode: 'numeric', mask: '00000' },
   AR: { mode: 'alphanumeric', mask: 'A9999AAA' },
   CL: { mode: 'numeric', mask: '0000000' },
-  CO: { mode: 'numeric', mask: '000000' },
+  // Colombia is addressed by DANE code (5 digits, e.g. `11001` for Bogota
+  // D.C.) across the platform — Checkout, freight templates, and
+  // `address-form`'s COL rules — not by the 6-digit UPU postal code.
+  CO: { mode: 'numeric', mask: '00000' },
   PE: { mode: 'numeric', mask: '00000' },
   US: { mode: 'numeric', mask: '00000' },
   CA: { mode: 'alphanumeric', mask: 'A9A 9A9' },

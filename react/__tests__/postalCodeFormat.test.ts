@@ -78,7 +78,7 @@ describe('postalCodeFormat — POSTAL_CODE_FORMATS registry', () => {
     ['MX', 'numeric', '00000'],
     ['AR', 'alphanumeric', 'A9999AAA'],
     ['CL', 'numeric', '0000000'],
-    ['CO', 'numeric', '000000'],
+    ['CO', 'numeric', '00000'],
     ['PE', 'numeric', '00000'],
     ['US', 'numeric', '00000'],
     ['CA', 'alphanumeric', 'A9A 9A9'],
@@ -125,7 +125,7 @@ describe('postalCodeFormat — getRequiredLength', () => {
     ['MX', 5],
     ['AR', 8],
     ['CL', 7],
-    ['CO', 6],
+    ['CO', 5],
     ['PE', 5],
     ['US', 5],
     ['CA', 6],
@@ -159,6 +159,16 @@ describe('postalCodeFormat — isPostalCodeComplete', () => {
     expect(isPostalCodeComplete('K', POSTAL_CODE_FORMATS.CA)).toBe(false)
     expect(isPostalCodeComplete('7', POSTAL_CODE_FORMATS.FR)).toBe(false)
     expect(isPostalCodeComplete('', POSTAL_CODE_FORMATS.BR)).toBe(false)
+  })
+
+  it('accepts a 5-digit DANE code for CO', () => {
+    // Bogota D.C., Medellin, Cali, Barranquilla. The previous 6-digit mask
+    // held these at 5 of 6 characters, so the guard rejected every one.
+    expect(isPostalCodeComplete('11001', POSTAL_CODE_FORMATS.CO)).toBe(true)
+    expect(isPostalCodeComplete('05001', POSTAL_CODE_FORMATS.CO)).toBe(true)
+    expect(isPostalCodeComplete('76001', POSTAL_CODE_FORMATS.CO)).toBe(true)
+    expect(isPostalCodeComplete('08001', POSTAL_CODE_FORMATS.CO)).toBe(true)
+    expect(isPostalCodeComplete('1100', POSTAL_CODE_FORMATS.CO)).toBe(false)
   })
 
   it('never blocks a mask-less format (markets outside the top-10)', () => {
