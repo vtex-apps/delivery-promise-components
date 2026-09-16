@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.2] - 2026-09-16
+
 ### Fixed
 
 - Colombian codes are no longer rejected by the location selector. Colombia is addressed by 5-digit DANE code across the platform (Checkout, freight templates, `address-form`'s `COL` rules), but the postal-code registry declared a fixed 6-digit mask, so every DANE code was held one character short of complete and rejected before any address lookup ran. The `CO` mask is now `00000`.
