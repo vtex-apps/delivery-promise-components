@@ -65,26 +65,26 @@
     fast-json-stable-stringify "^2.0.0"
     tslib "^1.10.0"
 
-"@ariakit/core@0.4.16":
-  version "0.4.16"
-  resolved "https://registry.yarnpkg.com/@ariakit/core/-/core-0.4.16.tgz#5272b6beccd2bc4420ab2d850e57cc68de690a9e"
-  integrity sha512-nPJ0Be8d5ZvRApYGqdLMuYUjP7ktkPmTPOXyZFw+0Illk8LKgF3Q74ctVGuoQurJNDsANXcewzlyXK4vyIAGTA==
+"@ariakit/core@0.4.20":
+  version "0.4.20"
+  resolved "https://registry.yarnpkg.com/@ariakit/core/-/core-0.4.20.tgz#5ff4ee99e223603240f02f5b3ebe76de1a48231c"
+  integrity sha512-DJbUnui0fM+2ZgiWLOMuFOmlWSJDNV3f6tqghIYRTWEm51TN/LoU6uM8og6/g7Nrwl4Uo5l8AoQT9Kkr/i/uRg==
 
-"@ariakit/react-core@0.4.19":
-  version "0.4.19"
-  resolved "https://registry.yarnpkg.com/@ariakit/react-core/-/react-core-0.4.19.tgz#5764c3f1b74f9556aec308e85d7a2cd24b909e0a"
-  integrity sha512-Aj+fu4pMyPXtlBghI+E7KSWItqJkbAqEhut3DlsFAjK9fQdHE+e1tQJG1PtnoEdD9BExkJWQ6R4M5a9HkEhqPA==
+"@ariakit/react-core@0.4.26":
+  version "0.4.26"
+  resolved "https://registry.yarnpkg.com/@ariakit/react-core/-/react-core-0.4.26.tgz#2e1909111f04dfde2cd169fbb1114f737bf91164"
+  integrity sha512-/Peh1KiVpjj79nCJIa6lEdzSTT9P9FZoy+CxByIFKL3YKdlXmDIIhS1E/tAqKbDq4ODVdynnqmrIDxE5wCoZYw==
   dependencies:
-    "@ariakit/core" "0.4.16"
+    "@ariakit/core" "0.4.20"
     "@floating-ui/dom" "^1.0.0"
-    use-sync-external-store "^1.2.0"
+    use-sync-external-store "^1.6.0"
 
-"@ariakit/react@^0.4.17":
-  version "0.4.19"
-  resolved "https://registry.yarnpkg.com/@ariakit/react/-/react-0.4.19.tgz#c80c3d6869ccbb3dceb31a41c39d12f9e8be0071"
-  integrity sha512-n6q8leSQWXMk4vhcZlpnj8cIlAY0n+1bvVTwHvaVfmec4LjW49MFKkJRZd1AiV+SE73nkxPwSL3IbaS4p1aRxQ==
+"@ariakit/react@^0.4.26":
+  version "0.4.26"
+  resolved "https://registry.yarnpkg.com/@ariakit/react/-/react-0.4.26.tgz#f733d8d61727be04697a04466f8ffd2eb80417bd"
+  integrity sha512-NcoPrYE4vgwyODAhdpNNuA7ldwODDuFqZl6jORPVDY3l+oRjl/OYwtQyyC3ZhC/4mjntYBYuKKrPJEizLmoxpg==
   dependencies:
-    "@ariakit/react-core" "0.4.19"
+    "@ariakit/react-core" "0.4.26"
 
 "@babel/code-frame@^7.0.0", "@babel/code-frame@^7.10.4", "@babel/code-frame@^7.27.1":
   version "7.27.1"
@@ -5851,7 +5851,7 @@ urix@^0.1.0:
   resolved "https://registry.yarnpkg.com/urix/-/urix-0.1.0.tgz#da937f7a62e21fec1fd18d49b35c2935067a6c72"
   integrity sha512-Am1ousAhSLBeB9cG/7k7r2R0zj50uDRlZHPGbazid5s9rlF1F/QKYObEKSIunSjIOkJZqwRRLpvewjEkM7pSqg==
 
-use-sync-external-store@^1.2.0:
+use-sync-external-store@^1.6.0:
   version "1.6.0"
   resolved "https://registry.yarnpkg.com/use-sync-external-store/-/use-sync-external-store-1.6.0.tgz#b174bfa65cb2b526732d9f2ac0a408027876f32d"
   integrity sha512-Pp6GSwGP/NrPIrxVFAIkOQeyw8lFenOHijQWkUTrDvrF4ALqylP2C/KCkeS9dpUM3KvYRQhna5vt7IL95+ZQ9w==
