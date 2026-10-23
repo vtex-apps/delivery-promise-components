@@ -40,9 +40,9 @@ go through `useDeliveryPromise()` which holds the only side-effect logic and is 
 sole caller of `react/client.ts`. Each block must be a **singleton per type** — the
 registry has no ref counting; the last mount wins if duplicates exist.
 
-## External APIs (all `fetch`, no GraphQL)
+## External APIs (`fetch`, plus two GraphQL queries)
 
-All HTTP traffic lives in `react/client.ts`, plus one Nominatim call in
+All HTTP and GraphQL traffic lives in `react/client.ts`, plus one Nominatim call in
 `react/components/ShopperLocationDetectorButton.tsx`.
 
 ### Checkout
@@ -53,9 +53,10 @@ All HTTP traffic lives in `react/client.ts`, plus one Nominatim call in
 ### VTEX Sessions
 - `POST /api/sessions` — `updateSession` / `clearShippingSession`. Writes `public.facets.value` as a `;`-joined string, e.g. `zip-code=12345;country=BRA;coordinates=-23,-46;shipping=delivery;pickupPoint=abc`.
 
-### Intelligent Search
-- `GET /api/intelligent-search/v0/pickup-point-availability/trade-policy/{salesChannel}?zip-code=...&an=...&country=...` — `getPickups`. Called with `credentials: 'omit'`.
-- `GET /api/intelligent-search/v1/catalog-count?zip-code=...&coordinates=...` — `getCatalogCount` (header `x-vtex-user-agent: vtex.delivery-promise-components@1.x`, `credentials: 'omit'`). If `total === 0` the postal code is rejected (`PRODUCTS_NOT_FOUND_ERROR_CODE`).
+### Intelligent Search (GraphQL via `vtex.search-graphql` → `vtex.search-resolver`)
+Both go through the Apollo client from `useApolloClient()` (passed into `client.ts` by `useDeliveryPromise`, `fetchPolicy: 'network-only'`). The resolver adds `dpPreview=true` when its `enableDeliveryPromisePreview` setting is on, which is why these are not plain `fetch` calls. Documents live in `react/queries/`.
+- `pickupPointAvailability(salesChannel, zipCode, country)` — `getPickups`. Errors are swallowed into `{ items: [] }`. Cached `PRIVATE`.
+- `catalogCount(zipCode, coordinates)` — `getCatalogCount`; `coordinates` is `lng,lat`. Errors reject. If `total === 0` the postal code is rejected (`PRODUCTS_NOT_FOUND_ERROR_CODE`).
 
 ### Delivery Promise BFF (`vtex.delivery-promises-bff`)
 All return `{ unavailableItemIds }`. Optional `?sc={salesChannel}` is appended when defined.
@@ -132,6 +133,7 @@ Defined in `DeliveryPromiseContext.tsx`, handled in `useDeliveryPromise.ts`.
 | `vtex.product-summary-context` | `AvailabilityBadges` reads `product.deliveryPromisesBadges`. |
 | `vtex.order-items` | `addItems`/`removeItem` for the unavailable-items flow. |
 | `vtex.session-client` | `useRenderSession()` for sales channel + session loading state. |
+| `vtex.search-graphql` | Schema for the `pickupPointAvailability` / `catalogCount` queries (needs 0.75.0+). |
 
 ## Verified Commands
 

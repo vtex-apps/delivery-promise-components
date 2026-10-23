@@ -1,0 +1,26 @@
+query pickupPointAvailability(
+  $salesChannel: String!
+  $zipCode: String!
+  $country: String!
+) {
+  pickupPointAvailability(
+    salesChannel: $salesChannel
+    zipCode: $zipCode
+    country: $country
+  ) {
+    pickupPointDistances {
+      pickupId
+      pickupName
+      distance
+      isActive
+      address {
+        neighborhood
+        street
+        postalCode
+        city
+        number
+        state
+      }
+    }
+  }
+}
