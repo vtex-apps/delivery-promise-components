@@ -308,9 +308,9 @@ describe('useDeliveryPromise actions and behavior', () => {
 
     await waitFor(() => {
       expect(getPickupsSpy).toHaveBeenCalledWith(
+        expect.anything(),
         'BR',
         '12345-678',
-        'store',
         DEFAULT_TRADE_POLICY
       )
     })

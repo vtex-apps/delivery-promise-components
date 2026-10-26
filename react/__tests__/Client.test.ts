@@ -5,92 +5,94 @@ import {
   validateProductAvailabilityByDelivery,
   validateProductAvailabilityByPickup,
 } from '../client'
-import { DEFAULT_TRADE_POLICY, USER_AGENT } from '../constants'
+import { DEFAULT_TRADE_POLICY } from '../constants'
+
+const apolloWith = (query: jest.Mock) => ({ query } as never)
 
 describe('client.getCatalogCount', () => {
-  beforeEach(() => {
-    jest.clearAllMocks()
+  it('queries catalogCount with zip and joined coordinates, bypassing the cache', async () => {
+    const query = jest
+      .fn()
+      .mockResolvedValue({ data: { catalogCount: { total: 7 } } })
+
+    const result = await getCatalogCount(
+      apolloWith(query),
+      '12345-678',
+      [-46.6, -23.5]
+    )
+
+    expect(result).toEqual({ total: 7 })
+    expect(query).toHaveBeenCalledTimes(1)
+    expect(query.mock.calls[0][0]).toMatchObject({
+      variables: { zipCode: '12345-678', coordinates: '-46.6,-23.5' },
+      fetchPolicy: 'network-only',
+    })
   })
 
-  it('calls intsch v1 catalog-count with identity header and without cookies', async () => {
-    const mockFetch = jest
-      .fn()
-      .mockResolvedValue({ json: () => Promise.resolve({}) })
+  it('rejects when the query fails so the postal code is treated as invalid', async () => {
+    const query = jest.fn().mockRejectedValue(new Error('graphql'))
 
-    ;(global as any).fetch = mockFetch
+    await expect(
+      getCatalogCount(apolloWith(query), '12345-678', [0, 0])
+    ).rejects.toThrow('graphql')
+  })
+})
 
-    await getCatalogCount('12345-678', [0, 0])
-
-    expect(mockFetch).toHaveBeenCalledTimes(1)
-
-    const [url, options] = mockFetch.mock.calls[0]
-
-    expect(url).toBe(
-      '/api/intelligent-search/v1/catalog-count?zip-code=12345-678&coordinates=0,0'
+describe('client without an Apollo client', () => {
+  it('getCatalogCount rejects', async () => {
+    await expect(getCatalogCount(null, '12345-678', [0, 0])).rejects.toThrow(
+      'Apollo client is not available'
     )
-    expect(options).toMatchObject({
-      method: 'GET',
-      credentials: 'omit',
-      headers: {
-        'x-vtex-user-agent': USER_AGENT,
-      },
+  })
+
+  it('getPickups returns empty items', async () => {
+    expect(await getPickups(null, 'BR', '01310-100', '1')).toEqual({
+      items: [],
     })
-    expect(options.headers).not.toHaveProperty('Content-Type')
-    expect(options.headers).not.toHaveProperty('Cookie')
   })
 })
 
 describe('client.getPickups', () => {
-  beforeEach(() => {
-    jest.clearAllMocks()
-  })
-
-  it('sends GET with credentials omitted and without Content-Type header', async () => {
-    const mockFetch = jest.fn().mockResolvedValue({
-      ok: true,
-      json: () =>
-        Promise.resolve({
-          pickupPointDistances: [],
-        }),
+  const respond = (pickupPointDistances: unknown) =>
+    jest.fn().mockResolvedValue({
+      data: { pickupPointAvailability: { pickupPointDistances } },
     })
 
-    ;(global as any).fetch = mockFetch
+  it('queries pickupPointAvailability with sales channel, zip and country', async () => {
+    const query = respond([])
 
-    await getPickups('BR', '01310-100', 'store', DEFAULT_TRADE_POLICY)
+    await getPickups(apolloWith(query), 'BR', '01310-100', DEFAULT_TRADE_POLICY)
 
-    expect(mockFetch).toHaveBeenCalledTimes(1)
-    const [, options] = mockFetch.mock.calls[0]
-
-    expect(options).toEqual({ method: 'GET', credentials: 'omit' })
+    expect(query).toHaveBeenCalledTimes(1)
+    expect(query.mock.calls[0][0]).toMatchObject({
+      variables: {
+        salesChannel: DEFAULT_TRADE_POLICY,
+        zipCode: '01310-100',
+        country: 'BR',
+      },
+      fetchPolicy: 'network-only',
+    })
   })
 
   it('maps pickup-point-availability response to the internal pickup model', async () => {
-    const mockFetch = jest.fn().mockResolvedValue({
-      ok: true,
-      json: () =>
-        Promise.resolve({
-          pickupPointDistances: [
-            {
-              pickupId: 'p1',
-              pickupName: 'Store A',
-              distance: 1200,
-              isActive: true,
-              address: {
-                neighborhood: 'Centro',
-                street: 'Rua A',
-                postalCode: '01310-100',
-                city: 'SP',
-                number: '10',
-                state: 'SP',
-              },
-            },
-          ],
-        }),
-    })
+    const query = respond([
+      {
+        pickupId: 'p1',
+        pickupName: 'Store A',
+        distance: 1200,
+        isActive: true,
+        address: {
+          neighborhood: 'Centro',
+          street: 'Rua A',
+          postalCode: '01310-100',
+          city: 'SP',
+          number: '10',
+          state: 'SP',
+        },
+      },
+    ])
 
-    ;(global as any).fetch = mockFetch
-
-    const result = await getPickups('BR', '01310-100', 'store', '2')
+    const result = await getPickups(apolloWith(query), 'BR', '01310-100', '2')
 
     expect(result.items).toHaveLength(1)
     expect(result.items[0]).toMatchObject({
@@ -112,24 +114,11 @@ describe('client.getPickups', () => {
   })
 
   it('uses empty strings when address fields are missing', async () => {
-    const mockFetch = jest.fn().mockResolvedValue({
-      ok: true,
-      json: () =>
-        Promise.resolve({
-          pickupPointDistances: [
-            {
-              pickupId: 'p2',
-              pickupName: 'Store B',
-              distance: 500,
-              isActive: true,
-            },
-          ],
-        }),
-    })
+    const query = respond([
+      { pickupId: 'p2', pickupName: 'Store B', distance: 500, isActive: true },
+    ])
 
-    ;(global as any).fetch = mockFetch
-
-    const result = await getPickups('BR', '01310-100', 'store', '1')
+    const result = await getPickups(apolloWith(query), 'BR', '01310-100', '1')
 
     expect(result.items[0].pickupPoint.address).toEqual({
       neighborhood: '',
@@ -141,26 +130,18 @@ describe('client.getPickups', () => {
     })
   })
 
-  it('returns empty items when the API responds with non-OK status', async () => {
-    const mockFetch = jest.fn().mockResolvedValue({
-      ok: false,
-      status: 500,
-      json: () => Promise.resolve({}),
-    })
+  it('returns empty items when the response has no pickup list', async () => {
+    const query = jest.fn().mockResolvedValue({ data: {} })
 
-    ;(global as any).fetch = mockFetch
-
-    const result = await getPickups('BR', '01310-100', 'store', '1')
+    const result = await getPickups(apolloWith(query), 'BR', '01310-100', '1')
 
     expect(result).toEqual({ items: [] })
   })
 
-  it('returns empty items when fetch rejects', async () => {
-    const mockFetch = jest.fn().mockRejectedValue(new Error('network'))
+  it('returns empty items when the query rejects', async () => {
+    const query = jest.fn().mockRejectedValue(new Error('network'))
 
-    ;(global as any).fetch = mockFetch
-
-    const result = await getPickups('BR', '01310-100', 'store', '1')
+    const result = await getPickups(apolloWith(query), 'BR', '01310-100', '1')
 
     expect(result).toEqual({ items: [] })
   })

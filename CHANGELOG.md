@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `getPickups` and `getCatalogCount` now query `vtex.search-graphql` (`pickupPointAvailability`, `catalogCount`) instead of calling Intelligent Search directly, so `vtex.search-resolver` forwards `dpPreview` when `enableDeliveryPromisePreview` is on. Both now take an `ApolloClient` as first argument and `getPickups` no longer takes `account`. **Breaking** for host apps calling `pickupSearchClient.getPickups`.
+
 ## [1.5.2] - 2026-09-16
 
 ### Fixed

@@ -1,5 +1,12 @@
-import { SHIPPING_INFO_COOKIE, USER_AGENT } from './constants'
+import type { useApolloClient } from 'react-apollo'
+
+import { SHIPPING_INFO_COOKIE } from './constants'
 import { setCookie } from './utils/cookie'
+import CATALOG_COUNT from './queries/catalogCount.graphql'
+import PICKUP_POINT_AVAILABILITY from './queries/pickupPointAvailability.graphql'
+
+/** The Apollo client `useApolloClient()` returns (null outside an Apollo provider). */
+export type QueryClient = ReturnType<typeof useApolloClient>
 
 /** Matches delivery-promises-bff availability body (`itemId` = SKU, `productId` = catalog product). */
 export type AvailabilityItem = {
@@ -151,34 +158,40 @@ export const clearShippingSession = async () => {
   })
 }
 
-export const getPickups = (
+const requireClient = (apolloClient: QueryClient) => {
+  if (!apolloClient) {
+    throw new Error('Apollo client is not available')
+  }
+
+  return apolloClient
+}
+
+export const getPickups = async (
+  apolloClient: QueryClient,
   countryCode: string,
   zipCode: string,
-  account: string,
   salesChannel: string
-) =>
-  fetch(
-    `/api/intelligent-search/v0/pickup-point-availability/trade-policy/${encodeURIComponent(
-      salesChannel
-    )}?zip-code=${encodeURIComponent(zipCode)}&an=${encodeURIComponent(
-      account
-    )}&country=${encodeURIComponent(countryCode)}`,
-    { method: 'GET', credentials: 'omit' }
-  )
-    .then((res) => {
-      if (!res.ok) {
-        throw new Error(`pickup-point-availability failed (${res.status})`)
-      }
-
-      return res.json() as Promise<PickupPointAvailabilityResponse>
+) => {
+  try {
+    const { data } = await requireClient(apolloClient).query<{
+      pickupPointAvailability?: PickupPointAvailabilityResponse
+    }>({
+      query: PICKUP_POINT_AVAILABILITY,
+      variables: { salesChannel, zipCode, country: countryCode },
+      fetchPolicy: 'network-only',
     })
-    .then((data) => ({
-      items:
-        Array.isArray(data?.pickupPointDistances) && data.pickupPointDistances
-          ? data.pickupPointDistances.map(mapPickupPointDistanceRow)
-          : [],
-    }))
-    .catch(() => ({ items: [] }))
+
+    const distances = data?.pickupPointAvailability?.pickupPointDistances
+
+    return {
+      items: Array.isArray(distances)
+        ? distances.map(mapPickupPointDistanceRow)
+        : [],
+    }
+  } catch {
+    return { items: [] }
+  }
+}
 
 export const updateOrderForm = (
   country: string,
@@ -202,19 +215,21 @@ export const clearOrderFormShipping = (orderFormId: string) =>
     },
   }).then((res) => res.json())
 
-export const getCatalogCount = (zipCode: string, geoCoordinates: number[]) =>
-  fetch(
-    `/api/intelligent-search/v1/catalog-count?zip-code=${zipCode}&coordinates=${geoCoordinates.join(
-      ','
-    )}`,
-    {
-      method: 'GET',
-      headers: {
-        'x-vtex-user-agent': USER_AGENT,
-      },
-      credentials: 'omit',
-    }
-  ).then((res) => res.json())
+export const getCatalogCount = async (
+  apolloClient: QueryClient,
+  zipCode: string,
+  geoCoordinates: number[]
+) => {
+  const { data } = await requireClient(apolloClient).query<{
+    catalogCount: { total: number }
+  }>({
+    query: CATALOG_COUNT,
+    variables: { zipCode, coordinates: geoCoordinates.join(',') },
+    fetchPolicy: 'network-only',
+  })
+
+  return data.catalogCount
+}
 
 export const getCartProducts = async (orderFormId: string) => {
   const orderForm = await fetch(

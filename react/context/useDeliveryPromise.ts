@@ -119,6 +119,11 @@ export const useDeliveryPromise = () => {
   const { addItems, removeItem } = useOrderItems()
   const { push } = usePixel()
   const apolloClient = useApolloClient()
+  // Read through a ref so fetchPickups (a dependency of the mount effect) keeps
+  // a stable identity and doesn't re-run when the client reference changes.
+  const apolloClientRef = useRef(apolloClient)
+
+  apolloClientRef.current = apolloClient
 
   /**
    * Refreshes the storefront after a session write. The session POST sets a
@@ -302,9 +307,9 @@ export const useDeliveryPromise = () => {
       }
 
       const responsePickups = await getPickups(
+        apolloClientRef.current,
         country,
         selectedZipcode,
-        account,
         salesChannel
       )
 
@@ -317,7 +322,7 @@ export const useDeliveryPromise = () => {
         keepLoading
       )
     },
-    [account, salesChannel, applyPickupsResult]
+    [salesChannel, applyPickupsResult]
   )
 
   useEffect(() => {
@@ -481,13 +486,18 @@ export const useDeliveryPromise = () => {
       // Run the three independent calls in parallel. getCatalogCount stays
       // on the critical path (UX gate) but no longer blocks updateOrderForm
       // and getPickups behind it.
-      const catalogCountPromise = getCatalogCount(selectedZipcode, coordinates)
+      const catalogCountPromise = getCatalogCount(
+        apolloClient,
+        selectedZipcode,
+        coordinates
+      )
+
       const updateOrderFormPromise = orderFormId
         ? updateOrderForm(countryCode, selectedZipcode, orderFormId)
         : Promise.resolve()
 
       const pickupsPromise = salesChannel
-        ? getPickups(countryCode, selectedZipcode, account, salesChannel)
+        ? getPickups(apolloClient, countryCode, selectedZipcode, salesChannel)
         : Promise.resolve(null)
 
       const [catalogCountResult, updateOrderFormResult, pickupsResult] =
