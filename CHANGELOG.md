@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- **`docs/README.md`:** `availability-badges` block from the blocks table and the block props section, since it is no longer recommended for new implementations.
+
 ## [1.7.0] - 2026-10-26
 
 ### Changed
