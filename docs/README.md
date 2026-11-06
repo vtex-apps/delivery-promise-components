@@ -41,7 +41,6 @@ You can now use all blocks exported by the `delivery-promise-components` app. Us
 | `shopper-location-setter`  | Postal code control: popover when optional, blocking modal when `required`. |
 | `shipping-method-selector` | Delivery vs pickup modal (after a postal code exists).                      |
 | `pickup-point-selector`    | Pickup point choice (when applicable).                                      |
-| `availability-badges`      | Product-summary badges driven by delivery promise data.                     |
 
 ### Adding blocks to the theme
 
@@ -110,10 +109,6 @@ Place the blocks where you need them (commonly under [header](https://developers
 | Prop name | Type   | Description          |
 | --------- | ------ | -------------------- |
 | `mode`    | `enum` | `default` or `icon`. |
-
-#### `availability-badges`
-
-No content schema; reads `ProductSummaryContext` and `useDeliveryPromiseState` to display delivery promise badges in product summaries.
 
 ### Global UI
 
